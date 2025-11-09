@@ -62,27 +62,81 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "portugues",
-    name: "Português",
+    id: "interpretacao-textual",
+    name: "Interpretação Textual",
     contents: [
       {
-        id: "gramatica",
-        name: "Gramática",
+        id: "compreensao",
+        name: "Compreensão Textual",
         topics: [
-          { id: "sintaxe", name: "Sintaxe" },
-          { id: "morfologia", name: "Morfologia" },
-          { id: "pontuacao", name: "Pontuação" },
-          { id: "concordancia", name: "Concordância" },
-          { id: "regencia", name: "Regência" },
+          { id: "ideia-central", name: "Ideia Central" },
+          { id: "argumentacao", name: "Argumentação" },
+          { id: "inferencia", name: "Inferência" },
         ],
       },
       {
-        id: "interpretacao",
-        name: "Interpretação de Texto",
+        id: "generos",
+        name: "Gêneros Textuais",
         topics: [
-          { id: "compreensao", name: "Compreensão Textual" },
-          { id: "generos", name: "Gêneros Textuais" },
-          { id: "inferencia", name: "Inferência" },
+          { id: "narrativo", name: "Narrativo" },
+          { id: "dissertativo", name: "Dissertativo" },
+          { id: "descritivo", name: "Descritivo" },
+          { id: "injuntivo", name: "Injuntivo" },
+        ],
+      },
+      {
+        id: "linguagem",
+        name: "Linguagem e Sentido",
+        topics: [
+          { id: "figuras", name: "Figuras de Linguagem" },
+          { id: "conotacao", name: "Conotação e Denotação" },
+          { id: "ambiguidade", name: "Ambiguidade" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "gramatica",
+    name: "Gramática",
+    contents: [
+      {
+        id: "sintaxe",
+        name: "Sintaxe",
+        topics: [
+          { id: "periodo-simples", name: "Período Simples" },
+          { id: "periodo-composto", name: "Período Composto" },
+          { id: "concordancia", name: "Concordância" },
+          { id: "regencia", name: "Regência" },
+          { id: "crase", name: "Crase" },
+        ],
+      },
+      {
+        id: "morfologia",
+        name: "Morfologia",
+        topics: [
+          { id: "classes-palavras", name: "Classes de Palavras" },
+          { id: "verbos", name: "Verbos" },
+          { id: "substantivos", name: "Substantivos" },
+          { id: "adjetivos", name: "Adjetivos" },
+          { id: "pronomes", name: "Pronomes" },
+        ],
+      },
+      {
+        id: "pontuacao",
+        name: "Pontuação",
+        topics: [
+          { id: "virgula", name: "Vírgula" },
+          { id: "ponto-virgula", name: "Ponto e Vírgula" },
+          { id: "dois-pontos", name: "Dois Pontos" },
+        ],
+      },
+      {
+        id: "ortografia",
+        name: "Ortografia",
+        topics: [
+          { id: "acentuacao", name: "Acentuação" },
+          { id: "hifen", name: "Hífen" },
+          { id: "homônimos", name: "Homônimos e Parônimos" },
         ],
       },
     ],
