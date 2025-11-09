@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Eye } from "lucide-react";
+import { Search, Filter, Eye, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -19,8 +19,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useState } from "react";
 
 const Questions = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<string | undefined>();
+  const [selectedExam, setSelectedExam] = useState<string | undefined>();
+  const [selectedYear, setSelectedYear] = useState<string | undefined>();
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string | undefined>();
+
   // Mock data - será substituído por dados reais do banco
   const questions = [
     {
@@ -83,6 +90,27 @@ const Questions = () => {
     }
   };
 
+  // Filtragem das questões
+  const filteredQuestions = questions.filter((question) => {
+    const matchesSearch = question.text.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSubject = !selectedSubject || question.subject === selectedSubject;
+    const matchesExam = !selectedExam || question.exam === selectedExam;
+    const matchesYear = !selectedYear || question.year.toString() === selectedYear;
+    const matchesDifficulty = !selectedDifficulty || question.difficulty === selectedDifficulty;
+
+    return matchesSearch && matchesSubject && matchesExam && matchesYear && matchesDifficulty;
+  });
+
+  const hasActiveFilters = selectedSubject || selectedExam || selectedYear || selectedDifficulty;
+
+  const clearFilters = () => {
+    setSelectedSubject(undefined);
+    setSelectedExam(undefined);
+    setSelectedYear(undefined);
+    setSelectedDifficulty(undefined);
+    setSearchTerm("");
+  };
+
   return (
     <Layout>
       <div className="space-y-8">
@@ -93,49 +121,85 @@ const Questions = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar questões..."
-                  className="pl-10"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar questões..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Matéria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Matemática">Matemática</SelectItem>
+                      <SelectItem value="Português">Português</SelectItem>
+                      <SelectItem value="Literatura">Literatura</SelectItem>
+                      <SelectItem value="Física">Física</SelectItem>
+                      <SelectItem value="Química">Química</SelectItem>
+                      <SelectItem value="Biologia">Biologia</SelectItem>
+                      <SelectItem value="História">História</SelectItem>
+                      <SelectItem value="Geografia">Geografia</SelectItem>
+                      <SelectItem value="Filosofia">Filosofia</SelectItem>
+                      <SelectItem value="Sociologia">Sociologia</SelectItem>
+                      <SelectItem value="Inglês">Inglês</SelectItem>
+                      <SelectItem value="Espanhol">Espanhol</SelectItem>
+                      <SelectItem value="Redação">Redação</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedExam} onValueChange={setSelectedExam}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Vestibular" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ENEM">ENEM</SelectItem>
+                      <SelectItem value="FUVEST">FUVEST</SelectItem>
+                      <SelectItem value="UNICAMP">UNICAMP</SelectItem>
+                      <SelectItem value="UNESP">UNESP</SelectItem>
+                      <SelectItem value="UERJ">UERJ</SelectItem>
+                      <SelectItem value="UFMG">UFMG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedYear} onValueChange={setSelectedYear}>
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue placeholder="Ano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2024">2024</SelectItem>
+                      <SelectItem value="2023">2023</SelectItem>
+                      <SelectItem value="2022">2022</SelectItem>
+                      <SelectItem value="2021">2021</SelectItem>
+                      <SelectItem value="2020">2020</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Dificuldade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Fácil">Fácil</SelectItem>
+                      <SelectItem value="Média">Média</SelectItem>
+                      <SelectItem value="Difícil">Difícil</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="icon" onClick={clearFilters}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Select>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Matéria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="matematica">Matemática</SelectItem>
-                    <SelectItem value="portugues">Português</SelectItem>
-                    <SelectItem value="literatura">Literatura</SelectItem>
-                    <SelectItem value="fisica">Física</SelectItem>
-                    <SelectItem value="quimica">Química</SelectItem>
-                    <SelectItem value="biologia">Biologia</SelectItem>
-                    <SelectItem value="historia">História</SelectItem>
-                    <SelectItem value="geografia">Geografia</SelectItem>
-                    <SelectItem value="filosofia">Filosofia</SelectItem>
-                    <SelectItem value="sociologia">Sociologia</SelectItem>
-                    <SelectItem value="ingles">Inglês</SelectItem>
-                    <SelectItem value="espanhol">Espanhol</SelectItem>
-                    <SelectItem value="redacao">Redação</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Vestibular" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enem">ENEM</SelectItem>
-                    <SelectItem value="fuvest">FUVEST</SelectItem>
-                    <SelectItem value="unicamp">UNICAMP</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </div>
+              {hasActiveFilters && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{filteredQuestions.length} questões encontradas</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -156,7 +220,14 @@ const Questions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {questions.map((question) => (
+                {filteredQuestions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      Nenhuma questão encontrada com os filtros selecionados.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredQuestions.map((question) => (
                   <TableRow key={question.id}>
                     <TableCell className="font-medium">{question.id}</TableCell>
                     <TableCell>
@@ -187,7 +258,8 @@ const Questions = () => {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
