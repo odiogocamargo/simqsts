@@ -58,6 +58,7 @@ const AddQuestion = () => {
                     <SelectContent>
                       <SelectItem value="matematica">Matemática</SelectItem>
                       <SelectItem value="portugues">Português</SelectItem>
+                      <SelectItem value="literatura">Literatura</SelectItem>
                       <SelectItem value="fisica">Física</SelectItem>
                       <SelectItem value="quimica">Química</SelectItem>
                       <SelectItem value="biologia">Biologia</SelectItem>
@@ -66,6 +67,8 @@ const AddQuestion = () => {
                       <SelectItem value="filosofia">Filosofia</SelectItem>
                       <SelectItem value="sociologia">Sociologia</SelectItem>
                       <SelectItem value="ingles">Inglês</SelectItem>
+                      <SelectItem value="espanhol">Espanhol</SelectItem>
+                      <SelectItem value="redacao">Redação</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Eye } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -11,6 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Questions = () => {
   // Mock data - será substituído por dados reais do banco
@@ -19,15 +27,17 @@ const Questions = () => {
       id: 1,
       text: "Calcule a integral definida de f(x) = x² + 2x no intervalo [0, 2]",
       subject: "Matemática",
-      exam: "ENEM 2023",
+      topic: "Cálculo Integral",
+      exam: "ENEM",
       difficulty: "Média",
       year: 2023,
     },
     {
       id: 2,
       text: "Analise o trecho literário e identifique as características do Modernismo brasileiro",
-      subject: "Português",
-      exam: "FUVEST 2023",
+      subject: "Literatura",
+      topic: "Modernismo",
+      exam: "FUVEST",
       difficulty: "Difícil",
       year: 2023,
     },
@@ -35,9 +45,28 @@ const Questions = () => {
       id: 3,
       text: "Determine a aceleração de um corpo em movimento retilíneo uniformemente variado",
       subject: "Física",
-      exam: "UNICAMP 2023",
+      topic: "Cinemática",
+      exam: "UNICAMP",
       difficulty: "Fácil",
       year: 2023,
+    },
+    {
+      id: 4,
+      text: "Calcule o pH de uma solução ácida com concentração de H+ igual a 10⁻³",
+      subject: "Química",
+      topic: "pH e pOH",
+      exam: "ENEM",
+      difficulty: "Média",
+      year: 2023,
+    },
+    {
+      id: 5,
+      text: "Explique o processo de fotossíntese e sua importância para os seres vivos",
+      subject: "Biologia",
+      topic: "Fisiologia Vegetal",
+      exam: "ENEM",
+      difficulty: "Fácil",
+      year: 2024,
     },
   ];
 
@@ -80,8 +109,17 @@ const Questions = () => {
                   <SelectContent>
                     <SelectItem value="matematica">Matemática</SelectItem>
                     <SelectItem value="portugues">Português</SelectItem>
+                    <SelectItem value="literatura">Literatura</SelectItem>
                     <SelectItem value="fisica">Física</SelectItem>
                     <SelectItem value="quimica">Química</SelectItem>
+                    <SelectItem value="biologia">Biologia</SelectItem>
+                    <SelectItem value="historia">História</SelectItem>
+                    <SelectItem value="geografia">Geografia</SelectItem>
+                    <SelectItem value="filosofia">Filosofia</SelectItem>
+                    <SelectItem value="sociologia">Sociologia</SelectItem>
+                    <SelectItem value="ingles">Inglês</SelectItem>
+                    <SelectItem value="espanhol">Espanhol</SelectItem>
+                    <SelectItem value="redacao">Redação</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select>
@@ -102,31 +140,58 @@ const Questions = () => {
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          {questions.map((question) => (
-            <Card key={question.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <p className="text-foreground leading-relaxed flex-1">{question.text}</p>
-                    <Badge className={getDifficultyColor(question.difficulty)}>
-                      {question.difficulty}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-                      {question.subject}
-                    </Badge>
-                    <Badge variant="outline" className="bg-secondary">
-                      {question.exam}
-                    </Badge>
-                    <span className="text-muted-foreground">{question.year}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">#</TableHead>
+                  <TableHead>Enunciado</TableHead>
+                  <TableHead className="w-32">Matéria</TableHead>
+                  <TableHead className="w-32">Tópico</TableHead>
+                  <TableHead className="w-28">Vestibular</TableHead>
+                  <TableHead className="w-20">Ano</TableHead>
+                  <TableHead className="w-28">Dificuldade</TableHead>
+                  <TableHead className="w-20">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {questions.map((question) => (
+                  <TableRow key={question.id}>
+                    <TableCell className="font-medium">{question.id}</TableCell>
+                    <TableCell>
+                      <p className="line-clamp-2 text-sm">{question.text}</p>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                        {question.subject}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">{question.topic}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-secondary">
+                        {question.exam}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{question.year}</TableCell>
+                    <TableCell>
+                      <Badge className={getDifficultyColor(question.difficulty)}>
+                        {question.difficulty}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
