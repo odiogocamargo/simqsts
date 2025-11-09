@@ -20,13 +20,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useState } from "react";
+import { subjects } from "@/data/subjects";
 
 const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | undefined>();
+  const [selectedContent, setSelectedContent] = useState<string | undefined>();
+  const [selectedTopic, setSelectedTopic] = useState<string | undefined>();
   const [selectedExam, setSelectedExam] = useState<string | undefined>();
   const [selectedYear, setSelectedYear] = useState<string | undefined>();
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | undefined>();
+
+  const currentSubject = subjects.find(s => s.id === selectedSubject);
+  const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
 
   // Mock data - será substituído por dados reais do banco
   const questions = [
@@ -34,7 +40,11 @@ const Questions = () => {
       id: 1,
       text: "Calcule a integral definida de f(x) = x² + 2x no intervalo [0, 2]",
       subject: "Matemática",
-      topic: "Cálculo Integral",
+      subjectId: "matematica",
+      content: "Cálculo",
+      contentId: "calculo",
+      topic: "Integrais",
+      topicId: "integrais",
       exam: "ENEM",
       difficulty: "Média",
       year: 2023,
@@ -43,7 +53,11 @@ const Questions = () => {
       id: 2,
       text: "Analise o trecho literário e identifique as características do Modernismo brasileiro",
       subject: "Literatura",
+      subjectId: "literatura",
+      content: "Movimentos Literários",
+      contentId: "movimentos",
       topic: "Modernismo",
+      topicId: "modernismo",
       exam: "FUVEST",
       difficulty: "Difícil",
       year: 2023,
@@ -52,7 +66,11 @@ const Questions = () => {
       id: 3,
       text: "Determine a aceleração de um corpo em movimento retilíneo uniformemente variado",
       subject: "Física",
+      subjectId: "fisica",
+      content: "Mecânica",
+      contentId: "mecanica",
       topic: "Cinemática",
+      topicId: "cinematica",
       exam: "UNICAMP",
       difficulty: "Fácil",
       year: 2023,
@@ -61,7 +79,11 @@ const Questions = () => {
       id: 4,
       text: "Calcule o pH de uma solução ácida com concentração de H+ igual a 10⁻³",
       subject: "Química",
-      topic: "pH e pOH",
+      subjectId: "quimica",
+      content: "Físico-Química",
+      contentId: "fisico-quimica",
+      topic: "Soluções",
+      topicId: "solucoes",
       exam: "ENEM",
       difficulty: "Média",
       year: 2023,
@@ -70,7 +92,11 @@ const Questions = () => {
       id: 5,
       text: "Explique o processo de fotossíntese e sua importância para os seres vivos",
       subject: "Biologia",
+      subjectId: "biologia",
+      content: "Fisiologia",
+      contentId: "fisiologia",
       topic: "Fisiologia Vegetal",
+      topicId: "vegetal",
       exam: "ENEM",
       difficulty: "Fácil",
       year: 2024,
@@ -93,18 +119,22 @@ const Questions = () => {
   // Filtragem das questões
   const filteredQuestions = questions.filter((question) => {
     const matchesSearch = question.text.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = !selectedSubject || question.subject === selectedSubject;
+    const matchesSubject = !selectedSubject || question.subjectId === selectedSubject;
+    const matchesContent = !selectedContent || question.contentId === selectedContent;
+    const matchesTopic = !selectedTopic || question.topicId === selectedTopic;
     const matchesExam = !selectedExam || question.exam === selectedExam;
     const matchesYear = !selectedYear || question.year.toString() === selectedYear;
     const matchesDifficulty = !selectedDifficulty || question.difficulty === selectedDifficulty;
 
-    return matchesSearch && matchesSubject && matchesExam && matchesYear && matchesDifficulty;
+    return matchesSearch && matchesSubject && matchesContent && matchesTopic && matchesExam && matchesYear && matchesDifficulty;
   });
 
-  const hasActiveFilters = selectedSubject || selectedExam || selectedYear || selectedDifficulty;
+  const hasActiveFilters = selectedSubject || selectedContent || selectedTopic || selectedExam || selectedYear || selectedDifficulty;
 
   const clearFilters = () => {
     setSelectedSubject(undefined);
+    setSelectedContent(undefined);
+    setSelectedTopic(undefined);
     setSelectedExam(undefined);
     setSelectedYear(undefined);
     setSelectedDifficulty(undefined);
@@ -133,24 +163,58 @@ const Questions = () => {
                   />
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                  <Select 
+                    value={selectedSubject} 
+                    onValueChange={(value) => {
+                      setSelectedSubject(value);
+                      setSelectedContent(undefined);
+                      setSelectedTopic(undefined);
+                    }}
+                  >
                     <SelectTrigger className="w-[150px]">
                       <SelectValue placeholder="Matéria" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Matemática">Matemática</SelectItem>
-                      <SelectItem value="Português">Português</SelectItem>
-                      <SelectItem value="Literatura">Literatura</SelectItem>
-                      <SelectItem value="Física">Física</SelectItem>
-                      <SelectItem value="Química">Química</SelectItem>
-                      <SelectItem value="Biologia">Biologia</SelectItem>
-                      <SelectItem value="História">História</SelectItem>
-                      <SelectItem value="Geografia">Geografia</SelectItem>
-                      <SelectItem value="Filosofia">Filosofia</SelectItem>
-                      <SelectItem value="Sociologia">Sociologia</SelectItem>
-                      <SelectItem value="Inglês">Inglês</SelectItem>
-                      <SelectItem value="Espanhol">Espanhol</SelectItem>
-                      <SelectItem value="Redação">Redação</SelectItem>
+                      {subjects.map(subject => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select 
+                    value={selectedContent} 
+                    onValueChange={(value) => {
+                      setSelectedContent(value);
+                      setSelectedTopic(undefined);
+                    }}
+                    disabled={!selectedSubject}
+                  >
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Conteúdo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentSubject?.contents.map(content => (
+                        <SelectItem key={content.id} value={content.id}>
+                          {content.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select 
+                    value={selectedTopic} 
+                    onValueChange={setSelectedTopic}
+                    disabled={!selectedContent}
+                  >
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Tópico" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentContent?.topics.map(topic => (
+                        <SelectItem key={topic.id} value={topic.id}>
+                          {topic.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select value={selectedExam} onValueChange={setSelectedExam}>
@@ -212,6 +276,7 @@ const Questions = () => {
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>Enunciado</TableHead>
                   <TableHead className="w-32">Matéria</TableHead>
+                  <TableHead className="w-32">Conteúdo</TableHead>
                   <TableHead className="w-32">Tópico</TableHead>
                   <TableHead className="w-28">Vestibular</TableHead>
                   <TableHead className="w-20">Ano</TableHead>
@@ -222,42 +287,45 @@ const Questions = () => {
               <TableBody>
                 {filteredQuestions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       Nenhuma questão encontrada com os filtros selecionados.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredQuestions.map((question) => (
-                  <TableRow key={question.id}>
-                    <TableCell className="font-medium">{question.id}</TableCell>
-                    <TableCell>
-                      <p className="line-clamp-2 text-sm">{question.text}</p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-                        {question.subject}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">{question.topic}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-secondary">
-                        {question.exam}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{question.year}</TableCell>
-                    <TableCell>
-                      <Badge className={getDifficultyColor(question.difficulty)}>
-                        {question.difficulty}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                    <TableRow key={question.id}>
+                      <TableCell className="font-medium">{question.id}</TableCell>
+                      <TableCell>
+                        <p className="line-clamp-2 text-sm">{question.text}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                          {question.subject}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">{question.content}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">{question.topic}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-secondary">
+                          {question.exam}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{question.year}</TableCell>
+                      <TableCell>
+                        <Badge className={getDifficultyColor(question.difficulty)}>
+                          {question.difficulty}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
               </TableBody>

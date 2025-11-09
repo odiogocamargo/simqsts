@@ -12,9 +12,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { subjects } from "@/data/subjects";
+import { useState } from "react";
 
 const AddQuestion = () => {
   const { toast } = useToast();
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedContent, setSelectedContent] = useState<string>("");
+  
+  const currentSubject = subjects.find(s => s.id === selectedSubject);
+  const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
+  
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 35 }, (_, i) => currentYear - i);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,44 +58,71 @@ const AddQuestion = () => {
                 />
               </div>
 
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="subject">Matéria</Label>
-                  <Select required>
+                  <Select 
+                    required 
+                    value={selectedSubject} 
+                    onValueChange={(value) => {
+                      setSelectedSubject(value);
+                      setSelectedContent("");
+                    }}
+                  >
                     <SelectTrigger id="subject">
                       <SelectValue placeholder="Selecione a matéria" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="matematica">Matemática</SelectItem>
-                      <SelectItem value="portugues">Português</SelectItem>
-                      <SelectItem value="literatura">Literatura</SelectItem>
-                      <SelectItem value="fisica">Física</SelectItem>
-                      <SelectItem value="quimica">Química</SelectItem>
-                      <SelectItem value="biologia">Biologia</SelectItem>
-                      <SelectItem value="historia">História</SelectItem>
-                      <SelectItem value="geografia">Geografia</SelectItem>
-                      <SelectItem value="filosofia">Filosofia</SelectItem>
-                      <SelectItem value="sociologia">Sociologia</SelectItem>
-                      <SelectItem value="ingles">Inglês</SelectItem>
-                      <SelectItem value="espanhol">Espanhol</SelectItem>
-                      <SelectItem value="redacao">Redação</SelectItem>
+                      {subjects.map(subject => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="content">Conteúdo</Label>
+                  <Select 
+                    required 
+                    value={selectedContent}
+                    onValueChange={setSelectedContent}
+                    disabled={!selectedSubject}
+                  >
+                    <SelectTrigger id="content">
+                      <SelectValue placeholder={selectedSubject ? "Selecione o conteúdo" : "Selecione a matéria primeiro"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentSubject?.contents.map(content => (
+                        <SelectItem key={content.id} value={content.id}>
+                          {content.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="topic">Tópico Específico</Label>
-                  <Input
-                    id="topic"
-                    placeholder="Ex: Integrais, Modernismo..."
-                    required
-                  />
+                  <Select required disabled={!selectedContent}>
+                    <SelectTrigger id="topic">
+                      <SelectValue placeholder={selectedContent ? "Selecione o tópico" : "Selecione o conteúdo primeiro"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currentContent?.topics.map(topic => (
+                        <SelectItem key={topic.id} value={topic.id}>
+                          {topic.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="exam">Vestibular</Label>
+                  <Label htmlFor="exam">Vestibular/Instituição</Label>
                   <Select required>
                     <SelectTrigger id="exam">
                       <SelectValue placeholder="Selecione" />
@@ -97,6 +134,11 @@ const AddQuestion = () => {
                       <SelectItem value="unesp">UNESP</SelectItem>
                       <SelectItem value="uerj">UERJ</SelectItem>
                       <SelectItem value="ufmg">UFMG</SelectItem>
+                      <SelectItem value="ufpr">UFPR</SelectItem>
+                      <SelectItem value="ufsc">UFSC</SelectItem>
+                      <SelectItem value="ufrgs">UFRGS</SelectItem>
+                      <SelectItem value="ita">ITA</SelectItem>
+                      <SelectItem value="ime">IME</SelectItem>
                       <SelectItem value="outros">Outros</SelectItem>
                     </SelectContent>
                   </Select>
@@ -104,14 +146,18 @@ const AddQuestion = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="year">Ano</Label>
-                  <Input
-                    id="year"
-                    type="number"
-                    placeholder="2023"
-                    min="1990"
-                    max={new Date().getFullYear()}
-                    required
-                  />
+                  <Select required>
+                    <SelectTrigger id="year">
+                      <SelectValue placeholder="Selecione o ano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map(year => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
