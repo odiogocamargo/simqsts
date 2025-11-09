@@ -21,6 +21,31 @@ import {
 } from "@/components/ui/table";
 import { useState } from "react";
 import { subjects } from "@/data/subjects";
+import { QuestionViewModal } from "@/components/QuestionViewModal";
+import { QuestionEditModal } from "@/components/QuestionEditModal";
+
+interface Question {
+  id: number;
+  text: string;
+  subject: string;
+  subjectId: string;
+  content: string;
+  contentId: string;
+  topic: string;
+  topicId: string;
+  exam: string;
+  difficulty: string;
+  year: number;
+  alternatives?: {
+    a: string;
+    b: string;
+    c: string;
+    d: string;
+    e: string;
+  };
+  correctAnswer?: string;
+  explanation?: string;
+}
 
 const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,12 +55,16 @@ const Questions = () => {
   const [selectedExam, setSelectedExam] = useState<string | undefined>();
   const [selectedYear, setSelectedYear] = useState<string | undefined>();
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | undefined>();
+  const [viewQuestion, setViewQuestion] = useState<Question | null>(null);
+  const [editQuestion, setEditQuestion] = useState<Question | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const currentSubject = subjects.find(s => s.id === selectedSubject);
   const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
 
   // Mock data - será substituído por dados reais do banco
-  const questions = [
+  const [questions, setQuestions] = useState<Question[]>([
     {
       id: 1,
       text: "Calcule a integral definida de f(x) = x² + 2x no intervalo [0, 2]",
@@ -48,6 +77,15 @@ const Questions = () => {
       exam: "ENEM",
       difficulty: "Média",
       year: 2023,
+      alternatives: {
+        a: "10/3",
+        b: "16/3",
+        c: "20/3",
+        d: "8/3",
+        e: "12/3"
+      },
+      correctAnswer: "b",
+      explanation: "Para resolver esta integral definida, primeiro encontramos a primitiva de f(x) = x² + 2x, que é F(x) = x³/3 + x². Aplicando o Teorema Fundamental do Cálculo, calculamos F(2) - F(0) = (8/3 + 4) - 0 = 16/3."
     },
     {
       id: 2,
@@ -61,6 +99,15 @@ const Questions = () => {
       exam: "FUVEST",
       difficulty: "Difícil",
       year: 2023,
+      alternatives: {
+        a: "Linguagem rebuscada e vocabulário erudito",
+        b: "Ruptura com padrões, linguagem coloquial e temática brasileira",
+        c: "Apego às formas clássicas e métricas rígidas",
+        d: "Valorização do passado colonial",
+        e: "Formalismo excessivo e distanciamento da realidade"
+      },
+      correctAnswer: "b",
+      explanation: "O Modernismo brasileiro se caracteriza pela ruptura com os padrões estéticos anteriores, uso de linguagem coloquial, valorização da cultura e temática nacional, liberdade formal e experimentação estética."
     },
     {
       id: 3,
@@ -74,6 +121,15 @@ const Questions = () => {
       exam: "UNICAMP",
       difficulty: "Fácil",
       year: 2023,
+      alternatives: {
+        a: "2 m/s²",
+        b: "4 m/s²",
+        c: "6 m/s²",
+        d: "8 m/s²",
+        e: "10 m/s²"
+      },
+      correctAnswer: "a",
+      explanation: "Em movimento retilíneo uniformemente variado (MRUV), a aceleração é constante. Utilizando a equação v = v₀ + at, onde v é a velocidade final, v₀ é a velocidade inicial e t é o tempo, podemos calcular a aceleração."
     },
     {
       id: 4,
@@ -87,6 +143,15 @@ const Questions = () => {
       exam: "ENEM",
       difficulty: "Média",
       year: 2023,
+      alternatives: {
+        a: "pH = 1",
+        b: "pH = 2",
+        c: "pH = 3",
+        d: "pH = 4",
+        e: "pH = 5"
+      },
+      correctAnswer: "c",
+      explanation: "O pH é calculado pela fórmula pH = -log[H+]. Substituindo [H+] = 10⁻³, temos pH = -log(10⁻³) = 3."
     },
     {
       id: 5,
@@ -100,8 +165,17 @@ const Questions = () => {
       exam: "ENEM",
       difficulty: "Fácil",
       year: 2024,
+      alternatives: {
+        a: "Processo de respiração celular das plantas",
+        b: "Conversão de luz solar em energia química através de clorofila",
+        c: "Absorção de nutrientes do solo pelas raízes",
+        d: "Reprodução assexuada das plantas",
+        e: "Transpiração das folhas"
+      },
+      correctAnswer: "b",
+      explanation: "A fotossíntese é o processo pelo qual as plantas convertem luz solar em energia química (glicose) usando clorofila. É fundamental pois produz oxigênio e é a base da cadeia alimentar."
     },
-  ];
+  ]);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -139,6 +213,20 @@ const Questions = () => {
     setSelectedYear(undefined);
     setSelectedDifficulty(undefined);
     setSearchTerm("");
+  };
+
+  const handleSaveQuestion = (updatedQuestion: Question) => {
+    setQuestions(questions.map(q => q.id === updatedQuestion.id ? updatedQuestion : q));
+  };
+
+  const handleViewQuestion = (question: Question) => {
+    setViewQuestion(question);
+    setIsViewModalOpen(true);
+  };
+
+  const handleEditQuestion = (question: Question) => {
+    setEditQuestion(question);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -321,7 +409,11 @@ const Questions = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleViewQuestion(question)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -332,6 +424,20 @@ const Questions = () => {
             </Table>
           </CardContent>
         </Card>
+
+        <QuestionViewModal 
+          question={viewQuestion}
+          open={isViewModalOpen}
+          onOpenChange={setIsViewModalOpen}
+          onEdit={handleEditQuestion}
+        />
+
+        <QuestionEditModal 
+          question={editQuestion}
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          onSave={handleSaveQuestion}
+        />
       </div>
     </Layout>
   );
