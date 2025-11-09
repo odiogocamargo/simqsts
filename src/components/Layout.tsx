@@ -1,55 +1,21 @@
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, PlusCircle } from "lucide-react";
-
-const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/questions", label: "Questões", icon: FileText },
-  { path: "/add-question", label: "Adicionar", icon: PlusCircle },
-];
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
-  const location = useLocation();
-
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <SidebarInset className="flex-1">
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background px-4">
+            <SidebarTrigger />
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">BQ</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Banco de Questões</h1>
-                <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
-              </div>
+              <h2 className="text-lg font-semibold text-foreground">Banco de Questões</h2>
             </div>
-            <div className="flex gap-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="font-medium text-sm">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </nav>
-      <main className="container mx-auto px-4 py-8">{children}</main>
-    </div>
+          </header>
+          <main className="flex-1 p-6">{children}</main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
