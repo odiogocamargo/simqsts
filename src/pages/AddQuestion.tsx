@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { subjects } from "@/data/subjects";
+import { exams } from "@/data/exams";
 import { useState } from "react";
 
 const AddQuestion = () => {
@@ -128,18 +129,11 @@ const AddQuestion = () => {
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="enem">ENEM</SelectItem>
-                      <SelectItem value="fuvest">FUVEST</SelectItem>
-                      <SelectItem value="unicamp">UNICAMP</SelectItem>
-                      <SelectItem value="unesp">UNESP</SelectItem>
-                      <SelectItem value="uerj">UERJ</SelectItem>
-                      <SelectItem value="ufmg">UFMG</SelectItem>
-                      <SelectItem value="ufpr">UFPR</SelectItem>
-                      <SelectItem value="ufsc">UFSC</SelectItem>
-                      <SelectItem value="ufrgs">UFRGS</SelectItem>
-                      <SelectItem value="ita">ITA</SelectItem>
-                      <SelectItem value="ime">IME</SelectItem>
-                      <SelectItem value="outros">Outros</SelectItem>
+                      {exams.map((exam) => (
+                        <SelectItem key={exam} value={exam}>
+                          {exam}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

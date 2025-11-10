@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { subjects } from "@/data/subjects";
+import { exams } from "@/data/exams";
 import { useToast } from "@/hooks/use-toast";
 
 interface Question {
@@ -197,12 +198,11 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ENEM">ENEM</SelectItem>
-                  <SelectItem value="FUVEST">FUVEST</SelectItem>
-                  <SelectItem value="UNICAMP">UNICAMP</SelectItem>
-                  <SelectItem value="UNESP">UNESP</SelectItem>
-                  <SelectItem value="UERJ">UERJ</SelectItem>
-                  <SelectItem value="UFMG">UFMG</SelectItem>
+                  {exams.map((exam) => (
+                    <SelectItem key={exam} value={exam}>
+                      {exam}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

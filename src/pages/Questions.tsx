@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { useState } from "react";
 import { subjects } from "@/data/subjects";
+import { exams } from "@/data/exams";
 import { QuestionViewModal } from "@/components/QuestionViewModal";
 import { QuestionEditModal } from "@/components/QuestionEditModal";
 
@@ -310,12 +311,11 @@ const Questions = () => {
                       <SelectValue placeholder="Vestibular" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ENEM">ENEM</SelectItem>
-                      <SelectItem value="FUVEST">FUVEST</SelectItem>
-                      <SelectItem value="UNICAMP">UNICAMP</SelectItem>
-                      <SelectItem value="UNESP">UNESP</SelectItem>
-                      <SelectItem value="UERJ">UERJ</SelectItem>
-                      <SelectItem value="UFMG">UFMG</SelectItem>
+                      {exams.map((exam) => (
+                        <SelectItem key={exam} value={exam}>
+                          {exam}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select value={selectedYear} onValueChange={setSelectedYear}>
