@@ -1887,20 +1887,40 @@ export const subjects: Subject[] = [
     name: "Espanhol",
     contents: [
       {
-        id: "interpretacao",
-        name: "Interpretação de Texto",
+        id: "comprension-interpretacion-textos",
+        name: "Comprensión e Interpretación de Textos",
         topics: [
-          { id: "compreensao", name: "Compreensão Textual" },
-          { id: "vocabulario", name: "Vocabulário" },
-          { id: "inferencia", name: "Inferência" },
+          { id: "identificacion-ideas-principales-secundarias", name: "Identificación de ideas principales y secundarias" },
+          { id: "inferencia-significados", name: "Inferencia de significados" },
+          { id: "proposito-comunicativo", name: "Propósito comunicativo" },
+          { id: "interpretacion-textos-autenticos", name: "Interpretación de textos auténticos" },
         ],
       },
       {
-        id: "gramatica",
-        name: "Gramática",
+        id: "generos-textuales",
+        name: "Géneros Textuales",
         topics: [
-          { id: "verbos", name: "Tempos Verbais" },
-          { id: "conectores", name: "Conectores" },
+          { id: "reconocimiento-tipos-textuales", name: "Reconocimiento de tipos textuales (noticia, diálogo, cartel, correo electrónico, poema, artículo)" },
+          { id: "funcion-social-registro-lenguaje", name: "Función social y registro de lenguaje" },
+        ],
+      },
+      {
+        id: "lexico-contexto",
+        name: "Léxico y Contexto",
+        topics: [
+          { id: "palabras-cognadas-falsos-cognados", name: "Palabras cognadas y falsos cognados" },
+          { id: "deduccion-vocabulario-contexto", name: "Deducción de vocabulario por contexto" },
+          { id: "expresiones-idiomaticas-colocaciones", name: "Expresiones idiomáticas y colocaciones comunes" },
+        ],
+      },
+      {
+        id: "aspectos-gramaticales-lectura",
+        name: "Aspectos Gramaticales Aplicados a la Lectura",
+        topics: [
+          { id: "verbos-regulares-irregulares", name: "Verbos regulares e irregulares" },
+          { id: "tiempos-basicos", name: "Tiempos básicos (presente, pasado, futuro)" },
+          { id: "preposiciones-pronombres-conectores", name: "Preposiciones, pronombres y conectores" },
+          { id: "negacion-comparativos", name: "Negación y comparativos" },
         ],
       },
     ],
