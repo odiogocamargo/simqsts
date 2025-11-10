@@ -451,27 +451,4 @@ export const subjects: Subject[] = [
       },
     ],
   },
-  {
-    id: "redacao",
-    name: "Redação",
-    contents: [
-      {
-        id: "dissertativa",
-        name: "Dissertação Argumentativa",
-        topics: [
-          { id: "estrutura", name: "Estrutura do Texto" },
-          { id: "argumentacao", name: "Argumentação" },
-          { id: "proposta", name: "Proposta de Intervenção" },
-        ],
-      },
-      {
-        id: "competencias",
-        name: "Competências",
-        topics: [
-          { id: "norma-culta", name: "Norma Culta" },
-          { id: "coesao", name: "Coesão e Coerência" },
-        ],
-      },
-    ],
-  },
 ];
