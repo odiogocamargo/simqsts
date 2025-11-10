@@ -1845,20 +1845,39 @@ export const subjects: Subject[] = [
     name: "Inglês",
     contents: [
       {
-        id: "interpretacao",
-        name: "Interpretação de Texto",
+        id: "compreensao-interpretacao-textos",
+        name: "Compreensão e Interpretação de Textos",
         topics: [
-          { id: "compreensao", name: "Compreensão Textual" },
-          { id: "vocabulario", name: "Vocabulário" },
-          { id: "inferencia", name: "Inferência" },
+          { id: "identificacao-ideias-principais-secundarias", name: "Identificação de ideias principais e secundárias" },
+          { id: "inferencia-sentido", name: "Inferência de sentido" },
+          { id: "proposito-comunicativo", name: "Propósito comunicativo" },
+          { id: "interpretacao-global-detalhada", name: "Interpretação global e detalhada de textos" },
         ],
       },
       {
-        id: "gramatica",
-        name: "Gramática",
+        id: "generos-textuais",
+        name: "Gêneros Textuais",
         topics: [
-          { id: "verbos", name: "Tempos Verbais" },
-          { id: "conectores", name: "Conectores" },
+          { id: "reconhecimento-tipos-textuais", name: "Reconhecimento de tipos textuais (notícia, propaganda, e-mail, tirinha, música, artigo, postagem)" },
+          { id: "funcao-social", name: "Função social e linguagem característica" },
+        ],
+      },
+      {
+        id: "vocabulario-contexto",
+        name: "Vocabulário e Contexto",
+        topics: [
+          { id: "cognatos-falsos-cognatos", name: "Cognatos e falsos cognatos" },
+          { id: "deducao-significados-contexto", name: "Dedução de significados pelo contexto" },
+          { id: "expressoes-idiomaticas-phrasal-verbs", name: "Expressões idiomáticas e phrasal verbs mais comuns" },
+        ],
+      },
+      {
+        id: "aspectos-gramaticais-leitura",
+        name: "Aspectos Gramaticais Aplicados à Leitura",
+        topics: [
+          { id: "tempos-verbais-usados", name: "Tempos verbais mais usados (present, past, future)" },
+          { id: "pronomes-modais", name: "Pronomes, modais" },
+          { id: "conectores-estrutura-frasal", name: "Conectores e compreensão de estrutura frasal" },
         ],
       },
     ],
