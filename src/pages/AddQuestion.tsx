@@ -24,8 +24,7 @@ const AddQuestion = () => {
   const currentSubject = subjects.find(s => s.id === selectedSubject);
   const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
   
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 35 }, (_, i) => currentYear - i);
+  const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
