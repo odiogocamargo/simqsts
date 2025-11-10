@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Eye, X } from "lucide-react";
+import { Search, Eye, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -24,6 +24,8 @@ import { subjects } from "@/data/subjects";
 import { exams } from "@/data/exams";
 import { QuestionViewModal } from "@/components/QuestionViewModal";
 import { QuestionEditModal } from "@/components/QuestionEditModal";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Question {
   id: number;
@@ -64,130 +66,101 @@ const Questions = () => {
   const currentSubject = subjects.find(s => s.id === selectedSubject);
   const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
 
-  // Mock data - será substituído por dados reais do banco
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: 1,
-      text: "Calcule a integral definida de f(x) = x² + 2x no intervalo [0, 2]",
-      subject: "Matemática",
-      subjectId: "matematica",
-      content: "Cálculo",
-      contentId: "calculo",
-      topic: "Integrais",
-      topicId: "integrais",
-      exam: "ENEM",
-      difficulty: "Média",
-      year: 2023,
-      alternatives: {
-        a: "10/3",
-        b: "16/3",
-        c: "20/3",
-        d: "8/3",
-        e: "12/3"
-      },
-      correctAnswer: "b",
-      explanation: "Para resolver esta integral definida, primeiro encontramos a primitiva de f(x) = x² + 2x, que é F(x) = x³/3 + x². Aplicando o Teorema Fundamental do Cálculo, calculamos F(2) - F(0) = (8/3 + 4) - 0 = 16/3."
+  // Buscar questões do banco de dados
+  const { data: questions = [], refetch } = useQuery({
+    queryKey: ['questions', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
+    queryFn: async () => {
+      let query = supabase
+        .from('questions')
+        .select(`
+          id,
+          statement,
+          year,
+          question_type,
+          option_a,
+          option_b,
+          option_c,
+          option_d,
+          option_e,
+          correct_answer,
+          explanation,
+          difficulty,
+          subjects(id, name),
+          contents(id, name),
+          exams(id, name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (selectedSubject) {
+        query = query.eq('subject_id', selectedSubject);
+      }
+      if (selectedContent) {
+        query = query.eq('content_id', selectedContent);
+      }
+      if (selectedExam) {
+        query = query.eq('exam_id', selectedExam);
+      }
+      if (selectedYear) {
+        query = query.eq('year', parseInt(selectedYear));
+      }
+      if (selectedDifficulty) {
+        query = query.eq('difficulty', selectedDifficulty);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching questions:', error);
+        return [];
+      }
+
+      return (data || []).map((q: any) => ({
+        id: q.id,
+        text: q.statement,
+        subject: q.subjects?.name || 'Desconhecida',
+        subjectId: q.subjects?.id || '',
+        content: q.contents?.name || 'Desconhecido',
+        contentId: q.contents?.id || '',
+        topic: '', // Buscar tópicos separadamente se necessário
+        topicId: '',
+        exam: q.exams?.name || 'Desconhecido',
+        difficulty: q.difficulty || 'medio',
+        year: q.year,
+        alternatives: q.question_type === 'multipla_escolha' ? {
+          a: q.option_a || '',
+          b: q.option_b || '',
+          c: q.option_c || '',
+          d: q.option_d || '',
+          e: q.option_e || '',
+        } : undefined,
+        correctAnswer: q.correct_answer,
+        explanation: q.explanation,
+      }));
     },
-    {
-      id: 2,
-      text: "Analise o trecho literário e identifique as características do Modernismo brasileiro",
-      subject: "Literatura",
-      subjectId: "literatura",
-      content: "Movimentos Literários",
-      contentId: "movimentos",
-      topic: "Modernismo",
-      topicId: "modernismo",
-      exam: "FUVEST",
-      difficulty: "Difícil",
-      year: 2023,
-      alternatives: {
-        a: "Linguagem rebuscada e vocabulário erudito",
-        b: "Ruptura com padrões, linguagem coloquial e temática brasileira",
-        c: "Apego às formas clássicas e métricas rígidas",
-        d: "Valorização do passado colonial",
-        e: "Formalismo excessivo e distanciamento da realidade"
-      },
-      correctAnswer: "b",
-      explanation: "O Modernismo brasileiro se caracteriza pela ruptura com os padrões estéticos anteriores, uso de linguagem coloquial, valorização da cultura e temática nacional, liberdade formal e experimentação estética."
-    },
-    {
-      id: 3,
-      text: "Determine a aceleração de um corpo em movimento retilíneo uniformemente variado",
-      subject: "Física",
-      subjectId: "fisica",
-      content: "Mecânica",
-      contentId: "mecanica",
-      topic: "Cinemática",
-      topicId: "cinematica",
-      exam: "UNICAMP",
-      difficulty: "Fácil",
-      year: 2023,
-      alternatives: {
-        a: "2 m/s²",
-        b: "4 m/s²",
-        c: "6 m/s²",
-        d: "8 m/s²",
-        e: "10 m/s²"
-      },
-      correctAnswer: "a",
-      explanation: "Em movimento retilíneo uniformemente variado (MRUV), a aceleração é constante. Utilizando a equação v = v₀ + at, onde v é a velocidade final, v₀ é a velocidade inicial e t é o tempo, podemos calcular a aceleração."
-    },
-    {
-      id: 4,
-      text: "Calcule o pH de uma solução ácida com concentração de H+ igual a 10⁻³",
-      subject: "Química",
-      subjectId: "quimica",
-      content: "Físico-Química",
-      contentId: "fisico-quimica",
-      topic: "Soluções",
-      topicId: "solucoes",
-      exam: "ENEM",
-      difficulty: "Média",
-      year: 2023,
-      alternatives: {
-        a: "pH = 1",
-        b: "pH = 2",
-        c: "pH = 3",
-        d: "pH = 4",
-        e: "pH = 5"
-      },
-      correctAnswer: "c",
-      explanation: "O pH é calculado pela fórmula pH = -log[H+]. Substituindo [H+] = 10⁻³, temos pH = -log(10⁻³) = 3."
-    },
-    {
-      id: 5,
-      text: "Explique o processo de fotossíntese e sua importância para os seres vivos",
-      subject: "Biologia",
-      subjectId: "biologia",
-      content: "Fisiologia",
-      contentId: "fisiologia",
-      topic: "Fisiologia Vegetal",
-      topicId: "vegetal",
-      exam: "ENEM",
-      difficulty: "Fácil",
-      year: 2024,
-      alternatives: {
-        a: "Processo de respiração celular das plantas",
-        b: "Conversão de luz solar em energia química através de clorofila",
-        c: "Absorção de nutrientes do solo pelas raízes",
-        d: "Reprodução assexuada das plantas",
-        e: "Transpiração das folhas"
-      },
-      correctAnswer: "b",
-      explanation: "A fotossíntese é o processo pelo qual as plantas convertem luz solar em energia química (glicose) usando clorofila. É fundamental pois produz oxigênio e é a base da cadeia alimentar."
-    },
-  ]);
+  });
 
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Fácil":
+    switch (difficulty.toLowerCase()) {
+      case "facil":
+      case "fácil":
         return "bg-success/10 text-success border-success/20";
-      case "Média":
+      case "medio":
+      case "média":
         return "bg-accent/10 text-accent border-accent/20";
-      case "Difícil":
+      case "dificil":
+      case "difícil":
         return "bg-destructive/10 text-destructive border-destructive/20";
       default:
         return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const formatDifficulty = (difficulty: string) => {
+    switch (difficulty.toLowerCase()) {
+      case "facil": return "Fácil";
+      case "medio": return "Média";
+      case "dificil": return "Difícil";
+      default: return difficulty;
     }
   };
 
@@ -216,8 +189,9 @@ const Questions = () => {
     setSearchTerm("");
   };
 
-  const handleSaveQuestion = (updatedQuestion: Question) => {
-    setQuestions(questions.map(q => q.id === updatedQuestion.id ? updatedQuestion : q));
+  const handleSaveQuestion = async (updatedQuestion: Question) => {
+    // Atualizar questão no banco e recarregar
+    await refetch();
   };
 
   const handleViewQuestion = (question: Question) => {
@@ -335,9 +309,9 @@ const Questions = () => {
                       <SelectValue placeholder="Dificuldade" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Fácil">Fácil</SelectItem>
-                      <SelectItem value="Média">Média</SelectItem>
-                      <SelectItem value="Difícil">Difícil</SelectItem>
+                      <SelectItem value="facil">Fácil</SelectItem>
+                      <SelectItem value="medio">Média</SelectItem>
+                      <SelectItem value="dificil">Difícil</SelectItem>
                     </SelectContent>
                   </Select>
                   {hasActiveFilters && (
@@ -405,7 +379,7 @@ const Questions = () => {
                       <TableCell className="text-muted-foreground">{question.year}</TableCell>
                       <TableCell>
                         <Badge className={getDifficultyColor(question.difficulty)}>
-                          {question.difficulty}
+                          {formatDifficulty(question.difficulty)}
                         </Badge>
                       </TableCell>
                       <TableCell>

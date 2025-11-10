@@ -2,23 +2,62 @@ import { Layout } from "@/components/Layout";
 import { MetricCard } from "@/components/MetricCard";
 import { Database, BookOpen, TrendingUp, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
-  // Mock data - será substituído por dados reais do banco
-  const metrics = [
-    { title: "Total de Questões", value: "1.247", icon: Database, variant: "default" as const },
-    { title: "Questões Esta Semana", value: "58", icon: TrendingUp, trend: "+12% vs semana anterior", variant: "success" as const },
-    { title: "Matérias Cobertas", value: "24", icon: BookOpen, variant: "default" as const },
-    { title: "Última Atualização", value: "Hoje", icon: Calendar, trend: "Há 2 horas", variant: "accent" as const },
-  ];
+  // Buscar total de questões
+  const { data: totalQuestions = 0 } = useQuery({
+    queryKey: ['questions-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('questions')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
 
-  const subjectStats = [
-    { subject: "Matemática", count: 245, percentage: 20 },
-    { subject: "Português", count: 198, percentage: 16 },
-    { subject: "Física", count: 187, percentage: 15 },
-    { subject: "Química", count: 165, percentage: 13 },
-    { subject: "Biologia", count: 156, percentage: 13 },
-    { subject: "Outras", count: 296, percentage: 23 },
+  // Buscar total de matérias
+  const { data: totalSubjects = 0 } = useQuery({
+    queryKey: ['subjects-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('subjects')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
+
+  // Buscar distribuição por matéria
+  const { data: subjectStats = [] } = useQuery({
+    queryKey: ['subject-distribution'],
+    queryFn: async () => {
+      const { data: questions } = await supabase
+        .from('questions')
+        .select('subject_id, subjects(name)');
+      
+      if (!questions) return [];
+
+      const distribution = questions.reduce((acc: any, q: any) => {
+        const subjectName = q.subjects?.name || 'Desconhecida';
+        acc[subjectName] = (acc[subjectName] || 0) + 1;
+        return acc;
+      }, {});
+
+      const total = questions.length || 1;
+      return Object.entries(distribution).map(([subject, count]: [string, any]) => ({
+        subject,
+        count,
+        percentage: Math.round((count / total) * 100),
+      })).sort((a, b) => b.count - a.count);
+    },
+  });
+
+  const metrics = [
+    { title: "Total de Questões", value: totalQuestions.toString(), icon: Database, variant: "default" as const },
+    { title: "Matérias Cobertas", value: totalSubjects.toString(), icon: BookOpen, variant: "default" as const },
+    { title: "Questões Adicionadas", value: "0", icon: TrendingUp, trend: "Esta semana", variant: "success" as const },
+    { title: "Última Atualização", value: totalQuestions > 0 ? "Hoje" : "Nenhuma", icon: Calendar, trend: totalQuestions > 0 ? "Recente" : "Adicione questões", variant: "accent" as const },
   ];
 
   return (
@@ -42,46 +81,80 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {subjectStats.map((stat) => (
-                  <div key={stat.subject} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-foreground">{stat.subject}</span>
-                      <span className="text-muted-foreground">{stat.count} questões</span>
-                    </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all"
-                        style={{ width: `${stat.percentage}%` }}
-                      />
-                    </div>
+                {subjectStats.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma questão cadastrada ainda.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Adicione questões para ver a distribuição por matéria.
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  subjectStats.map((stat) => (
+                    <div key={stat.subject} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-foreground">{stat.subject}</span>
+                        <span className="text-muted-foreground">{stat.count} questões</span>
+                      </div>
+                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all"
+                          style={{ width: `${stat.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Atividade Recente</CardTitle>
+              <CardTitle>Status do Sistema</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { action: "Nova questão adicionada", subject: "Matemática", time: "2 horas atrás" },
-                  { action: "Questão atualizada", subject: "Física", time: "4 horas atrás" },
-                  { action: "Nova questão adicionada", subject: "Química", time: "6 horas atrás" },
-                  { action: "Nova questão adicionada", subject: "Português", time: "1 dia atrás" },
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-start gap-3 pb-4 border-b last:border-0 last:pb-0">
-                    <div className="h-2 w-2 rounded-full bg-success mt-2" />
+                <div className="flex items-start gap-3 pb-4 border-b">
+                  <div className="h-2 w-2 rounded-full bg-success mt-2" />
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium text-foreground">Banco de Dados Conectado</p>
+                    <p className="text-xs text-muted-foreground">
+                      Sistema pronto para receber questões
+                    </p>
+                  </div>
+                </div>
+                {totalQuestions === 0 ? (
+                  <div className="flex items-start gap-3 pb-4 border-b">
+                    <div className="h-2 w-2 rounded-full bg-accent mt-2" />
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium text-foreground">{activity.action}</p>
+                      <p className="text-sm font-medium text-foreground">Nenhuma questão cadastrada</p>
                       <p className="text-xs text-muted-foreground">
-                        {activity.subject} • {activity.time}
+                        Comece adicionando suas primeiras questões
                       </p>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="flex items-start gap-3 pb-4 border-b">
+                    <div className="h-2 w-2 rounded-full bg-success mt-2" />
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium text-foreground">{totalQuestions} questões no banco</p>
+                      <p className="text-xs text-muted-foreground">
+                        Distribuídas em {totalSubjects} matérias
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-start gap-3">
+                  <div className="h-2 w-2 rounded-full bg-primary mt-2" />
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium text-foreground">Sistema de Autenticação</p>
+                    <p className="text-xs text-muted-foreground">
+                      Aguardando implementação
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
