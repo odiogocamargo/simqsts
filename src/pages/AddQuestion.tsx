@@ -1,7 +1,6 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,11 +14,21 @@ import { useToast } from "@/hooks/use-toast";
 import { subjects } from "@/data/subjects";
 import { exams } from "@/data/exams";
 import { useState } from "react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 const AddQuestion = () => {
   const { toast } = useToast();
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedContent, setSelectedContent] = useState<string>("");
+  const [statement, setStatement] = useState<string>("");
+  const [alternatives, setAlternatives] = useState<Record<string, string>>({
+    A: "",
+    B: "",
+    C: "",
+    D: "",
+    E: "",
+  });
+  const [explanation, setExplanation] = useState<string>("");
   
   const currentSubject = subjects.find(s => s.id === selectedSubject);
   const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
@@ -32,6 +41,14 @@ const AddQuestion = () => {
       title: "Questão adicionada!",
       description: "A questão foi cadastrada com sucesso no banco.",
     });
+  };
+
+  const handleClear = () => {
+    setStatement("");
+    setAlternatives({ A: "", B: "", C: "", D: "", E: "" });
+    setExplanation("");
+    setSelectedSubject("");
+    setSelectedContent("");
   };
 
   return (
@@ -50,11 +67,11 @@ const AddQuestion = () => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="statement">Enunciado da Questão</Label>
-                <Textarea
-                  id="statement"
-                  placeholder="Digite o enunciado completo da questão..."
-                  rows={6}
-                  required
+                <RichTextEditor
+                  content={statement}
+                  onChange={setStatement}
+                  placeholder="Digite o enunciado completo da questão. Use a barra de ferramentas para formatar o texto..."
+                  minHeight="250px"
                 />
               </div>
 
@@ -171,14 +188,18 @@ const AddQuestion = () => {
               <div className="space-y-4">
                 <Label>Alternativas</Label>
                 {["A", "B", "C", "D", "E"].map((letter) => (
-                  <div key={letter} className="flex gap-3 items-start">
-                    <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center font-semibold text-foreground shrink-0">
-                      {letter}
+                  <div key={letter} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-bold text-primary-foreground text-sm shrink-0">
+                        {letter}
+                      </div>
+                      <span className="text-sm font-semibold text-muted-foreground">Alternativa {letter}</span>
                     </div>
-                    <Textarea
+                    <RichTextEditor
+                      content={alternatives[letter]}
+                      onChange={(content) => setAlternatives(prev => ({ ...prev, [letter]: content }))}
                       placeholder={`Digite a alternativa ${letter}...`}
-                      rows={2}
-                      required
+                      minHeight="120px"
                     />
                   </div>
                 ))}
@@ -202,10 +223,11 @@ const AddQuestion = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="explanation">Resolução/Explicação (Opcional)</Label>
-                <Textarea
-                  id="explanation"
+                <RichTextEditor
+                  content={explanation}
+                  onChange={setExplanation}
                   placeholder="Digite a resolução detalhada ou explicação da questão..."
-                  rows={4}
+                  minHeight="180px"
                 />
               </div>
 
@@ -213,7 +235,7 @@ const AddQuestion = () => {
                 <Button type="submit" className="flex-1">
                   Adicionar Questão
                 </Button>
-                <Button type="button" variant="outline">
+                <Button type="button" variant="outline" onClick={handleClear}>
                   Limpar
                 </Button>
               </div>
