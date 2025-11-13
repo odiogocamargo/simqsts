@@ -2,7 +2,8 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
-import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, List, ListOrdered } from 'lucide-react';
+import Image from '@tiptap/extension-image';
+import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,13 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded-lg my-2',
+        },
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -34,6 +42,27 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] px-4 py-3',
         'data-placeholder': placeholder,
+      },
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            event.preventDefault();
+            const file = items[i].getAsFile();
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const base64 = e.target?.result as string;
+                editor?.chain().focus().setImage({ src: base64 }).run();
+              };
+              reader.readAsDataURL(file);
+            }
+            return true;
+          }
+        }
+        return false;
       },
     },
   });
@@ -138,6 +167,21 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
           title="Lista numerada"
         >
           <ListOrdered className="h-4 w-4" />
+        </MenuButton>
+
+        <div className="w-px h-6 bg-border/50 mx-1" />
+
+        <MenuButton
+          onClick={() => {
+            const url = window.prompt('URL da imagem:');
+            if (url) {
+              editor.chain().focus().setImage({ src: url }).run();
+            }
+          }}
+          isActive={editor.isActive('image')}
+          title="Inserir imagem"
+        >
+          <ImageIcon className="h-4 w-4" />
         </MenuButton>
       </div>
 
