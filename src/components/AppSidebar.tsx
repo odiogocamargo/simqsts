@@ -25,36 +25,37 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
+    <Sidebar collapsible="icon" className="border-r border-border/50 glass-effect">
       <SidebarContent>
         {/* Logo/Header */}
-        <div className="flex items-center gap-2 p-4 border-b">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground font-bold text-sm">BQ</span>
+        <div className="flex items-center gap-3 p-4 border-b border-border/50">
+          <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shrink-0 premium-glow">
+            <span className="text-white font-bold text-base tracking-tight">BQ</span>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
           </div>
           {!isCollapsed && (
-            <div>
-              <h1 className="text-sm font-bold text-foreground">Banco de Questões</h1>
-              <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+            <div className="animate-slide-in">
+              <h1 className="text-base font-bold text-foreground tracking-tight">Banco de Questões</h1>
+              <p className="text-xs text-muted-foreground font-medium">Sistema Premium</p>
             </div>
           )}
         </div>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
+        <SidebarGroup className="mt-2">
+          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider">Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+            <SidebarMenu className="space-y-1">
+              {navItems.map((item, index) => (
+                <SidebarMenuItem key={item.title} style={{ animationDelay: `${index * 50}ms` }} className="animate-slide-in">
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
                       end
-                      className="flex items-center gap-3 hover:bg-secondary"
-                      activeClassName="bg-primary text-primary-foreground hover:bg-primary"
+                      className="flex items-center gap-3 rounded-xl transition-all duration-300 hover:bg-secondary/50 hover:translate-x-1"
+                      activeClassName="bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:from-primary hover:to-secondary premium-shadow"
                     >
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!isCollapsed && <span className="font-medium">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

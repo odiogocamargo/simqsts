@@ -27,30 +27,33 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <SidebarInset className="flex-1">
-          <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b bg-background px-4">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger />
-              <h2 className="text-lg font-semibold text-foreground">Banco de Questões</h2>
+          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-2 border-b border-border/50 glass-effect px-6 backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="hover:bg-secondary/50 transition-colors" />
+              <div className="h-8 w-px bg-border/50" />
+              <h2 className="text-xl font-bold text-foreground tracking-tight">Banco de Questões</h2>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                  <Avatar className="h-9 w-9">
-                    <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:scale-105 transition-transform">
+                  <Avatar className="h-10 w-10 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground font-semibold">
+                      {getUserInitials()}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56 glass-card">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">Minha Conta</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm font-semibold">Minha Conta</p>
+                    <p className="text-xs text-muted-foreground font-medium">{user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sair
+                  <span className="font-medium">Sair</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
