@@ -244,6 +244,57 @@ export type Database = {
           },
         ]
       }
+      study_sessions: {
+        Row: {
+          correct_answers: number
+          duration_minutes: number | null
+          ended_at: string | null
+          exam_id: string | null
+          id: string
+          questions_answered: number
+          started_at: string
+          subject_id: string | null
+          user_id: string
+        }
+        Insert: {
+          correct_answers?: number
+          duration_minutes?: number | null
+          ended_at?: string | null
+          exam_id?: string | null
+          id?: string
+          questions_answered?: number
+          started_at?: string
+          subject_id?: string | null
+          user_id: string
+        }
+        Update: {
+          correct_answers?: number
+          duration_minutes?: number | null
+          ended_at?: string | null
+          exam_id?: string | null
+          id?: string
+          questions_answered?: number
+          started_at?: string
+          subject_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           created_at: string
@@ -287,6 +338,91 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_answers: {
+        Row: {
+          answered_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          selected_answer: string
+          time_spent_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          answered_at?: string
+          id?: string
+          is_correct: boolean
+          question_id: string
+          selected_answer: string
+          time_spent_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          answered_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          selected_answer?: string
+          time_spent_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_performance: {
+        Row: {
+          accuracy_percentage: number | null
+          correct_answers: number
+          created_at: string
+          id: string
+          last_practice_at: string | null
+          subject_id: string
+          total_questions: number
+          updated_at: string
+          user_id: string
+          wrong_answers: number
+        }
+        Insert: {
+          accuracy_percentage?: number | null
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          last_practice_at?: string | null
+          subject_id: string
+          total_questions?: number
+          updated_at?: string
+          user_id: string
+          wrong_answers?: number
+        }
+        Update: {
+          accuracy_percentage?: number | null
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          last_practice_at?: string | null
+          subject_id?: string
+          total_questions?: number
+          updated_at?: string
+          user_id?: string
+          wrong_answers?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_performance_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
