@@ -1,164 +1,161 @@
 import { Layout } from "@/components/Layout";
 import { MetricCard } from "@/components/MetricCard";
-import { Database, BookOpen, TrendingUp, Calendar } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { TrendingUp, Target, BookOpen, Award, BarChart3 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 const Dashboard = () => {
-  // Buscar total de questões
-  const { data: totalQuestions = 0 } = useQuery({
-    queryKey: ['questions-count'],
+  const { data: user } = useQuery({
+    queryKey: ["current-user"],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true });
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
+  });
+
+  // Total de questões respondidas
+  const { data: answeredCount } = useQuery({
+    queryKey: ["user-answered-count", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { count, error } = await supabase
+        .from("user_answers")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (error) throw error;
       return count || 0;
     },
+    enabled: !!user,
   });
 
-  // Buscar total de matérias
-  const { data: totalSubjects = 0 } = useQuery({
-    queryKey: ['subjects-count'],
+  // Acertos totais
+  const { data: correctCount } = useQuery({
+    queryKey: ["user-correct-count", user?.id],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('subjects')
-        .select('*', { count: 'exact', head: true });
+      if (!user) return 0;
+      const { count, error } = await supabase
+        .from("user_answers")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("is_correct", true);
+      if (error) throw error;
       return count || 0;
     },
+    enabled: !!user,
   });
 
-  // Buscar distribuição por matéria
-  const { data: subjectStats = [] } = useQuery({
-    queryKey: ['subject-distribution'],
+  // Taxa de acerto geral
+  const accuracy = answeredCount && answeredCount > 0 
+    ? Math.round((correctCount || 0) / answeredCount * 100) 
+    : 0;
+
+  // Desempenho por matéria
+  const { data: performance } = useQuery({
+    queryKey: ["user-performance", user?.id],
     queryFn: async () => {
-      const { data: questions } = await supabase
-        .from('questions')
-        .select('subject_id, subjects(name)');
-      
-      if (!questions) return [];
-
-      const distribution = questions.reduce((acc: any, q: any) => {
-        const subjectName = q.subjects?.name || 'Desconhecida';
-        acc[subjectName] = (acc[subjectName] || 0) + 1;
-        return acc;
-      }, {});
-
-      const total = questions.length || 1;
-      return Object.entries(distribution).map(([subject, count]: [string, any]) => ({
-        subject,
-        count,
-        percentage: Math.round((count / total) * 100),
-      })).sort((a, b) => b.count - a.count);
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("user_performance")
+        .select(`
+          *,
+          subjects(name)
+        `)
+        .eq("user_id", user.id)
+        .order("total_questions", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data;
     },
+    enabled: !!user,
   });
 
-  const metrics = [
-    { title: "Total de Questões", value: totalQuestions.toString(), icon: Database, variant: "default" as const },
-    { title: "Matérias Cobertas", value: totalSubjects.toString(), icon: BookOpen, variant: "default" as const },
-    { title: "Questões Adicionadas", value: "0", icon: TrendingUp, trend: "Esta semana", variant: "success" as const },
-    { title: "Última Atualização", value: totalQuestions > 0 ? "Hoje" : "Nenhuma", icon: Calendar, trend: totalQuestions > 0 ? "Recente" : "Adicione questões", variant: "accent" as const },
-  ];
+  // Últimas sessões de estudo
+  const { data: recentSessions } = useQuery({
+    queryKey: ["recent-sessions", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("study_sessions")
+        .select(`
+          *,
+          subjects(name),
+          exams(name)
+        `)
+        .eq("user_id", user.id)
+        .order("started_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const sessionsCount = recentSessions?.length || 0;
 
   return (
     <Layout>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-bold text-foreground mb-2">Dashboard</h2>
-          <p className="text-muted-foreground">Visão geral da saúde do seu banco de questões</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Meu Desempenho</h1>
+          <p className="text-muted-foreground">Acompanhe sua evolução nos estudos</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {metrics.map((metric) => (
-            <MetricCard key={metric.title} {...metric} />
-          ))}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <MetricCard
+            title="Questões Respondidas"
+            value={answeredCount?.toString() || "0"}
+            icon={BookOpen}
+          />
+          <MetricCard
+            title="Acertos"
+            value={correctCount?.toString() || "0"}
+            icon={Target}
+            variant="success"
+          />
+          <MetricCard
+            title="Taxa de Acerto"
+            value={`${accuracy}%`}
+            icon={TrendingUp}
+          />
+          <MetricCard
+            title="Sessões de Estudo"
+            value={sessionsCount.toString()}
+            icon={Award}
+            variant="accent"
+          />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Distribuição por Matéria</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {subjectStats.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-muted-foreground">
-                      Nenhuma questão cadastrada ainda.
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Adicione questões para ver a distribuição por matéria.
-                    </p>
+        {/* Desempenho por Matéria */}
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">Desempenho por Matéria</h2>
+          </div>
+          
+          {!performance || performance.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              Comece a responder questões para ver seu desempenho por matéria!
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {performance.map((perf) => (
+                <div key={perf.id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-foreground">
+                      {perf.subjects?.name}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {perf.correct_answers}/{perf.total_questions} ({Math.round(Number(perf.accuracy_percentage))}%)
+                    </span>
                   </div>
-                ) : (
-                  subjectStats.map((stat) => (
-                    <div key={stat.subject} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-foreground">{stat.subject}</span>
-                        <span className="text-muted-foreground">{stat.count} questões</span>
-                      </div>
-                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all"
-                          style={{ width: `${stat.percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Status do Sistema</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 pb-4 border-b">
-                  <div className="h-2 w-2 rounded-full bg-success mt-2" />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium text-foreground">Banco de Dados Conectado</p>
-                    <p className="text-xs text-muted-foreground">
-                      Sistema pronto para receber questões
-                    </p>
-                  </div>
+                  <Progress value={Number(perf.accuracy_percentage)} className="h-2" />
                 </div>
-                {totalQuestions === 0 ? (
-                  <div className="flex items-start gap-3 pb-4 border-b">
-                    <div className="h-2 w-2 rounded-full bg-accent mt-2" />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium text-foreground">Nenhuma questão cadastrada</p>
-                      <p className="text-xs text-muted-foreground">
-                        Comece adicionando suas primeiras questões
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-3 pb-4 border-b">
-                    <div className="h-2 w-2 rounded-full bg-success mt-2" />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium text-foreground">{totalQuestions} questões no banco</p>
-                      <p className="text-xs text-muted-foreground">
-                        Distribuídas em {totalSubjects} matérias
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-start gap-3">
-                  <div className="h-2 w-2 rounded-full bg-primary mt-2" />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium text-foreground">Sistema de Autenticação</p>
-                    <p className="text-xs text-muted-foreground">
-                      Aguardando implementação
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
     </Layout>
   );
