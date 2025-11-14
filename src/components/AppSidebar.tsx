@@ -1,3 +1,6 @@
+import { LayoutDashboard, FileText, PlusCircle } from "lucide-react";
+import { NavLink } from "@/components/NavLink";
+
 import {
   Sidebar,
   SidebarContent,
@@ -7,77 +10,60 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import { BookOpen, FileQuestion, Home, Plus, Target } from "lucide-react";
-import { NavLink } from "./NavLink";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { Button } from "./ui/button";
+
+const navItems = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Questões", url: "/questions", icon: FileText },
+  { title: "Adicionar Questão", url: "/add-question", icon: PlusCircle },
+];
 
 export function AppSidebar() {
-  const navigate = useNavigate();
+  const { state } = useSidebar();
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
+  const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-border p-4">
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg text-foreground">SIM Questões</span>
-        </div>
-      </SidebarHeader>
+    <Sidebar collapsible="icon" className="border-r border-border/50 glass-effect">
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+        {/* Logo/Header */}
+        <div className="flex items-center gap-3 p-4 border-b border-border/50">
+          <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shrink-0 premium-glow">
+            <span className="text-white font-bold text-base tracking-tight">BQ</span>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
+          </div>
+          {!isCollapsed && (
+            <div className="animate-slide-in">
+              <h1 className="text-base font-bold text-foreground tracking-tight">Banco de Questões</h1>
+              <p className="text-xs text-muted-foreground font-medium">Sistema Premium</p>
+            </div>
+          )}
+        </div>
+
+        <SidebarGroup className="mt-2">
+          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider">Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/dashboard">
-                    <Home className="h-4 w-4" />
-                    <span>Dashboard</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/practice">
-                    <Target className="h-4 w-4" />
-                    <span>Treinar</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/questions">
-                    <FileQuestion className="h-4 w-4" />
-                    <span>Questões</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink to="/add-question">
-                    <Plus className="h-4 w-4" />
-                    <span>Adicionar Questão</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+            <SidebarMenu className="space-y-1">
+              {navItems.map((item, index) => (
+                <SidebarMenuItem key={item.title} style={{ animationDelay: `${index * 50}ms` }} className="animate-slide-in">
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end
+                      className="flex items-center gap-3 rounded-xl transition-all duration-300 hover:bg-secondary/50 hover:translate-x-1"
+                      activeClassName="bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:from-primary hover:to-secondary premium-shadow"
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!isCollapsed && <span className="font-medium">{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-border p-4">
-        <Button variant="outline" onClick={handleSignOut} className="w-full">
-          Sair
-        </Button>
-      </SidebarFooter>
     </Sidebar>
   );
 }

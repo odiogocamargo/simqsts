@@ -25,11 +25,11 @@ const Landing = () => {
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <div className="space-y-4 animate-fade-in">
             <h2 className="text-5xl md:text-6xl font-bold text-foreground leading-tight">
-              Treine para o Vestibular
-              <span className="text-gradient block mt-2">com Questões Reais</span>
+              Banco de Questões para
+              <span className="text-gradient block mt-2">Vestibulares</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Pratique diariamente com questões de ENEM, FUVEST, UNICAMP e outros vestibulares. Acompanhe sua evolução e conquiste sua vaga!
+              Organize, gerencie e compartilhe questões de vestibulares de forma simples e eficiente
             </p>
           </div>
 
@@ -57,9 +57,9 @@ const Landing = () => {
               <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <BookOpen className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Questões Reais</h3>
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Banco Completo</h3>
               <p className="text-muted-foreground text-sm">
-                Milhares de questões de vestibulares como ENEM, FUVEST, UNICAMP e muito mais
+                Cadastre questões de diversos vestibulares com editor rico em recursos
               </p>
             </div>
 
@@ -67,9 +67,9 @@ const Landing = () => {
               <div className="bg-secondary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Target className="h-6 w-6 text-secondary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Acompanhamento Inteligente</h3>
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Organização Inteligente</h3>
               <p className="text-muted-foreground text-sm">
-                Veja seu desempenho por matéria, identifique pontos fracos e evolua continuamente
+                Filtre por matéria, vestibular, ano e nível de dificuldade
               </p>
             </div>
 
@@ -77,9 +77,9 @@ const Landing = () => {
               <div className="bg-accent/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Zap className="h-6 w-6 text-accent" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Treino Diário</h3>
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Rápido e Eficiente</h3>
               <p className="text-muted-foreground text-sm">
-                Pratique todos os dias com questões personalizadas e alcance seus objetivos
+                Interface moderna e intuitiva para máxima produtividade
               </p>
             </div>
           </div>
