@@ -23,7 +23,7 @@ export default function Auth() {
 
   // Redirect if already logged in
   if (user) {
-    navigate('/');
+    navigate('/dashboard');
     return null;
   }
 
@@ -83,7 +83,7 @@ export default function Auth() {
       }
     } else {
       toast.success('Login realizado com sucesso!');
-      navigate('/');
+      navigate('/dashboard');
     }
     setLoading(false);
   };
