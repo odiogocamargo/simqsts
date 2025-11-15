@@ -22,6 +22,7 @@ const StudentQuestions = () => {
   const [selectedExam, setSelectedExam] = useState<string>("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedContent, setSelectedContent] = useState<string>("");
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
   
@@ -30,20 +31,44 @@ const StudentQuestions = () => {
   const [showResult, setShowResult] = useState(false);
   
   const currentSubject = subjects.find(s => s.id === selectedSubject);
+  const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
   
   const { data: questions = [], isLoading: isLoadingQuestions } = useQuery({
-    queryKey: ['practice-questions', selectedExam, selectedSubject, selectedContent, selectedYear, selectedDifficulty],
+    queryKey: ['practice-questions', selectedExam, selectedSubject, selectedContent, selectedTopic, selectedYear, selectedDifficulty],
     queryFn: async () => {
-      let query = supabase.from('questions').select('*');
-      if (selectedExam) query = query.eq('exam_id', selectedExam);
-      if (selectedSubject) query = query.eq('subject_id', selectedSubject);
-      if (selectedContent) query = query.eq('content_id', selectedContent);
-      if (selectedYear) query = query.eq('year', parseInt(selectedYear));
-      if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      if (selectedTopic) {
+        // Se tópico está selecionado, buscar questões através da tabela question_topics
+        const { data: questionTopics, error: qtError } = await supabase
+          .from('question_topics')
+          .select('question_id')
+          .eq('topic_id', selectedTopic);
+        
+        if (qtError) throw qtError;
+        const questionIds = questionTopics?.map(qt => qt.question_id) || [];
+        
+        if (questionIds.length === 0) return [];
+        
+        let query = supabase.from('questions').select('*').in('id', questionIds);
+        if (selectedExam) query = query.eq('exam_id', selectedExam);
+        if (selectedSubject) query = query.eq('subject_id', selectedSubject);
+        if (selectedContent) query = query.eq('content_id', selectedContent);
+        if (selectedYear) query = query.eq('year', parseInt(selectedYear));
+        if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      } else {
+        let query = supabase.from('questions').select('*');
+        if (selectedExam) query = query.eq('exam_id', selectedExam);
+        if (selectedSubject) query = query.eq('subject_id', selectedSubject);
+        if (selectedContent) query = query.eq('content_id', selectedContent);
+        if (selectedYear) query = query.eq('year', parseInt(selectedYear));
+        if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      }
     },
     enabled: !!selectedExam && !!selectedSubject,
   });
@@ -97,6 +122,7 @@ const StudentQuestions = () => {
     setSelectedExam("");
     setSelectedSubject("");
     setSelectedContent("");
+    setSelectedTopic("");
     setSelectedYear("");
     setSelectedDifficulty("");
     setCurrentQuestionIndex(0);
@@ -125,16 +151,23 @@ const StudentQuestions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Matéria</Label>
-                <Select value={selectedSubject} onValueChange={(v) => { setSelectedSubject(v); setSelectedContent(""); }}>
+                <Select value={selectedSubject} onValueChange={(v) => { setSelectedSubject(v); setSelectedContent(""); setSelectedTopic(""); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>{subjects.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Conteúdo</Label>
-                <Select value={selectedContent} onValueChange={setSelectedContent} disabled={!selectedSubject}>
+                <Select value={selectedContent} onValueChange={(v) => { setSelectedContent(v); setSelectedTopic(""); }} disabled={!selectedSubject}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>{currentSubject?.contents.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Tópico</Label>
+                <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={!selectedContent}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{currentContent?.topics.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
