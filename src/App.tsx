@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Questions from "./pages/Questions";
 import AddQuestion from "./pages/AddQuestion";
 import StudentPractice from "./pages/StudentPractice";
+import StudentQuestions from "./pages/StudentQuestions";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/add-question" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><AddQuestion /></RoleBasedRoute></ProtectedRoute>} />
             {/* Rotas de Aluno */}
             <Route path="/student" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentPractice /></RoleBasedRoute></ProtectedRoute>} />
+            <Route path="/student/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentQuestions /></RoleBasedRoute></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
