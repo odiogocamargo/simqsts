@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, PlusCircle, TrendingUp } from "lucide-react";
+import { LayoutDashboard, FileText, PlusCircle, TrendingUp, BookOpen } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -24,6 +24,7 @@ const adminNavItems = [
 // Itens de navegação para aluno
 const studentNavItems = [
   { title: "Meu Desempenho", url: "/student", icon: TrendingUp },
+  { title: "Questões", url: "/student/questions", icon: BookOpen },
 ];
 
 export function AppSidebar() {
