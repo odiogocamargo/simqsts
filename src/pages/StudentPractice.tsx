@@ -1,25 +1,67 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, TrendingUp, Target, Clock } from "lucide-react";
+import { BookOpen, TrendingUp, Target, Clock, CalendarIcon } from "lucide-react";
 import { MetricCard } from "@/components/MetricCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { useState } from "react";
+import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const StudentPractice = () => {
   const { user } = useAuth();
+  const [period, setPeriod] = useState<string>("today");
+  const [customDate, setCustomDate] = useState<Date>();
+
+  // Calcular datas de início e fim baseado no período selecionado
+  const getDateRange = () => {
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date = endOfDay(now);
+
+    switch (period) {
+      case "today":
+        startDate = startOfDay(now);
+        break;
+      case "yesterday":
+        startDate = startOfDay(subDays(now, 1));
+        endDate = endOfDay(subDays(now, 1));
+        break;
+      case "week":
+        startDate = startOfWeek(now, { weekStartsOn: 0 });
+        endDate = endOfWeek(now, { weekStartsOn: 0 });
+        break;
+      case "custom":
+        if (!customDate) return { startDate: startOfDay(now), endDate };
+        startDate = startOfDay(customDate);
+        endDate = endOfDay(customDate);
+        break;
+      default:
+        startDate = startOfDay(now);
+    }
+
+    return { startDate: startDate.toISOString(), endDate: endDate.toISOString() };
+  };
+
+  const { startDate, endDate } = getDateRange();
 
   // Buscar desempenho do usuário
   const { data: performance = [] } = useQuery({
-    queryKey: ['user-performance', user?.id],
+    queryKey: ['user-performance', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
       
       const { data } = await supabase
         .from('user_performance')
         .select('*, subjects(name)')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .gte('last_practice_at', startDate)
+        .lte('last_practice_at', endDate);
       
       return data || [];
     },
@@ -28,7 +70,7 @@ const StudentPractice = () => {
 
   // Buscar sessões de estudo
   const { data: studySessions = [] } = useQuery({
-    queryKey: ['study-sessions', user?.id],
+    queryKey: ['study-sessions', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
       
@@ -36,6 +78,8 @@ const StudentPractice = () => {
         .from('study_sessions')
         .select('*')
         .eq('user_id', user.id)
+        .gte('started_at', startDate)
+        .lte('started_at', endDate)
         .order('started_at', { ascending: false })
         .limit(5);
       
@@ -81,9 +125,51 @@ const StudentPractice = () => {
   return (
     <Layout>
       <div className="space-y-8">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground mb-2">Meu Desempenho</h2>
-          <p className="text-muted-foreground">Acompanhe seu progresso e continue evoluindo</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Meu Desempenho</h2>
+            <p className="text-muted-foreground">Acompanhe seu progresso e continue evoluindo</p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Selecione o período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="yesterday">Ontem</SelectItem>
+                <SelectItem value="week">Esta Semana</SelectItem>
+                <SelectItem value="custom">Personalizado</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {period === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[200px] justify-start text-left font-normal",
+                      !customDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customDate ? format(customDate, "PPP") : <span>Escolha uma data</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customDate}
+                    onSelect={setCustomDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
