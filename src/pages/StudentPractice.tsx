@@ -271,7 +271,7 @@ const StudentPractice = () => {
                     <Label>Vestibular</Label>
                     <Select value={selectedExam} onValueChange={setSelectedExam}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>{exams.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                      <SelectContent>{exams.map(exam => <SelectItem key={exam} value={exam}>{exam}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
