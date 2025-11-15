@@ -1,5 +1,6 @@
-import { LayoutDashboard, FileText, PlusCircle } from "lucide-react";
+import { LayoutDashboard, FileText, PlusCircle, TrendingUp } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useUserRole } from "@/hooks/useUserRole";
 
 import {
   Sidebar,
@@ -13,14 +14,23 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+// Itens de navegação para admin
+const adminNavItems = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Questões", url: "/questions", icon: FileText },
   { title: "Adicionar Questão", url: "/add-question", icon: PlusCircle },
 ];
 
+// Itens de navegação para aluno
+const studentNavItems = [
+  { title: "Meu Desempenho", url: "/student", icon: TrendingUp },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
+  const { role, isLoading } = useUserRole();
+
+  const navItems = role === "aluno" ? studentNavItems : adminNavItems;
 
   const isCollapsed = state === "collapsed";
 
