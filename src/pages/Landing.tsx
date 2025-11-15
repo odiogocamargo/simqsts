@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Target, Zap, ArrowRight } from "lucide-react";
+import { BookOpen, Target, Zap, ArrowRight, Check } from "lucide-react";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -81,6 +81,92 @@ const Landing = () => {
               <p className="text-muted-foreground text-sm">
                 Interface moderna e intuitiva para máxima produtividade
               </p>
+            </div>
+          </div>
+
+          {/* Funcionalidades Completas */}
+          <div className="mt-32 animate-fade-in" style={{ animationDelay: "0.6s" }}>
+            <h3 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-12">
+              Tudo que você precisa para se preparar
+            </h3>
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              <div className="glass-card p-8 rounded-xl space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Banco de questões (+200 mil)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Questões inéditas (+15 mil)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Resolução comentada das questões</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Lista de exercícios personalizadas</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Provas atualizadas do Enem e vestibulares</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Simulados para praticar</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card p-8 rounded-xl space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-secondary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-secondary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Relatório estatístico de desempenho</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-secondary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-secondary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Pontos fortes e a melhorar</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-secondary/10 rounded-full p-1 mt-0.5">
+                    <Check className="h-5 w-5 text-secondary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Questões que mais caem por instituição</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
