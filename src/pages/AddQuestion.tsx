@@ -11,10 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { subjects } from "@/data/subjects";
-import { exams } from "@/data/exams";
 import { useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 
 const AddQuestion = () => {
   const { toast } = useToast();
@@ -30,8 +29,10 @@ const AddQuestion = () => {
   });
   const [explanation, setExplanation] = useState<string>("");
   
-  const currentSubject = subjects.find(s => s.id === selectedSubject);
-  const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
+  const { data: subjects = [] } = useSubjects();
+  const { data: contents = [] } = useContents(selectedSubject);
+  const { data: topics = [] } = useTopics(selectedContent);
+  const { data: exams = [] } = useExams();
   
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
 
@@ -111,7 +112,7 @@ const AddQuestion = () => {
                       <SelectValue placeholder={selectedSubject ? "Selecione o conteúdo" : "Selecione a matéria primeiro"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {currentSubject?.contents.map(content => (
+                      {contents.map(content => (
                         <SelectItem key={content.id} value={content.id}>
                           {content.name}
                         </SelectItem>
@@ -120,39 +121,39 @@ const AddQuestion = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="topic">Tópico Específico</Label>
-                  <Select required disabled={!selectedContent}>
-                    <SelectTrigger id="topic">
-                      <SelectValue placeholder={selectedContent ? "Selecione o tópico" : "Selecione o conteúdo primeiro"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currentContent?.topics.map(topic => (
-                        <SelectItem key={topic.id} value={topic.id}>
-                          {topic.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="topic">Tópico Específico</Label>
+                    <Select required disabled={!selectedContent}>
+                      <SelectTrigger id="topic">
+                        <SelectValue placeholder={selectedContent ? "Selecione o tópico" : "Selecione o conteúdo primeiro"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {topics.map(topic => (
+                          <SelectItem key={topic.id} value={topic.id}>
+                            {topic.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
               </div>
 
               <div className="grid gap-6 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="exam">Vestibular/Instituição</Label>
-                  <Select required>
-                    <SelectTrigger id="exam">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {exams.map((exam) => (
-                        <SelectItem key={exam} value={exam}>
-                          {exam}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exam">Vestibular/Instituição</Label>
+                    <Select required>
+                      <SelectTrigger id="exam">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {exams.map((exam) => (
+                          <SelectItem key={exam.id} value={exam.id}>
+                            {exam.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="year">Ano</Label>

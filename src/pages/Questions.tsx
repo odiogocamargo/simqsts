@@ -20,12 +20,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useState } from "react";
-import { subjects } from "@/data/subjects";
-import { exams } from "@/data/exams";
 import { QuestionViewModal } from "@/components/QuestionViewModal";
 import { QuestionEditModal } from "@/components/QuestionEditModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 
 interface Question {
   id: number;
@@ -63,8 +62,10 @@ const Questions = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const currentSubject = subjects.find(s => s.id === selectedSubject);
-  const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
+  const { data: subjects = [] } = useSubjects();
+  const { data: contents = [] } = useContents(selectedSubject);
+  const { data: topics = [] } = useTopics(selectedContent);
+  const { data: exams = [] } = useExams();
 
   // Buscar questões do banco de dados
   const { data: questions = [], refetch } = useQuery({
@@ -257,7 +258,7 @@ const Questions = () => {
                       <SelectValue placeholder="Conteúdo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {currentSubject?.contents.map(content => (
+                      {contents.map(content => (
                         <SelectItem key={content.id} value={content.id}>
                           {content.name}
                         </SelectItem>
@@ -273,7 +274,7 @@ const Questions = () => {
                       <SelectValue placeholder="Tópico" />
                     </SelectTrigger>
                     <SelectContent>
-                      {currentContent?.topics.map(topic => (
+                      {topics.map(topic => (
                         <SelectItem key={topic.id} value={topic.id}>
                           {topic.name}
                         </SelectItem>
@@ -286,8 +287,8 @@ const Questions = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {exams.map((exam) => (
-                        <SelectItem key={exam} value={exam}>
-                          {exam}
+                        <SelectItem key={exam.id} value={exam.id}>
+                          {exam.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
