@@ -12,11 +12,17 @@ import { z } from 'zod';
 const emailSchema = z.string().email('Email inválido');
 const passwordSchema = z.string().min(6, 'A senha deve ter no mínimo 6 caracteres');
 const nameSchema = z.string().min(2, 'Nome deve ter no mínimo 2 caracteres');
+const cpfSchema = z.string().regex(/^\d{11}$/, 'CPF deve conter 11 dígitos numéricos');
+const whatsappSchema = z.string().regex(/^\d{10,11}$/, 'WhatsApp deve conter 10 ou 11 dígitos');
+const enderecoSchema = z.string().min(5, 'Endereço deve ter no mínimo 5 caracteres');
 
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [endereco, setEndereco] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -62,6 +68,42 @@ export default function Auth() {
     }
   };
 
+  const validateCpf = (cpf: string) => {
+    try {
+      cpfSchema.parse(cpf);
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+      return false;
+    }
+  };
+
+  const validateWhatsapp = (whatsapp: string) => {
+    try {
+      whatsappSchema.parse(whatsapp);
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+      return false;
+    }
+  };
+
+  const validateEndereco = (endereco: string) => {
+    try {
+      enderecoSchema.parse(endereco);
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+      return false;
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -90,12 +132,13 @@ export default function Auth() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateName(fullName) || !validateEmail(email) || !validatePassword(password)) {
+    if (!validateName(fullName) || !validateEmail(email) || !validatePassword(password) ||
+        !validateCpf(cpf) || !validateWhatsapp(whatsapp) || !validateEndereco(endereco)) {
       return;
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, fullName, cpf, whatsapp, endereco);
     
     if (error) {
       if (error.message.includes('User already registered')) {
@@ -163,6 +206,41 @@ export default function Auth() {
                     placeholder="Seu nome"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-cpf">CPF</Label>
+                  <Input
+                    id="signup-cpf"
+                    type="text"
+                    placeholder="12345678901"
+                    value={cpf}
+                    onChange={(e) => setCpf(e.target.value.replace(/\D/g, ''))}
+                    maxLength={11}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-whatsapp">WhatsApp</Label>
+                  <Input
+                    id="signup-whatsapp"
+                    type="text"
+                    placeholder="11999999999"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
+                    maxLength={11}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-endereco">Endereço</Label>
+                  <Input
+                    id="signup-endereco"
+                    type="text"
+                    placeholder="Rua, número, bairro, cidade"
+                    value={endereco}
+                    onChange={(e) => setEndereco(e.target.value)}
                     required
                   />
                 </div>
