@@ -8,11 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
-import { subjects } from "@/data/subjects";
-import { exams } from "@/data/exams";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 
 const StudentQuestions = () => {
   const { user } = useAuth();
@@ -30,8 +29,10 @@ const StudentQuestions = () => {
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [showResult, setShowResult] = useState(false);
   
-  const currentSubject = subjects.find(s => s.id === selectedSubject);
-  const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
+  const { data: subjects = [] } = useSubjects();
+  const { data: contents = [] } = useContents(selectedSubject);
+  const { data: topics = [] } = useTopics(selectedContent);
+  const { data: exams = [] } = useExams();
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
   
   const { data: questions = [], isLoading: isLoadingQuestions } = useQuery({
@@ -146,7 +147,7 @@ const StudentQuestions = () => {
                 <Label>Vestibular</Label>
                 <Select value={selectedExam} onValueChange={setSelectedExam}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{exams.map(exam => <SelectItem key={exam} value={exam}>{exam}</SelectItem>)}</SelectContent>
+                  <SelectContent>{exams.map(exam => <SelectItem key={exam.id} value={exam.id}>{exam.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
@@ -160,14 +161,14 @@ const StudentQuestions = () => {
                 <Label>Conteúdo</Label>
                 <Select value={selectedContent} onValueChange={(v) => { setSelectedContent(v); setSelectedTopic(""); }} disabled={!selectedSubject}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{currentSubject?.contents.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{contents.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Tópico</Label>
                 <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={!selectedContent}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{currentContent?.topics.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">

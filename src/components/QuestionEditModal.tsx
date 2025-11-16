@@ -17,9 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { subjects } from "@/data/subjects";
-import { exams } from "@/data/exams";
 import { useToast } from "@/hooks/use-toast";
+import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 
 interface Question {
   id: number;
@@ -57,6 +56,11 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedContent, setSelectedContent] = useState<string>("");
 
+  const { data: subjects = [] } = useSubjects();
+  const { data: contents = [] } = useContents(selectedSubject);
+  const { data: topics = [] } = useTopics(selectedContent);
+  const { data: exams = [] } = useExams();
+
   useEffect(() => {
     if (question) {
       setFormData(question);
@@ -67,14 +71,15 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
 
   if (!formData) return null;
 
-  const currentSubject = subjects.find(s => s.id === selectedSubject);
-  const currentContent = currentSubject?.contents.find(c => c.id === selectedContent);
-
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 35 }, (_, i) => currentYear - i);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const currentSubject = subjects.find(s => s.id === selectedSubject);
+    const currentContent = contents.find(c => c.id === selectedContent);
+    const currentTopic = topics.find(t => t.id === formData.topicId);
     
     const updatedQuestion = {
       ...formData,
@@ -82,7 +87,7 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
       subjectId: selectedSubject,
       content: currentContent?.name || formData.content,
       contentId: selectedContent,
-      topic: currentContent?.topics.find(t => t.id === formData.topicId)?.name || formData.topic,
+      topic: currentTopic?.name || formData.topic,
     };
 
     onSave(updatedQuestion);
@@ -155,7 +160,7 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
                   <SelectValue placeholder={selectedSubject ? "Selecione o conteúdo" : "Selecione a matéria primeiro"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {currentSubject?.contents.map(content => (
+                  {contents.map(content => (
                     <SelectItem key={content.id} value={content.id}>
                       {content.name}
                     </SelectItem>
@@ -176,7 +181,7 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
                   <SelectValue placeholder={selectedContent ? "Selecione o tópico" : "Selecione o conteúdo primeiro"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {currentContent?.topics.map(topic => (
+                  {topics.map(topic => (
                     <SelectItem key={topic.id} value={topic.id}>
                       {topic.name}
                     </SelectItem>
@@ -199,8 +204,8 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
                 </SelectTrigger>
                 <SelectContent>
                   {exams.map((exam) => (
-                    <SelectItem key={exam} value={exam}>
-                      {exam}
+                    <SelectItem key={exam.id} value={exam.id}>
+                      {exam.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
