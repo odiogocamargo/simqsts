@@ -11,8 +11,8 @@ const Index = () => {
   useEffect(() => {
     if (!loading && !roleLoading) {
       if (!user) {
-        // Se não está autenticado, vai para landing ou auth
-        navigate('/auth');
+        // Se não está autenticado, vai para landing
+        navigate('/landing');
       } else if (role === 'aluno') {
         navigate('/student');
       } else if (role === 'admin' || role === 'professor') {
