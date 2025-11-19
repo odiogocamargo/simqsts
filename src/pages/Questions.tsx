@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, X, PlusCircle } from "lucide-react";
+import { Search, Eye, X, PlusCircle, FileJson } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Select,
@@ -23,6 +23,7 @@ import {
 import { useState } from "react";
 import { QuestionViewModal } from "@/components/QuestionViewModal";
 import { QuestionEditModal } from "@/components/QuestionEditModal";
+import { QuestionImportModal } from "@/components/QuestionImportModal";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
@@ -62,6 +63,7 @@ const Questions = () => {
   const [editQuestion, setEditQuestion] = useState<Question | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
@@ -214,12 +216,18 @@ const Questions = () => {
             <h2 className="text-3xl font-bold text-foreground mb-2">Questões</h2>
             <p className="text-muted-foreground">Visualize e gerencie todas as questões do banco</p>
           </div>
-          <Link to="/add-question">
-            <Button className="gap-2">
-              <PlusCircle className="h-4 w-4" />
-              Adicionar Questão
+          <div className="flex gap-2">
+            <Button onClick={() => setIsImportModalOpen(true)} variant="outline">
+              <FileJson className="mr-2 h-4 w-4" />
+              Importar JSON
             </Button>
-          </Link>
+            <Link to="/add-question">
+              <Button className="gap-2">
+                <PlusCircle className="h-4 w-4" />
+                Adicionar Questão
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <Card>
@@ -423,6 +431,12 @@ const Questions = () => {
           open={isEditModalOpen}
           onOpenChange={setIsEditModalOpen}
           onSave={handleSaveQuestion}
+        />
+
+        <QuestionImportModal
+          open={isImportModalOpen}
+          onOpenChange={setIsImportModalOpen}
+          onSuccess={() => refetch()}
         />
       </div>
     </Layout>
