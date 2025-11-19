@@ -28,17 +28,6 @@ const Landing = () => {
         </div>
       </header>
 
-      {/* Banner Section */}
-      <section className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b border-border/40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-6 md:p-8 text-center animate-fade-in">
-            <p className="text-primary-foreground text-lg md:text-xl font-semibold">
-              🎯 Prepare-se para o ENEM e PAES UEMA com milhares de questões organizadas
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 md:py-24">
         <div className="max-w-5xl mx-auto">
