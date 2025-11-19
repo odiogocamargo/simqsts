@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, X } from "lucide-react";
+import { Search, Eye, X, PlusCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -208,9 +209,17 @@ const Questions = () => {
   return (
     <Layout>
       <div className="space-y-8">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground mb-2">Questões</h2>
-          <p className="text-muted-foreground">Visualize e gerencie todas as questões do banco</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Questões</h2>
+            <p className="text-muted-foreground">Visualize e gerencie todas as questões do banco</p>
+          </div>
+          <Link to="/add-question">
+            <Button className="gap-2">
+              <PlusCircle className="h-4 w-4" />
+              Adicionar Questão
+            </Button>
+          </Link>
         </div>
 
         <Card>

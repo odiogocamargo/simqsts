@@ -18,7 +18,6 @@ import {
 const adminNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Questões", url: "/questions", icon: FileText },
-  { title: "Adicionar Questão", url: "/add-question", icon: PlusCircle },
   { title: "Relatório de Taxonomia", url: "/subject-report", icon: List },
 ];
 
