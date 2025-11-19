@@ -342,34 +342,35 @@ const Questions = () => {
 
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Enunciado</TableHead>
-                  <TableHead className="w-32">Matéria</TableHead>
-                  <TableHead className="w-32">Conteúdo</TableHead>
-                  <TableHead className="w-32">Tópico</TableHead>
-                  <TableHead className="w-28">Vestibular</TableHead>
-                  <TableHead className="w-20">Ano</TableHead>
-                  <TableHead className="w-28">Dificuldade</TableHead>
-                  <TableHead className="w-20">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredQuestions.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                      Nenhuma questão encontrada com os filtros selecionados.
-                    </TableCell>
+                    <TableHead className="w-16">#</TableHead>
+                    <TableHead className="min-w-[300px] max-w-[400px]">Enunciado</TableHead>
+                    <TableHead className="w-32">Matéria</TableHead>
+                    <TableHead className="w-32">Conteúdo</TableHead>
+                    <TableHead className="w-32">Tópico</TableHead>
+                    <TableHead className="w-28">Vestibular</TableHead>
+                    <TableHead className="w-20">Ano</TableHead>
+                    <TableHead className="w-28">Dificuldade</TableHead>
+                    <TableHead className="w-20">Ações</TableHead>
                   </TableRow>
-                ) : (
-                  filteredQuestions.map((question) => (
-                    <TableRow key={question.id}>
-                      <TableCell className="font-medium">{question.id}</TableCell>
-                      <TableCell>
-                        <p className="line-clamp-2 text-sm">{question.text}</p>
+                </TableHeader>
+                <TableBody>
+                  {filteredQuestions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                        Nenhuma questão encontrada com os filtros selecionados.
                       </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredQuestions.map((question) => (
+                      <TableRow key={question.id}>
+                        <TableCell className="font-medium">{question.id}</TableCell>
+                        <TableCell className="min-w-[300px] max-w-[400px]">
+                          <p className="line-clamp-2 text-sm break-words">{question.text}</p>
+                        </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
                           {question.subject}
@@ -406,6 +407,7 @@ const Questions = () => {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 
