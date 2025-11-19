@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Upload, FileJson } from "lucide-react";
+import { Loader2, Upload, FileJson, Download } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { Database } from "@/integrations/supabase/types";
@@ -38,6 +38,55 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
   const [jsonContent, setJsonContent] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
+
+  const handleDownloadTemplate = () => {
+    const template = [
+      {
+        statement: "Qual é a fórmula da água?",
+        subject_id: "quimica",
+        content_id: "quimica_geral",
+        topic_id: "substancias_e_misturas",
+        exam_id: "enem",
+        year: 2024,
+        difficulty: "facil",
+        option_a: "H2O",
+        option_b: "CO2",
+        option_c: "O2",
+        option_d: "N2",
+        option_e: "H2SO4",
+        correct_answer: "A",
+        explanation: "A água é formada por dois átomos de hidrogênio e um de oxigênio (H2O).",
+        question_type: "multipla_escolha"
+      },
+      {
+        statement: "Exemplo de questão dissertativa. Explique o processo de fotossíntese.",
+        subject_id: "biologia",
+        content_id: "ecologia",
+        topic_id: "fotossintese",
+        exam_id: "paes_uema",
+        year: 2024,
+        difficulty: "medio",
+        question_type: "discursiva",
+        explanation: "A fotossíntese é o processo pelo qual as plantas convertem luz solar em energia química."
+      }
+    ];
+
+    const jsonString = JSON.stringify(template, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "template-questoes.json";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Template baixado",
+      description: "Preencha o arquivo com suas questões e importe novamente.",
+    });
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -157,9 +206,20 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
         <DialogHeader>
           <DialogTitle>Importar Questões (JSON)</DialogTitle>
           <DialogDescription>
-            Faça upload de um arquivo JSON com um array de questões. Cada questão deve ter os campos: statement, subject_id, content_id, topic_id, exam_id, year.
+            Faça upload de um arquivo JSON com um array de questões. Baixe o template para ver a estrutura correta.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadTemplate}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Baixar Template
+          </Button>
+        </div>
 
         <div className="space-y-4">
           <div>
