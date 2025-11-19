@@ -94,7 +94,7 @@ const StudentQuestions = () => {
   
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
-    const isCorrect = selectedAnswer === currentQuestion.correct_answer;
+    const isCorrect = selectedAnswer.toLowerCase() === currentQuestion.correct_answer?.toLowerCase();
     saveAnswerMutation.mutate({ questionId: currentQuestion.id, answer: selectedAnswer, isCorrect });
     setShowResult(true);
     toast({
@@ -222,7 +222,7 @@ const StudentQuestions = () => {
                   const optionValue = currentQuestion[optionKey] as string;
                   if (!optionValue) return null;
                   
-                  const isCorrect = currentQuestion.correct_answer === option;
+                  const isCorrect = currentQuestion.correct_answer?.toLowerCase() === option.toLowerCase();
                   const isSelected = selectedAnswer === option;
                   
                   return (
