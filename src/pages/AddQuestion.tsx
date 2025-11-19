@@ -14,11 +14,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const AddQuestion = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedContent, setSelectedContent] = useState<string>("");
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
+  const [selectedExam, setSelectedExam] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
+  const [correctAnswer, setCorrectAnswer] = useState<string>("");
   const [statement, setStatement] = useState<string>("");
   const [alternatives, setAlternatives] = useState<Record<string, string>>({
     A: "",
@@ -28,6 +36,7 @@ const AddQuestion = () => {
     E: "",
   });
   const [explanation, setExplanation] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
@@ -36,12 +45,75 @@ const AddQuestion = () => {
   
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Questão adicionada!",
-      description: "A questão foi cadastrada com sucesso no banco.",
-    });
+    
+    if (!user?.id) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar autenticado para adicionar questões.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.from("questions").insert({
+        statement,
+        subject_id: selectedSubject,
+        content_id: selectedContent,
+        exam_id: selectedExam,
+        year: parseInt(selectedYear),
+        difficulty: selectedDifficulty,
+        option_a: alternatives.A,
+        option_b: alternatives.B,
+        option_c: alternatives.C,
+        option_d: alternatives.D,
+        option_e: alternatives.E,
+        correct_answer: correctAnswer,
+        explanation: explanation || null,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      // Inserir o tópico da questão
+      if (selectedTopic) {
+        const { data: questionData } = await supabase
+          .from("questions")
+          .select("id")
+          .eq("created_by", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (questionData) {
+          await supabase.from("question_topics").insert({
+            question_id: questionData.id,
+            topic_id: selectedTopic,
+          });
+        }
+      }
+
+      toast({
+        title: "Questão adicionada!",
+        description: "A questão foi cadastrada com sucesso no banco.",
+      });
+
+      // Reset do formulário
+      handleClear();
+    } catch (error) {
+      console.error("Erro ao adicionar questão:", error);
+      toast({
+        title: "Erro ao adicionar questão",
+        description: "Ocorreu um erro ao salvar a questão. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClear = () => {
@@ -50,6 +122,11 @@ const AddQuestion = () => {
     setExplanation("");
     setSelectedSubject("");
     setSelectedContent("");
+    setSelectedTopic("");
+    setSelectedExam("");
+    setSelectedYear("");
+    setSelectedDifficulty("");
+    setCorrectAnswer("");
   };
 
   return (
@@ -123,7 +200,12 @@ const AddQuestion = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="topic">Tópico Específico</Label>
-                    <Select required disabled={!selectedContent}>
+                    <Select 
+                      required 
+                      disabled={!selectedContent}
+                      value={selectedTopic}
+                      onValueChange={setSelectedTopic}
+                    >
                       <SelectTrigger id="topic">
                         <SelectValue placeholder={selectedContent ? "Selecione o tópico" : "Selecione o conteúdo primeiro"} />
                       </SelectTrigger>
@@ -141,7 +223,11 @@ const AddQuestion = () => {
               <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="exam">Vestibular/Instituição</Label>
-                    <Select required>
+                    <Select 
+                      required
+                      value={selectedExam}
+                      onValueChange={setSelectedExam}
+                    >
                       <SelectTrigger id="exam">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
@@ -157,7 +243,11 @@ const AddQuestion = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="year">Ano</Label>
-                  <Select required>
+                  <Select 
+                    required
+                    value={selectedYear}
+                    onValueChange={setSelectedYear}
+                  >
                     <SelectTrigger id="year">
                       <SelectValue placeholder="Selecione o ano" />
                     </SelectTrigger>
@@ -173,7 +263,11 @@ const AddQuestion = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="difficulty">Dificuldade</Label>
-                  <Select required>
+                  <Select 
+                    required
+                    value={selectedDifficulty}
+                    onValueChange={setSelectedDifficulty}
+                  >
                     <SelectTrigger id="difficulty">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
@@ -208,7 +302,11 @@ const AddQuestion = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="correct">Alternativa Correta</Label>
-                <Select required>
+                <Select 
+                  required
+                  value={correctAnswer}
+                  onValueChange={setCorrectAnswer}
+                >
                   <SelectTrigger id="correct">
                     <SelectValue placeholder="Selecione a alternativa correta" />
                   </SelectTrigger>
@@ -233,10 +331,10 @@ const AddQuestion = () => {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-1">
-                  Adicionar Questão
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? "Adicionando..." : "Adicionar Questão"}
                 </Button>
-                <Button type="button" variant="outline" onClick={handleClear}>
+                <Button type="button" variant="outline" onClick={handleClear} disabled={isSubmitting}>
                   Limpar
                 </Button>
               </div>
