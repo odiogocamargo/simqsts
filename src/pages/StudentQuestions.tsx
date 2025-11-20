@@ -28,6 +28,7 @@ const StudentQuestions = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [showResult, setShowResult] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
@@ -78,13 +79,101 @@ const StudentQuestions = () => {
   
   const saveAnswerMutation = useMutation({
     mutationFn: async ({ questionId, answer, isCorrect }: { questionId: string, answer: string, isCorrect: boolean }) => {
-      const { error } = await supabase.from('user_answers').insert({
-        user_id: user?.id!,
+      if (!user?.id || !currentQuestion) return;
+
+      // 1. Salvar resposta do usuário
+      const { error: answerError } = await supabase.from('user_answers').insert({
+        user_id: user.id,
         question_id: questionId,
         selected_answer: answer,
         is_correct: isCorrect,
       });
-      if (error) throw error;
+      if (answerError) throw answerError;
+
+      // 2. Atualizar ou criar registro de performance
+      const { data: existingPerformance } = await supabase
+        .from('user_performance')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('subject_id', currentQuestion.subject_id)
+        .single();
+
+      if (existingPerformance) {
+        // Atualizar performance existente
+        const newTotalQuestions = existingPerformance.total_questions + 1;
+        const newCorrectAnswers = existingPerformance.correct_answers + (isCorrect ? 1 : 0);
+        const newWrongAnswers = existingPerformance.wrong_answers + (isCorrect ? 0 : 1);
+        const newAccuracy = (newCorrectAnswers / newTotalQuestions) * 100;
+
+        const { error: updateError } = await supabase
+          .from('user_performance')
+          .update({
+            total_questions: newTotalQuestions,
+            correct_answers: newCorrectAnswers,
+            wrong_answers: newWrongAnswers,
+            accuracy_percentage: newAccuracy,
+            last_practice_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingPerformance.id);
+        
+        if (updateError) throw updateError;
+      } else {
+        // Criar novo registro de performance
+        const { error: insertError } = await supabase
+          .from('user_performance')
+          .insert({
+            user_id: user.id,
+            subject_id: currentQuestion.subject_id,
+            total_questions: 1,
+            correct_answers: isCorrect ? 1 : 0,
+            wrong_answers: isCorrect ? 0 : 1,
+            accuracy_percentage: isCorrect ? 100 : 0,
+            last_practice_at: new Date().toISOString(),
+          });
+        
+        if (insertError) throw insertError;
+      }
+
+      // 3. Atualizar ou criar sessão de estudo
+      if (sessionId) {
+        // Atualizar sessão existente
+        const { data: session } = await supabase
+          .from('study_sessions')
+          .select('*')
+          .eq('id', sessionId)
+          .single();
+
+        if (session) {
+          const { error: sessionError } = await supabase
+            .from('study_sessions')
+            .update({
+              questions_answered: session.questions_answered + 1,
+              correct_answers: session.correct_answers + (isCorrect ? 1 : 0),
+              ended_at: new Date().toISOString(),
+            })
+            .eq('id', sessionId);
+          
+          if (sessionError) throw sessionError;
+        }
+      } else {
+        // Criar nova sessão
+        const { data: newSession, error: sessionError } = await supabase
+          .from('study_sessions')
+          .insert({
+            user_id: user.id,
+            exam_id: currentQuestion.exam_id,
+            subject_id: currentQuestion.subject_id,
+            questions_answered: 1,
+            correct_answers: isCorrect ? 1 : 0,
+            started_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+        
+        if (sessionError) throw sessionError;
+        if (newSession) setSessionId(newSession.id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-performance'] });
@@ -129,6 +218,7 @@ const StudentQuestions = () => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer("");
     setShowResult(false);
+    setSessionId(null);
   };
 
   return (
