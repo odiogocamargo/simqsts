@@ -190,10 +190,21 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
     setIsImporting(true);
 
     try {
-      const questions: QuestionJSON[] = JSON.parse(jsonContent);
+      let questions: QuestionJSON[];
+      
+      try {
+        questions = JSON.parse(jsonContent);
+      } catch (parseError: any) {
+        throw new Error(`JSON inválido: ${parseError.message}`);
+
+      }
 
       if (!Array.isArray(questions)) {
-        throw new Error("O JSON deve ser um array de questões");
+        throw new Error("O JSON deve ser um array de questões. Exemplo: [{...}, {...}]");
+      }
+
+      if (questions.length === 0) {
+        throw new Error("O array de questões está vazio");
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -203,8 +214,19 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       let errorCount = 0;
       const errors: string[] = [];
 
+      console.log(`Iniciando importação de ${questions.length} questões...`);
+
       for (const [index, question] of questions.entries()) {
         try {
+          // Validar campos obrigatórios
+          const requiredFields = ['statement', 'subject_id', 'content_id', 'exam_id', 'year'];
+          const missingFields = requiredFields.filter(field => !question[field as keyof QuestionJSON]);
+          
+          if (missingFields.length > 0) {
+            throw new Error(`Campos obrigatórios ausentes: ${missingFields.join(', ')}`);
+          }
+
+          console.log(`Importando questão ${index + 1}:`, question.statement.substring(0, 50) + '...');
           // Insert question
           const questionData: QuestionInsert = {
             statement: question.statement,
@@ -308,10 +330,13 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
             }
           }
 
+          console.log(`Questão ${index + 1} importada com sucesso!`);
           successCount++;
         } catch (error: any) {
           errorCount++;
-          errors.push(`Questão ${index + 1}: ${error.message}`);
+          const errorMsg = `Questão ${index + 1}: ${error.message}`;
+          errors.push(errorMsg);
+          console.error(errorMsg, error);
         }
       }
 
@@ -324,13 +349,20 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
         onOpenChange(false);
         setJsonContent("");
       } else {
-        throw new Error("Nenhuma questão foi importada");
+        const errorDetails = errors.length > 0 ? `\n\nDetalhes:\n${errors.slice(0, 3).join('\n')}` : "";
+        throw new Error(`Nenhuma questão foi importada.${errorDetails}`);
       }
 
       if (errors.length > 0) {
         console.error("Erros durante importação:", errors);
+        toast({
+          title: "Atenção",
+          description: `${errorCount} questões com erro. Veja o console para detalhes.`,
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
+      console.error("Erro geral na importação:", error);
       toast({
         title: "Erro ao importar",
         description: error.message || "Verifique o formato do JSON",
