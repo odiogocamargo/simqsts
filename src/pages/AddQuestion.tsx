@@ -17,6 +17,7 @@ import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjec
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ImageUpload, QuestionImage } from "@/components/ImageUpload";
+import { QuestionImageUpload } from "@/components/QuestionImageUpload";
 
 const AddQuestion = () => {
   const { toast } = useToast();
@@ -47,6 +48,32 @@ const AddQuestion = () => {
   const { data: exams = [] } = useExams();
   
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
+
+  const handleExtractedData = (data: any) => {
+    console.log('Handling extracted data:', data);
+    
+    // Preencher campos automaticamente
+    if (data.exam_id) setSelectedExam(data.exam_id);
+    if (data.subject_id) setSelectedSubject(data.subject_id);
+    if (data.content_id) setSelectedContent(data.content_id);
+    if (data.topic_id) setSelectedTopic(data.topic_id);
+    if (data.statement) setStatement(data.statement);
+    if (data.year) setSelectedYear(data.year.toString());
+    if (data.difficulty) setSelectedDifficulty(data.difficulty);
+    if (data.correct_answer) setCorrectAnswer(data.correct_answer);
+    
+    // Preencher alternativas
+    if (data.option_a) setAlternatives(prev => ({ ...prev, A: data.option_a }));
+    if (data.option_b) setAlternatives(prev => ({ ...prev, B: data.option_b }));
+    if (data.option_c) setAlternatives(prev => ({ ...prev, C: data.option_c }));
+    if (data.option_d) setAlternatives(prev => ({ ...prev, D: data.option_d }));
+    if (data.option_e) setAlternatives(prev => ({ ...prev, E: data.option_e }));
+
+    toast({
+      title: 'Dados preenchidos!',
+      description: 'Revise os campos abaixo e faça ajustes se necessário antes de salvar.',
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,8 +169,10 @@ const AddQuestion = () => {
       <div className="space-y-8">
         <div>
           <h2 className="text-3xl font-bold text-foreground mb-2">Adicionar Questão</h2>
-          <p className="text-muted-foreground">Cadastre uma nova questão no banco de dados</p>
+          <p className="text-muted-foreground">Cadastre uma nova questão no banco de dados ou use IA para extrair de uma imagem</p>
         </div>
+
+        <QuestionImageUpload onDataExtracted={handleExtractedData} />
 
         <form onSubmit={handleSubmit}>
           <Card>

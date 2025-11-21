@@ -1,1 +1,4 @@
 project_id = "ovpvsysssqnvqwkqeybh"
+
+[functions.analyze-question-image]
+verify_jwt = false
