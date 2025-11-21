@@ -28,6 +28,21 @@ const Dashboard = () => {
     },
   });
 
+  // Buscar questões adicionadas esta semana
+  const { data: questionsThisWeek = 0 } = useQuery({
+    queryKey: ['questions-this-week'],
+    queryFn: async () => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { count } = await supabase
+        .from('questions')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', sevenDaysAgo.toISOString());
+      return count || 0;
+    },
+  });
+
   // Buscar distribuição por matéria
   const { data: subjectStats = [] } = useQuery({
     queryKey: ['subject-distribution'],
@@ -56,7 +71,7 @@ const Dashboard = () => {
   const metrics = [
     { title: "Total de Questões", value: totalQuestions.toString(), icon: Database, variant: "default" as const },
     { title: "Matérias Cobertas", value: totalSubjects.toString(), icon: BookOpen, variant: "default" as const },
-    { title: "Questões Adicionadas", value: "0", icon: TrendingUp, trend: "Esta semana", variant: "success" as const },
+    { title: "Questões Adicionadas", value: questionsThisWeek.toString(), icon: TrendingUp, trend: "Esta semana", variant: "success" as const },
     { title: "Última Atualização", value: totalQuestions > 0 ? "Hoje" : "Nenhuma", icon: Calendar, trend: totalQuestions > 0 ? "Recente" : "Adicione questões", variant: "accent" as const },
   ];
 
