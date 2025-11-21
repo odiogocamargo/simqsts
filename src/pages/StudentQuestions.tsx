@@ -77,6 +77,22 @@ const StudentQuestions = () => {
   
   const currentQuestion = questions[currentQuestionIndex];
   
+  const { data: currentQuestionImages = [] } = useQuery({
+    queryKey: ['question-images', currentQuestion?.id],
+    queryFn: async () => {
+      if (!currentQuestion?.id) return [];
+      const { data, error } = await supabase
+        .from('question_images')
+        .select('*')
+        .eq('question_id', currentQuestion.id)
+        .order('display_order');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentQuestion?.id,
+  });
+  
   const saveAnswerMutation = useMutation({
     mutationFn: async ({ questionId, answer, isCorrect }: { questionId: string, answer: string, isCorrect: boolean }) => {
       if (!user?.id || !currentQuestion) return;
@@ -305,6 +321,20 @@ const StudentQuestions = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: currentQuestion.statement }} />
+              
+              {currentQuestionImages.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {currentQuestionImages.map((image) => (
+                    <div key={image.id} className="rounded-lg overflow-hidden border border-border">
+                      <img
+                        src={image.image_url}
+                        alt={`Imagem da questão ${image.display_order}`}
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
               
               <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer} disabled={showResult}>
                 {['A', 'B', 'C', 'D', 'E'].map((option) => {

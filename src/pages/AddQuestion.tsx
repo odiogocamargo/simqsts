@@ -16,6 +16,7 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { ImageUpload, QuestionImage } from "@/components/ImageUpload";
 
 const AddQuestion = () => {
   const { toast } = useToast();
@@ -36,7 +37,9 @@ const AddQuestion = () => {
     E: "",
   });
   const [explanation, setExplanation] = useState<string>("");
+  const [images, setImages] = useState<QuestionImage[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdQuestionId, setCreatedQuestionId] = useState<string | null>(null);
   
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
@@ -60,50 +63,53 @@ const AddQuestion = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from("questions").insert({
-        statement,
-        subject_id: selectedSubject,
-        content_id: selectedContent,
-        exam_id: selectedExam,
-        year: parseInt(selectedYear),
-        difficulty: selectedDifficulty,
-        option_a: alternatives.A,
-        option_b: alternatives.B,
-        option_c: alternatives.C,
-        option_d: alternatives.D,
-        option_e: alternatives.E,
-        correct_answer: correctAnswer,
-        explanation: explanation || null,
-        created_by: user.id,
-      });
+      const { data: questionData, error } = await supabase
+        .from("questions")
+        .insert({
+          statement,
+          subject_id: selectedSubject,
+          content_id: selectedContent,
+          exam_id: selectedExam,
+          year: parseInt(selectedYear),
+          difficulty: selectedDifficulty,
+          option_a: alternatives.A,
+          option_b: alternatives.B,
+          option_c: alternatives.C,
+          option_d: alternatives.D,
+          option_e: alternatives.E,
+          correct_answer: correctAnswer,
+          explanation: explanation || null,
+          created_by: user.id,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       // Inserir o tópico da questão
-      if (selectedTopic) {
-        const { data: questionData } = await supabase
-          .from("questions")
-          .select("id")
-          .eq("created_by", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
+      if (selectedTopic && questionData) {
+        await supabase.from("question_topics").insert({
+          question_id: questionData.id,
+          topic_id: selectedTopic,
+        });
+      }
 
-        if (questionData) {
-          await supabase.from("question_topics").insert({
-            question_id: questionData.id,
-            topic_id: selectedTopic,
-          });
-        }
+      // Guardar o ID da questão criada para permitir upload de imagens
+      if (questionData) {
+        setCreatedQuestionId(questionData.id);
       }
 
       toast({
         title: "Questão adicionada!",
-        description: "A questão foi cadastrada com sucesso no banco.",
+        description: images.length > 0 
+          ? "Questão cadastrada! Agora você pode fazer upload das imagens." 
+          : "A questão foi cadastrada com sucesso no banco.",
       });
 
-      // Reset do formulário
-      handleClear();
+      // Se não houver imagens, limpar o formulário
+      if (images.length === 0) {
+        handleClear();
+      }
     } catch (error) {
       console.error("Erro ao adicionar questão:", error);
       toast({
@@ -127,6 +133,8 @@ const AddQuestion = () => {
     setSelectedYear("");
     setSelectedDifficulty("");
     setCorrectAnswer("");
+    setImages([]);
+    setCreatedQuestionId(null);
   };
 
   return (
@@ -327,6 +335,15 @@ const AddQuestion = () => {
                   onChange={setExplanation}
                   placeholder="Digite a resolução detalhada ou explicação da questão..."
                   minHeight="180px"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Imagens da Questão (Opcional)</Label>
+                <ImageUpload
+                  questionId={createdQuestionId || undefined}
+                  onImagesChange={setImages}
+                  initialImages={images}
                 />
               </div>
 

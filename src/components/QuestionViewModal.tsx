@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Edit, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Question {
   id: string;
@@ -39,6 +41,21 @@ interface QuestionViewModalProps {
 
 export function QuestionViewModal({ question, open, onOpenChange, onEdit }: QuestionViewModalProps) {
   if (!question) return null;
+
+  const { data: images = [] } = useQuery({
+    queryKey: ['question-images', question.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('question_images')
+        .select('*')
+        .eq('question_id', question.id)
+        .order('display_order');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!question.id,
+  });
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -105,6 +122,26 @@ export function QuestionViewModal({ question, open, onOpenChange, onEdit }: Ques
             <h4 className="text-sm font-semibold text-muted-foreground mb-3">Enunciado</h4>
             <p className="text-foreground leading-relaxed">{question.text}</p>
           </div>
+
+          {images.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="text-sm font-semibold text-muted-foreground mb-3">Imagens</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {images.map((image) => (
+                    <div key={image.id} className="rounded-lg overflow-hidden border border-border">
+                      <img
+                        src={image.image_url}
+                        alt={`Imagem da questão ${image.display_order}`}
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {question.alternatives && (
             <>
