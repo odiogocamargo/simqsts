@@ -49,28 +49,76 @@ const AddQuestion = () => {
   
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
 
-  const handleExtractedData = (data: any) => {
+  const handleExtractedData = async (data: any) => {
     console.log('Handling extracted data:', data);
     
-    // Preencher campos automaticamente
+    // Preencher campos básicos
     if (data.exam_id) setSelectedExam(data.exam_id);
-    if (data.subject_id) setSelectedSubject(data.subject_id);
-    if (data.content_id) setSelectedContent(data.content_id);
-    if (data.topic_id) setSelectedTopic(data.topic_id);
-    if (data.statement) setStatement(data.statement);
     if (data.year) setSelectedYear(data.year.toString());
     if (data.difficulty) setSelectedDifficulty(data.difficulty);
     if (data.correct_answer) setCorrectAnswer(data.correct_answer);
     
-    // Preencher alternativas
+    // Preencher enunciado e alternativas
+    if (data.statement) setStatement(data.statement);
     if (data.option_a) setAlternatives(prev => ({ ...prev, A: data.option_a }));
     if (data.option_b) setAlternatives(prev => ({ ...prev, B: data.option_b }));
     if (data.option_c) setAlternatives(prev => ({ ...prev, C: data.option_c }));
     if (data.option_d) setAlternatives(prev => ({ ...prev, D: data.option_d }));
     if (data.option_e) setAlternatives(prev => ({ ...prev, E: data.option_e }));
+    
+    // Preencher matéria
+    if (data.subject_id) {
+      setSelectedSubject(data.subject_id);
+    }
+    
+    // Buscar e preencher conteúdo (aguardar um pouco para a query de contents carregar)
+    if (data.content_id && data.subject_id) {
+      setTimeout(async () => {
+        // Buscar conteúdos da matéria
+        const { data: contentsData } = await supabase
+          .from('contents')
+          .select('*')
+          .eq('subject_id', data.subject_id);
+        
+        if (contentsData) {
+          // Tentar encontrar o conteúdo pelo ID ou nome similar
+          const foundContent = contentsData.find(c => 
+            c.id === data.content_id || 
+            c.id.toLowerCase().includes(data.content_id.toLowerCase()) ||
+            data.content_id.toLowerCase().includes(c.id.toLowerCase())
+          );
+          
+          if (foundContent) {
+            setSelectedContent(foundContent.id);
+            
+            // Buscar e preencher tópico
+            if (data.topic_id) {
+              setTimeout(async () => {
+                const { data: topicsData } = await supabase
+                  .from('topics')
+                  .select('*')
+                  .eq('content_id', foundContent.id);
+                
+                if (topicsData) {
+                  const foundTopic = topicsData.find(t => 
+                    t.id === data.topic_id || 
+                    t.id.toLowerCase().includes(data.topic_id.toLowerCase()) ||
+                    data.topic_id.toLowerCase().includes(t.id.toLowerCase())
+                  );
+                  
+                  if (foundTopic) {
+                    setSelectedTopic(foundTopic.id);
+                  }
+                }
+              }, 500);
+            }
+          }
+        }
+      }, 500);
+    }
 
     toast({
-      title: 'Dados preenchidos!',
+      title: 'Dados extraídos e preenchidos!',
       description: 'Revise os campos abaixo e faça ajustes se necessário antes de salvar.',
     });
   };

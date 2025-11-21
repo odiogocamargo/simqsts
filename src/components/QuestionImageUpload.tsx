@@ -192,14 +192,17 @@ export const QuestionImageUpload = ({ onDataExtracted }: QuestionImageUploadProp
                       <li>• <strong>Vestibular:</strong> {extractedData.exam_id}</li>
                       <li>• <strong>Matéria:</strong> {extractedData.subject_id}</li>
                       {extractedData.content_id && (
-                        <li>• <strong>Conteúdo:</strong> {extractedData.content_id}</li>
+                        <li>• <strong>Conteúdo sugerido:</strong> {extractedData.content_id}</li>
                       )}
                       {extractedData.topic_id && (
-                        <li>• <strong>Tópico:</strong> {extractedData.topic_id}</li>
+                        <li>• <strong>Tópico sugerido:</strong> {extractedData.topic_id}</li>
                       )}
                       <li>• <strong>Resposta correta:</strong> {extractedData.correct_answer.toUpperCase()}</li>
                       {extractedData.year && (
                         <li>• <strong>Ano:</strong> {extractedData.year}</li>
+                      )}
+                      {extractedData.statement && (
+                        <li>• <strong>Enunciado:</strong> {extractedData.statement.substring(0, 100)}...</li>
                       )}
                     </ul>
                     {extractedData.notes && (
