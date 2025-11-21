@@ -72,6 +72,14 @@ const AddQuestion = () => {
 
       console.log('Filling form fields...');
 
+      // Normalizar exam_id (aceitar ENEM/enem e PAES UEMA/paes-uema)
+      let normalizedExamId = parsed.exam_id;
+      if (parsed.exam_id.toUpperCase() === 'ENEM') {
+        normalizedExamId = 'enem';
+      } else if (parsed.exam_id.toUpperCase().includes('PAES') || parsed.exam_id.includes('UEMA')) {
+        normalizedExamId = 'paes-uema';
+      }
+
       // Preencher todos os campos do formulário
       setStatement(parsed.statement);
       console.log('Statement set:', parsed.statement);
@@ -79,8 +87,8 @@ const AddQuestion = () => {
       setSelectedSubject(parsed.subject_id);
       console.log('Subject set:', parsed.subject_id);
       
-      setSelectedExam(parsed.exam_id);
-      console.log('Exam set:', parsed.exam_id);
+      setSelectedExam(normalizedExamId);
+      console.log('Exam set:', normalizedExamId);
       
       setSelectedYear(parsed.year.toString());
       console.log('Year set:', parsed.year);
