@@ -58,22 +58,64 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
         option_c: "O2",
         option_d: "N2",
         option_e: "H2SO4",
-        correct_answer: "A",
+        correct_answer: "a",
         explanation: "A água é formada por dois átomos de hidrogênio e um de oxigênio (H2O).",
         question_type: "multipla_escolha",
         images: [
           {
-            url: "https://exemplo.com/imagem1.png",
+            url: "https://exemplo.com/imagem-da-questao.png",
             display_order: 0
-          },
-          {
-            url: "data:image/png;base64,iVBORw0KG...",
-            display_order: 1
           }
         ]
       },
       {
-        statement: "Exemplo de questão dissertativa. Explique o processo de fotossíntese.",
+        statement: "Observe a imagem abaixo. Qual elemento químico está representado?",
+        subject_id: "quimica",
+        content_id: "quimica_geral",
+        topic_id: "tabela_periodica",
+        exam_id: "enem",
+        year: 2024,
+        difficulty: "medio",
+        option_a: "Hidrogênio",
+        option_b: "Oxigênio",
+        option_c: "Carbono",
+        option_d: "Nitrogênio",
+        option_e: "Hélio",
+        correct_answer: "a",
+        explanation: "O elemento representado é o Hidrogênio (H), primeiro elemento da tabela periódica.",
+        question_type: "multipla_escolha",
+        images: [
+          {
+            url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+            display_order: 0
+          }
+        ]
+      },
+      {
+        statement: "Analise o gráfico e responda: qual é o comportamento da função?",
+        subject_id: "matematica",
+        content_id: "funcoes",
+        topic_id: "funcao_primeiro_grau",
+        exam_id: "paes_uema",
+        year: 2024,
+        difficulty: "dificil",
+        option_a: "Crescente",
+        option_b: "Decrescente",
+        option_c: "Constante",
+        option_d: "Não é função",
+        option_e: "Função quadrática",
+        correct_answer: "a",
+        explanation: "O gráfico mostra uma função crescente, onde y aumenta conforme x aumenta.",
+        question_type: "multipla_escolha",
+        images: [
+          {
+            url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNk+M9Qz0AEYBxVSF+FAP0KBIGvdF9PAAAAAElFTkSuQmCC",
+            display_order: 0
+          }
+        ]
+      },
+      {
+        statement: "Questão dissertativa: Explique o processo de fotossíntese com base na imagem fornecida.",
         subject_id: "biologia",
         content_id: "ecologia",
         topic_id: "fotossintese",
@@ -81,7 +123,28 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
         year: 2024,
         difficulty: "medio",
         question_type: "discursiva",
-        explanation: "A fotossíntese é o processo pelo qual as plantas convertem luz solar em energia química."
+        explanation: "A fotossíntese é o processo pelo qual as plantas convertem luz solar, água e CO2 em glicose e oxigênio.",
+        images: [
+          {
+            url: "https://exemplo.com/diagrama-fotossintese.jpg",
+            display_order: 0
+          }
+        ]
+      },
+      {
+        statement: "INSTRUÇÕES: Para converter suas imagens para base64, você pode usar:\n\n1. Sites online: https://www.base64-image.de/\n2. Python: import base64; base64.b64encode(open('imagem.png', 'rb').read()).decode()\n3. Node.js: Buffer.from(fs.readFileSync('imagem.png')).toString('base64')\n\nO formato completo deve ser: data:image/png;base64,SEU_CODIGO_BASE64_AQUI\n\nSuporte para: PNG, JPG, JPEG, GIF, WebP",
+        subject_id: "matematica",
+        content_id: "algebra",
+        exam_id: "enem",
+        year: 2024,
+        difficulty: "facil",
+        option_a: "Exemplo",
+        option_b: "Template",
+        option_c: "Instruções",
+        option_d: "Ajuda",
+        option_e: "Info",
+        correct_answer: "c",
+        question_type: "multipla_escolha"
       }
     ];
 
