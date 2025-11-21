@@ -57,6 +57,7 @@ const AddQuestion = () => {
   const handleLoadFromJson = () => {
     try {
       const parsed = JSON.parse(jsonInput);
+      console.log('JSON parsed:', parsed);
       
       // Validar campos obrigatórios
       const requiredFields = [
@@ -64,19 +65,31 @@ const AddQuestion = () => {
         'option_a', 'option_b', 'option_c', 'option_d', 'option_e', 'correct_answer'
       ];
 
-      for (const field of requiredFields) {
-        if (!parsed[field]) {
-          throw new Error(`Campo obrigatório ausente: ${field}`);
-        }
+      const missingFields = requiredFields.filter(field => !parsed[field]);
+      if (missingFields.length > 0) {
+        throw new Error(`Campos obrigatórios ausentes: ${missingFields.join(', ')}`);
       }
+
+      console.log('Filling form fields...');
 
       // Preencher todos os campos do formulário
       setStatement(parsed.statement);
+      console.log('Statement set:', parsed.statement);
+      
       setSelectedSubject(parsed.subject_id);
+      console.log('Subject set:', parsed.subject_id);
+      
       setSelectedExam(parsed.exam_id);
+      console.log('Exam set:', parsed.exam_id);
+      
       setSelectedYear(parsed.year.toString());
+      console.log('Year set:', parsed.year);
+      
       setSelectedDifficulty(parsed.difficulty);
+      console.log('Difficulty set:', parsed.difficulty);
+      
       setCorrectAnswer(parsed.correct_answer.toLowerCase());
+      console.log('Correct answer set:', parsed.correct_answer);
       
       setAlternatives({
         A: parsed.option_a,
@@ -85,16 +98,18 @@ const AddQuestion = () => {
         D: parsed.option_d,
         E: parsed.option_e,
       });
+      console.log('Alternatives set');
 
       toast({
         title: 'JSON carregado!',
-        description: 'Campos preenchidos. Agora clique em "Classificar automaticamente" para definir conteúdo e tópico.',
+        description: 'Todos os campos foram preenchidos. Agora clique em "Classificar automaticamente" para definir conteúdo e tópico.',
       });
 
       // Limpar o campo JSON
       setJsonInput('');
 
     } catch (error) {
+      console.error('Error loading JSON:', error);
       toast({
         title: 'Erro ao carregar JSON',
         description: error instanceof Error ? error.message : 'JSON inválido',
