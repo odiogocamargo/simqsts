@@ -19,8 +19,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { ImageUpload, QuestionImage } from "@/components/ImageUpload";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { QuestionBatchImport } from "@/components/QuestionBatchImport";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const AddQuestion = () => {
   const { toast } = useToast();
@@ -201,18 +199,11 @@ const AddQuestion = () => {
     <Layout>
       <div className="space-y-8">
         <div>
-          <h2 className="text-3xl font-bold text-foreground mb-2">Adicionar Questões</h2>
-          <p className="text-muted-foreground">Cadastre questões individualmente ou em lote com classificação automática por IA</p>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Adicionar Questão</h2>
+          <p className="text-muted-foreground">Cadastre uma nova questão - a IA classificará automaticamente conteúdo e tópico</p>
         </div>
 
-        <Tabs defaultValue="single" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="single">Questão Individual</TabsTrigger>
-            <TabsTrigger value="batch">Importação em Lote</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="single" className="space-y-8">
-            <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
               <CardTitle>Dados da Questão</CardTitle>
@@ -469,12 +460,6 @@ const AddQuestion = () => {
             </CardContent>
           </Card>
         </form>
-      </TabsContent>
-
-      <TabsContent value="batch">
-        <QuestionBatchImport />
-      </TabsContent>
-    </Tabs>
       </div>
     </Layout>
   );
