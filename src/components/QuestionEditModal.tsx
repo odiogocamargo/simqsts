@@ -30,6 +30,7 @@ interface Question {
   topic: string;
   topicId: string;
   exam: string;
+  examId: string;
   difficulty: string;
   year: number;
   alternatives?: {
@@ -91,10 +92,6 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
     };
 
     onSave(updatedQuestion);
-    toast({
-      title: "Questão atualizada!",
-      description: "As alterações foram salvas com sucesso.",
-    });
     onOpenChange(false);
   };
 
@@ -196,8 +193,15 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
               <Label htmlFor="edit-exam">Vestibular/Instituição</Label>
               <Select 
                 required
-                value={formData.exam}
-                onValueChange={(value) => setFormData({ ...formData, exam: value })}
+                value={formData.examId}
+                onValueChange={(value) => {
+                  const selectedExam = exams.find(e => e.id === value);
+                  setFormData({ 
+                    ...formData, 
+                    examId: value,
+                    exam: selectedExam?.name || value
+                  });
+                }}
               >
                 <SelectTrigger id="edit-exam">
                   <SelectValue placeholder="Selecione" />
@@ -243,9 +247,9 @@ export function QuestionEditModal({ question, open, onOpenChange, onSave }: Ques
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Fácil">Fácil</SelectItem>
-                  <SelectItem value="Média">Média</SelectItem>
-                  <SelectItem value="Difícil">Difícil</SelectItem>
+                  <SelectItem value="facil">Fácil</SelectItem>
+                  <SelectItem value="medio">Média</SelectItem>
+                  <SelectItem value="dificil">Difícil</SelectItem>
                 </SelectContent>
               </Select>
             </div>
