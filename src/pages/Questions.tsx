@@ -49,6 +49,7 @@ interface Question {
   topic: string;
   topicId: string;
   exam: string;
+  examId: string;
   difficulty: string;
   year: number;
   alternatives?: {
@@ -104,6 +105,9 @@ const Questions = () => {
           correct_answer,
           explanation,
           difficulty,
+          subject_id,
+          content_id,
+          exam_id,
           subjects(id, name),
           contents(id, name),
           exams(id, name)
@@ -133,28 +137,46 @@ const Questions = () => {
         return [];
       }
 
-      return (data || []).map((q: any) => ({
-        id: q.id,
-        text: q.statement,
-        subject: q.subjects?.name || 'Desconhecida',
-        subjectId: q.subjects?.id || '',
-        content: q.contents?.name || 'Desconhecido',
-        contentId: q.contents?.id || '',
-        topic: '', // Buscar tópicos separadamente se necessário
-        topicId: '',
-        exam: q.exams?.name || 'Desconhecido',
-        difficulty: q.difficulty || 'medio',
-        year: q.year,
-        alternatives: q.question_type === 'multipla_escolha' ? {
-          a: q.option_a || '',
-          b: q.option_b || '',
-          c: q.option_c || '',
-          d: q.option_d || '',
-          e: q.option_e || '',
-        } : undefined,
-        correctAnswer: q.correct_answer,
-        explanation: q.explanation,
-      }));
+      // Buscar tópicos para cada questão
+      const questionIds = (data || []).map(q => q.id);
+      const { data: questionTopics } = await supabase
+        .from('question_topics')
+        .select('question_id, topic_id, topics(id, name)')
+        .in('question_id', questionIds);
+
+      const topicsMap = new Map(
+        (questionTopics || []).map((qt: any) => [
+          qt.question_id,
+          { id: qt.topic_id, name: qt.topics?.name }
+        ])
+      );
+
+      return (data || []).map((q: any) => {
+        const topicData = topicsMap.get(q.id);
+        return {
+          id: q.id,
+          text: q.statement,
+          subject: q.subjects?.name || 'Desconhecida',
+          subjectId: q.subject_id || '',
+          content: q.contents?.name || 'Desconhecido',
+          contentId: q.content_id || '',
+          topic: topicData?.name || '',
+          topicId: topicData?.id || '',
+          exam: q.exams?.name || 'Desconhecido',
+          examId: q.exam_id || '',
+          difficulty: q.difficulty || 'medio',
+          year: q.year,
+          alternatives: q.question_type === 'multipla_escolha' ? {
+            a: q.option_a || '',
+            b: q.option_b || '',
+            c: q.option_c || '',
+            d: q.option_d || '',
+            e: q.option_e || '',
+          } : undefined,
+          correctAnswer: q.correct_answer,
+          explanation: q.explanation,
+        };
+      });
     },
   });
 
@@ -209,8 +231,63 @@ const Questions = () => {
   };
 
   const handleSaveQuestion = async (updatedQuestion: Question) => {
-    // Atualizar questão no banco e recarregar
-    await refetch();
+    try {
+      // Atualizar a questão na tabela questions
+      const { error: questionError } = await supabase
+        .from('questions')
+        .update({
+          statement: updatedQuestion.text,
+          subject_id: updatedQuestion.subjectId,
+          content_id: updatedQuestion.contentId,
+          exam_id: updatedQuestion.examId,
+          year: updatedQuestion.year,
+          difficulty: updatedQuestion.difficulty,
+          option_a: updatedQuestion.alternatives?.a,
+          option_b: updatedQuestion.alternatives?.b,
+          option_c: updatedQuestion.alternatives?.c,
+          option_d: updatedQuestion.alternatives?.d,
+          option_e: updatedQuestion.alternatives?.e,
+          correct_answer: updatedQuestion.correctAnswer,
+          explanation: updatedQuestion.explanation,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', updatedQuestion.id);
+
+      if (questionError) throw questionError;
+
+      // Atualizar o tópico na tabela question_topics
+      if (updatedQuestion.topicId) {
+        // Deletar o tópico antigo
+        await supabase
+          .from('question_topics')
+          .delete()
+          .eq('question_id', updatedQuestion.id);
+
+        // Inserir o novo tópico
+        const { error: topicError } = await supabase
+          .from('question_topics')
+          .insert({
+            question_id: updatedQuestion.id,
+            topic_id: updatedQuestion.topicId,
+          });
+
+        if (topicError) throw topicError;
+      }
+
+      toast({
+        title: "Questão atualizada!",
+        description: "As alterações foram salvas com sucesso.",
+      });
+
+      await refetch();
+    } catch (error) {
+      console.error('Error updating question:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleViewQuestion = (question: Question) => {
