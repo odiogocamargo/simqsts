@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.classify-question]
 verify_jwt = false
+
+[functions.classify-questions-batch]
+verify_jwt = false
