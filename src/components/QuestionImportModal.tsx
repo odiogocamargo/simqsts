@@ -32,6 +32,10 @@ interface QuestionJSON {
   correct_answer?: string;
   explanation?: string;
   question_type?: "multipla_escolha" | "discursiva" | "verdadeiro_falso";
+  images?: Array<{
+    url: string; // URL direta ou base64
+    display_order?: number;
+  }>;
 }
 
 export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionImportModalProps) => {
@@ -56,7 +60,17 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
         option_e: "H2SO4",
         correct_answer: "A",
         explanation: "A água é formada por dois átomos de hidrogênio e um de oxigênio (H2O).",
-        question_type: "multipla_escolha"
+        question_type: "multipla_escolha",
+        images: [
+          {
+            url: "https://exemplo.com/imagem1.png",
+            display_order: 0
+          },
+          {
+            url: "data:image/png;base64,iVBORw0KG...",
+            display_order: 1
+          }
+        ]
       },
       {
         statement: "Exemplo de questão dissertativa. Explique o processo de fotossíntese.",
@@ -165,6 +179,70 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
               });
 
             if (topicError) throw topicError;
+          }
+
+          // Process images if provided
+          if (question.images && question.images.length > 0 && insertedQuestion) {
+            for (const image of question.images) {
+              let imageUrl = image.url;
+              
+              // Se for base64, fazer upload para o storage
+              if (image.url.startsWith("data:image")) {
+                try {
+                  // Extrair o tipo de imagem e os dados base64
+                  const matches = image.url.match(/^data:image\/(\w+);base64,(.+)$/);
+                  if (matches) {
+                    const imageType = matches[1];
+                    const base64Data = matches[2];
+                    
+                    // Converter base64 para blob
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                      byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: `image/${imageType}` });
+                    
+                    // Upload para o storage
+                    const fileName = `${insertedQuestion.id}/${Date.now()}_${image.display_order || 0}.${imageType}`;
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                      .from("question-images")
+                      .upload(fileName, blob, {
+                        cacheControl: "3600",
+                        upsert: false
+                      });
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    // Obter URL pública
+                    const { data: { publicUrl } } = supabase.storage
+                      .from("question-images")
+                      .getPublicUrl(uploadData.path);
+                    
+                    imageUrl = publicUrl;
+                  }
+                } catch (uploadError: any) {
+                  console.error("Erro ao fazer upload de imagem base64:", uploadError);
+                  // Continua com a próxima imagem em caso de erro
+                  continue;
+                }
+              }
+              
+              // Inserir registro da imagem no banco
+              const { error: imageError } = await supabase
+                .from("question_images")
+                .insert({
+                  question_id: insertedQuestion.id,
+                  image_url: imageUrl,
+                  image_type: "question",
+                  display_order: image.display_order || 0
+                });
+              
+              if (imageError) {
+                console.error("Erro ao inserir imagem:", imageError);
+              }
+            }
           }
 
           successCount++;
