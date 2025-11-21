@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 
 interface Question {
-  id: number;
+  id: string;
   text: string;
   subject: string;
   subjectId: string;
