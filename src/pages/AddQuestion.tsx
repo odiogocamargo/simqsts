@@ -17,8 +17,9 @@ import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjec
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ImageUpload, QuestionImage } from "@/components/ImageUpload";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
 
 const AddQuestion = () => {
   const { toast } = useToast();
@@ -44,6 +45,7 @@ const AddQuestion = () => {
   const [createdQuestionId, setCreatedQuestionId] = useState<string | null>(null);
   const [isClassifying, setIsClassifying] = useState(false);
   const [classificationSuggestion, setClassificationSuggestion] = useState<any>(null);
+  const [jsonInput, setJsonInput] = useState('');
   
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
@@ -52,11 +54,69 @@ const AddQuestion = () => {
   
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
 
+  const handleLoadFromJson = () => {
+    try {
+      const parsed = JSON.parse(jsonInput);
+      
+      // Validar campos obrigatórios
+      const requiredFields = [
+        'statement', 'subject_id', 'exam_id', 'year', 'difficulty',
+        'option_a', 'option_b', 'option_c', 'option_d', 'option_e', 'correct_answer'
+      ];
+
+      for (const field of requiredFields) {
+        if (!parsed[field]) {
+          throw new Error(`Campo obrigatório ausente: ${field}`);
+        }
+      }
+
+      // Preencher todos os campos do formulário
+      setStatement(parsed.statement);
+      setSelectedSubject(parsed.subject_id);
+      setSelectedExam(parsed.exam_id);
+      setSelectedYear(parsed.year.toString());
+      setSelectedDifficulty(parsed.difficulty);
+      setCorrectAnswer(parsed.correct_answer.toLowerCase());
+      
+      setAlternatives({
+        A: parsed.option_a,
+        B: parsed.option_b,
+        C: parsed.option_c,
+        D: parsed.option_d,
+        E: parsed.option_e,
+      });
+
+      toast({
+        title: 'JSON carregado!',
+        description: 'Campos preenchidos. Agora clique em "Classificar automaticamente" para definir conteúdo e tópico.',
+      });
+
+      // Limpar o campo JSON
+      setJsonInput('');
+
+    } catch (error) {
+      toast({
+        title: 'Erro ao carregar JSON',
+        description: error instanceof Error ? error.message : 'JSON inválido',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleAutoClassify = async () => {
     if (!statement.trim()) {
       toast({
         title: 'Erro',
         description: 'Digite o enunciado da questão primeiro',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!selectedSubject) {
+      toast({
+        title: 'Erro',
+        description: 'Selecione a matéria primeiro',
         variant: 'destructive',
       });
       return;
@@ -204,6 +264,42 @@ const AddQuestion = () => {
         </div>
 
         <form onSubmit={handleSubmit}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Carregar do JSON (Opcional)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="json-input">Cole o JSON da questão aqui</Label>
+                <Textarea
+                  id="json-input"
+                  value={jsonInput}
+                  onChange={(e) => setJsonInput(e.target.value)}
+                  placeholder={`Cole o JSON aqui:\n{\n  "statement": "Enunciado...",\n  "subject_id": "quimica",\n  "exam_id": "ENEM",\n  "year": 2025,\n  "difficulty": "medio",\n  "option_a": "Alt A",\n  "option_b": "Alt B",\n  "option_c": "Alt C",\n  "option_d": "Alt D",\n  "option_e": "Alt E",\n  "correct_answer": "e"\n}`}
+                  rows={8}
+                  className="font-mono text-xs"
+                />
+              </div>
+              
+              <Button
+                type="button"
+                onClick={handleLoadFromJson}
+                disabled={!jsonInput.trim()}
+                variant="secondary"
+                className="w-full"
+              >
+                Carregar Dados do JSON
+              </Button>
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>Campos obrigatórios:</strong> statement, subject_id, exam_id, year, difficulty, option_a-e, correct_answer
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Dados da Questão</CardTitle>
