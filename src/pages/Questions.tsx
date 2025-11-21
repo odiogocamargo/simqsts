@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, X, PlusCircle, FileJson } from "lucide-react";
+import { Search, Eye, X, PlusCircle, FileJson, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Select,
@@ -24,12 +24,23 @@ import { useState } from "react";
 import { QuestionViewModal } from "@/components/QuestionViewModal";
 import { QuestionEditModal } from "@/components/QuestionEditModal";
 import { QuestionImportModal } from "@/components/QuestionImportModal";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 
 interface Question {
-  id: number;
+  id: string;
   text: string;
   subject: string;
   subjectId: string;
@@ -64,6 +75,10 @@ const Questions = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
@@ -207,6 +222,33 @@ const Questions = () => {
     setEditQuestion(question);
     setIsEditModalOpen(true);
   };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (questionId: string) => {
+      const { error } = await supabase
+        .from('questions')
+        .delete()
+        .eq('id', questionId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Questão deletada",
+        description: "A questão foi removida com sucesso do banco de dados.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['questions'] });
+      setDeleteQuestionId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao deletar",
+        description: "Não foi possível deletar a questão. Tente novamente.",
+        variant: "destructive",
+      });
+      console.error('Error deleting question:', error);
+    },
+  });
 
   return (
     <Layout>
@@ -402,13 +444,22 @@ const Questions = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleViewQuestion(question)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleViewQuestion(question)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => setDeleteQuestionId(question.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -438,6 +489,26 @@ const Questions = () => {
           onOpenChange={setIsImportModalOpen}
           onSuccess={() => refetch()}
         />
+
+        <AlertDialog open={deleteQuestionId !== null} onOpenChange={() => setDeleteQuestionId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja deletar esta questão? Esta ação não pode ser desfeita e a questão será removida permanentemente do banco de dados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteQuestionId && deleteMutation.mutate(deleteQuestionId)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Deletar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );

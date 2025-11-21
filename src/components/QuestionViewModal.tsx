@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Edit, X } from "lucide-react";
 
 interface Question {
-  id: number;
+  id: string;
   text: string;
   subject: string;
   content: string;
