@@ -17,7 +17,8 @@ import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjec
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ImageUpload, QuestionImage } from "@/components/ImageUpload";
-import { QuestionImageUpload } from "@/components/QuestionImageUpload";
+import { Sparkles, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const AddQuestion = () => {
   const { toast } = useToast();
@@ -41,6 +42,8 @@ const AddQuestion = () => {
   const [images, setImages] = useState<QuestionImage[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdQuestionId, setCreatedQuestionId] = useState<string | null>(null);
+  const [isClassifying, setIsClassifying] = useState(false);
+  const [classificationSuggestion, setClassificationSuggestion] = useState<any>(null);
   
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
@@ -49,78 +52,58 @@ const AddQuestion = () => {
   
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
 
-  const handleExtractedData = async (data: any) => {
-    console.log('Handling extracted data:', data);
-    
-    // Preencher campos básicos
-    if (data.exam_id) setSelectedExam(data.exam_id);
-    if (data.year) setSelectedYear(data.year.toString());
-    if (data.difficulty) setSelectedDifficulty(data.difficulty);
-    if (data.correct_answer) setCorrectAnswer(data.correct_answer);
-    
-    // Preencher enunciado e alternativas
-    if (data.statement) setStatement(data.statement);
-    if (data.option_a) setAlternatives(prev => ({ ...prev, A: data.option_a }));
-    if (data.option_b) setAlternatives(prev => ({ ...prev, B: data.option_b }));
-    if (data.option_c) setAlternatives(prev => ({ ...prev, C: data.option_c }));
-    if (data.option_d) setAlternatives(prev => ({ ...prev, D: data.option_d }));
-    if (data.option_e) setAlternatives(prev => ({ ...prev, E: data.option_e }));
-    
-    // Preencher matéria
-    if (data.subject_id) {
-      setSelectedSubject(data.subject_id);
-    }
-    
-    // Buscar e preencher conteúdo (aguardar um pouco para a query de contents carregar)
-    if (data.content_id && data.subject_id) {
-      setTimeout(async () => {
-        // Buscar conteúdos da matéria
-        const { data: contentsData } = await supabase
-          .from('contents')
-          .select('*')
-          .eq('subject_id', data.subject_id);
-        
-        if (contentsData) {
-          // Tentar encontrar o conteúdo pelo ID ou nome similar
-          const foundContent = contentsData.find(c => 
-            c.id === data.content_id || 
-            c.id.toLowerCase().includes(data.content_id.toLowerCase()) ||
-            data.content_id.toLowerCase().includes(c.id.toLowerCase())
-          );
-          
-          if (foundContent) {
-            setSelectedContent(foundContent.id);
-            
-            // Buscar e preencher tópico
-            if (data.topic_id) {
-              setTimeout(async () => {
-                const { data: topicsData } = await supabase
-                  .from('topics')
-                  .select('*')
-                  .eq('content_id', foundContent.id);
-                
-                if (topicsData) {
-                  const foundTopic = topicsData.find(t => 
-                    t.id === data.topic_id || 
-                    t.id.toLowerCase().includes(data.topic_id.toLowerCase()) ||
-                    data.topic_id.toLowerCase().includes(t.id.toLowerCase())
-                  );
-                  
-                  if (foundTopic) {
-                    setSelectedTopic(foundTopic.id);
-                  }
-                }
-              }, 500);
-            }
-          }
-        }
-      }, 500);
+  const handleAutoClassify = async () => {
+    if (!statement.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Digite o enunciado da questão primeiro',
+        variant: 'destructive',
+      });
+      return;
     }
 
-    toast({
-      title: 'Dados extraídos e preenchidos!',
-      description: 'Revise os campos abaixo e faça ajustes se necessário antes de salvar.',
-    });
+    setIsClassifying(true);
+    setClassificationSuggestion(null);
+
+    try {
+      console.log('Calling classify-question function...');
+      
+      const { data, error } = await supabase.functions.invoke('classify-question', {
+        body: { statement }
+      });
+
+      if (error) {
+        console.error('Error invoking function:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao classificar questão');
+      }
+
+      console.log('Classification result:', data.data);
+      setClassificationSuggestion(data.data);
+
+      // Aplicar sugestões automaticamente
+      if (data.data.subject_id) setSelectedSubject(data.data.subject_id);
+      if (data.data.content_id) setSelectedContent(data.data.content_id);
+      if (data.data.topic_id) setSelectedTopic(data.data.topic_id);
+
+      toast({
+        title: 'Classificação concluída!',
+        description: `Questão classificada com ${Math.round((data.data.confidence || 0.8) * 100)}% de confiança`,
+      });
+
+    } catch (error) {
+      console.error('Error classifying question:', error);
+      toast({
+        title: 'Erro na classificação',
+        description: error instanceof Error ? error.message : 'Erro ao classificar questão',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsClassifying(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -217,10 +200,8 @@ const AddQuestion = () => {
       <div className="space-y-8">
         <div>
           <h2 className="text-3xl font-bold text-foreground mb-2">Adicionar Questão</h2>
-          <p className="text-muted-foreground">Cadastre uma nova questão no banco de dados ou use IA para extrair de uma imagem</p>
+          <p className="text-muted-foreground">Cadastre uma nova questão - a IA classificará automaticamente a matéria, conteúdo e tópico</p>
         </div>
-
-        <QuestionImageUpload onDataExtracted={handleExtractedData} />
 
         <form onSubmit={handleSubmit}>
           <Card>
@@ -236,6 +217,50 @@ const AddQuestion = () => {
                   placeholder="Digite o enunciado completo da questão. Use a barra de ferramentas para formatar o texto..."
                   minHeight="250px"
                 />
+              </div>
+
+              <div className="space-y-4">
+                <Button
+                  type="button"
+                  onClick={handleAutoClassify}
+                  disabled={!statement.trim() || isClassifying}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isClassifying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Classificando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Classificar automaticamente com IA
+                    </>
+                  )}
+                </Button>
+
+                {classificationSuggestion && (
+                  <Alert className="border-blue-500/50 bg-blue-500/10">
+                    <Sparkles className="h-4 w-4 text-blue-500" />
+                    <AlertDescription>
+                      <div className="space-y-1">
+                        <p className="font-medium">Classificação sugerida:</p>
+                        <ul className="text-xs space-y-1 mt-2">
+                          <li>• <strong>Matéria:</strong> {subjects.find(s => s.id === classificationSuggestion.subject_id)?.name || classificationSuggestion.subject_id}</li>
+                          <li>• <strong>Conteúdo:</strong> {contents.find(c => c.id === classificationSuggestion.content_id)?.name || classificationSuggestion.content_id}</li>
+                          <li>• <strong>Tópico:</strong> {topics.find(t => t.id === classificationSuggestion.topic_id)?.name || classificationSuggestion.topic_id}</li>
+                          <li>• <strong>Confiança:</strong> {Math.round((classificationSuggestion.confidence || 0) * 100)}%</li>
+                        </ul>
+                        {classificationSuggestion.reasoning && (
+                          <p className="text-xs mt-2 text-muted-foreground italic">
+                            {classificationSuggestion.reasoning}
+                          </p>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
 
               <div className="grid gap-6 md:grid-cols-3">
