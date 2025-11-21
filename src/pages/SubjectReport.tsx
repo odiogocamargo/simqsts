@@ -4,8 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, FileText, Tag } from "lucide-react";
+import { BookOpen, FileText, Tag, BarChart3 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 interface TopicData {
   id: string;
@@ -108,6 +111,24 @@ const SubjectReport = () => {
     acc + subject.contents.reduce((sum, content) => sum + content.topics.length, 0), 0) || 0;
   const totalQuestions = reportData?.reduce((acc, subject) => acc + subject.questionCount, 0) || 0;
 
+  // Preparar dados para o gráfico de matérias
+  const chartDataBySubject = reportData?.map(subject => ({
+    name: subject.name,
+    questoes: subject.questionCount
+  })).sort((a, b) => b.questoes - a.questoes) || [];
+
+  // Preparar lista de todos os tópicos com contagem
+  const allTopicsWithCount = reportData?.flatMap(subject => 
+    subject.contents.flatMap(content => 
+      content.topics.map(topic => ({
+        topicName: topic.name,
+        contentName: content.name,
+        subjectName: subject.name,
+        questionCount: topic.questionCount
+      }))
+    )
+  ).sort((a, b) => b.questionCount - a.questionCount) || [];
+
   if (isLoading) {
     return (
       <Layout>
@@ -176,73 +197,163 @@ const SubjectReport = () => {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Estrutura por Matéria</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Accordion type="multiple" className="w-full">
-              {reportData?.map((subject, idx) => (
-                <AccordionItem key={subject.id} value={`subject-${idx}`}>
-                  <AccordionTrigger className="hover:no-underline">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <BookOpen className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-lg">{subject.name}</span>
-                      <Badge variant="secondary">
-                        {subject.contents.length} conteúdos
-                      </Badge>
-                      <Badge variant="outline">
-                        {subject.contents.reduce((sum, c) => sum + c.topics.length, 0)} tópicos
-                      </Badge>
-                      <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
-                        {subject.questionCount} questões
-                      </Badge>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="pl-8 space-y-4 pt-4">
-                      {subject.contents.length === 0 ? (
-                        <p className="text-sm text-muted-foreground italic">
-                          Nenhum conteúdo cadastrado
-                        </p>
-                      ) : (
-                        subject.contents.map((content) => (
-                          <div key={content.id} className="border-l-2 border-primary/20 pl-4 space-y-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium text-foreground">{content.name}</span>
-                              <Badge variant="secondary" className="text-xs">
-                                {content.topics.length} tópicos
-                              </Badge>
-                              <Badge className="text-xs bg-primary/10 text-primary hover:bg-primary/20">
-                                {content.questionCount} questões
-                              </Badge>
-                            </div>
-                            {content.topics.length > 0 && (
-                              <div className="pl-6 space-y-1">
-                                {content.topics.map((topic) => (
-                                  <div key={topic.id} className="flex items-center gap-2 text-sm justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <Tag className="h-3 w-3 text-muted-foreground" />
-                                      <span className="text-muted-foreground">{topic.name}</span>
-                                    </div>
-                                    <Badge variant="outline" className="text-xs">
-                                      {topic.questionCount}
-                                    </Badge>
+        <Tabs defaultValue="hierarchy" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="hierarchy">Hierarquia</TabsTrigger>
+            <TabsTrigger value="chart">Gráfico</TabsTrigger>
+            <TabsTrigger value="topics">Por Tópicos</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="hierarchy">
+            <Card>
+              <CardHeader>
+                <CardTitle>Estrutura por Matéria</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="multiple" className="w-full">
+                  {reportData?.map((subject, idx) => (
+                    <AccordionItem key={subject.id} value={`subject-${idx}`}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <BookOpen className="h-5 w-5 text-primary" />
+                          <span className="font-semibold text-lg">{subject.name}</span>
+                          <Badge variant="secondary">
+                            {subject.contents.length} conteúdos
+                          </Badge>
+                          <Badge variant="outline">
+                            {subject.contents.reduce((sum, c) => sum + c.topics.length, 0)} tópicos
+                          </Badge>
+                          <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
+                            {subject.questionCount} questões
+                          </Badge>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="pl-8 space-y-4 pt-4">
+                          {subject.contents.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic">
+                              Nenhum conteúdo cadastrado
+                            </p>
+                          ) : (
+                            subject.contents.map((content) => (
+                              <div key={content.id} className="border-l-2 border-primary/20 pl-4 space-y-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <span className="font-medium text-foreground">{content.name}</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {content.topics.length} tópicos
+                                  </Badge>
+                                  <Badge className="text-xs bg-primary/10 text-primary hover:bg-primary/20">
+                                    {content.questionCount} questões
+                                  </Badge>
+                                </div>
+                                {content.topics.length > 0 && (
+                                  <div className="pl-6 space-y-1">
+                                    {content.topics.map((topic) => (
+                                      <div key={topic.id} className="flex items-center gap-2 text-sm justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <Tag className="h-3 w-3 text-muted-foreground" />
+                                          <span className="text-muted-foreground">{topic.name}</span>
+                                        </div>
+                                        <Badge variant="outline" className="text-xs">
+                                          {topic.questionCount}
+                                        </Badge>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
+                                )}
                               </div>
-                            )}
+                            ))
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="chart">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Distribuição de Questões por Matéria
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    questoes: {
+                      label: "Questões",
+                      color: "hsl(var(--primary))",
+                    },
+                  }}
+                  className="h-[500px] w-full"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartDataBySubject}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-45} 
+                        textAnchor="end" 
+                        height={120}
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis stroke="hsl(var(--muted-foreground))" />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar 
+                        dataKey="questoes" 
+                        fill="hsl(var(--primary))" 
+                        radius={[8, 8, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="topics">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5 text-primary" />
+                  Questões por Tópico
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {allTopicsWithCount.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Nenhuma questão cadastrada ainda
+                    </p>
+                  ) : (
+                    allTopicsWithCount.map((topic, idx) => (
+                      <div 
+                        key={`${topic.topicName}-${idx}`}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-accent/5 transition-colors"
+                      >
+                        <div className="flex-1 space-y-1">
+                          <div className="font-medium text-foreground">{topic.topicName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {topic.contentName} • {topic.subjectName}
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </CardContent>
-        </Card>
+                        </div>
+                        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 text-base px-3 py-1">
+                          {topic.questionCount} {topic.questionCount === 1 ? 'questão' : 'questões'}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
