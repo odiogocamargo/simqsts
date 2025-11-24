@@ -59,7 +59,7 @@ const Landing = () => {
             </h1>
             <div className="flex gap-3">
               <Button 
-                onClick={() => navigate("/auth")} 
+                onClick={() => navigate("/auth?mode=login")} 
                 variant="outline"
                 size="lg" 
                 className="gap-2"
@@ -67,7 +67,7 @@ const Landing = () => {
                 Já sou aluno
               </Button>
               <Button 
-                onClick={() => navigate("/auth")} 
+                onClick={() => navigate("/auth?mode=signup")} 
                 size="lg" 
                 className="gap-2"
               >
@@ -166,7 +166,7 @@ const Landing = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
                   size="lg" 
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/auth?mode=login")}
                   variant="outline"
                   className="gap-2 text-xl px-10 py-8 h-auto font-bold"
                 >
@@ -174,7 +174,7 @@ const Landing = () => {
                 </Button>
                 <Button 
                   size="lg" 
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/auth?mode=signup")}
                   className="gap-2 group text-xl px-10 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-bold animate-pulse hover:animate-none"
                 >
                   Quero mudar isso agora — R$ 37,90/mês
@@ -333,7 +333,7 @@ const Landing = () => {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button 
                     size="lg" 
-                    onClick={() => navigate("/auth")}
+                    onClick={() => navigate("/auth?mode=login")}
                     variant="outline"
                     className="gap-2 text-lg px-10 py-6 h-auto font-bold"
                   >
@@ -341,7 +341,7 @@ const Landing = () => {
                   </Button>
                   <Button 
                     size="lg" 
-                    onClick={() => navigate("/auth")}
+                    onClick={() => navigate("/auth?mode=signup")}
                     className="gap-2 group text-lg px-10 py-6 h-auto shadow-xl hover:shadow-2xl transition-all font-black"
                   >
                     Começar Agora — R$ 37,90/mês
@@ -465,7 +465,7 @@ const Landing = () => {
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button 
                       size="lg" 
-                      onClick={() => navigate("/auth")}
+                      onClick={() => navigate("/auth?mode=login")}
                       variant="outline"
                       className="gap-2 text-xl px-10 py-7 h-auto font-bold"
                     >
@@ -473,7 +473,7 @@ const Landing = () => {
                     </Button>
                     <Button 
                       size="lg" 
-                      onClick={() => navigate("/auth")}
+                      onClick={() => navigate("/auth?mode=signup")}
                       className="gap-3 group text-2xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-black"
                     >
                       Quero evoluir agora — R$ 37,90/mês

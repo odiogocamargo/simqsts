@@ -14,6 +14,7 @@ import AddQuestion from "./pages/AddQuestion";
 import StudentPractice from "./pages/StudentPractice";
 import StudentQuestions from "./pages/StudentQuestions";
 import SubjectReport from "./pages/SubjectReport";
+import Users from "./pages/Users";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Questions /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/add-question" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><AddQuestion /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/subject-report" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><SubjectReport /></RoleBasedRoute></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Users /></RoleBasedRoute></ProtectedRoute>} />
             {/* Rotas de Aluno */}
             <Route path="/student" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentPractice /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/student/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentQuestions /></RoleBasedRoute></ProtectedRoute>} />
