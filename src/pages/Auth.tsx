@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ const whatsappSchema = z.string().regex(/^\d{10,11}$/, 'WhatsApp deve conter 10 
 const enderecoSchema = z.string().min(5, 'Endereço deve ter no mínimo 5 caracteres');
 
 export default function Auth() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -24,8 +25,19 @@ export default function Auth() {
   const [whatsapp, setWhatsapp] = useState('');
   const [endereco, setEndereco] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+
+  // Detectar modo da URL
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'signup') {
+      setActiveTab('signup');
+    } else if (mode === 'login') {
+      setActiveTab('login');
+    }
+  }, [searchParams]);
 
   // Redirect if already logged in
   if (user) {
@@ -160,7 +172,7 @@ export default function Auth() {
           <CardDescription>Faça login ou crie uma conta para continuar</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Criar Conta</TabsTrigger>
