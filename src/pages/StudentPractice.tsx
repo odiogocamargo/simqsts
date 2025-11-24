@@ -14,7 +14,7 @@ import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek } from "d
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -286,196 +286,176 @@ const StudentPractice = () => {
           </Card>
         )}
 
-        <Tabs defaultValue="evolution" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="evolution">Evolução</TabsTrigger>
-            <TabsTrigger value="subjects">Por Matéria</TabsTrigger>
-            <TabsTrigger value="contents">Por Conteúdo</TabsTrigger>
-            <TabsTrigger value="topics">Por Tópico</TabsTrigger>
-            <TabsTrigger value="exams">Por Vestibular</TabsTrigger>
-          </TabsList>
+        <Card>
+          <CardHeader>
+            <CardTitle>Evolução Diária do Desempenho</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dailyEvolution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={dailyEvolution}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="accuracy" stroke="hsl(var(--primary))" name="Taxa de Acerto (%)" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">Sem dados suficientes para gráfico de evolução</p>
+            )}
+          </CardContent>
+        </Card>
 
-          <TabsContent value="evolution" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Evolução Diária do Desempenho</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {dailyEvolution.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={dailyEvolution}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="accuracy" stroke="hsl(var(--primary))" name="Taxa de Acerto (%)" strokeWidth={2} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">Sem dados suficientes para gráfico de evolução</p>
-                )}
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader><CardTitle>Histórico dos Últimos Blocos Resolvidos</CardTitle></CardHeader>
+          <CardContent>
+            {studySessions.length === 0 ? (
+              <p className="text-muted-foreground">Nenhuma sessão registrada no período selecionado.</p>
+            ) : (
+              <div className="space-y-3">
+                {studySessions.map((session) => (
+                  <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div className="flex-1">
+                      <p className="font-medium">{format(new Date(session.started_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                      <p className="text-sm text-muted-foreground">{session.questions_answered} questões • {session.correct_answers} acertos • {session.duration_minutes || 0} min</p>
+                    </div>
+                    <Badge variant={session.questions_answered > 0 && (session.correct_answers / session.questions_answered) >= 0.7 ? "default" : "secondary"}>
+                      {session.questions_answered > 0 ? ((session.correct_answers / session.questions_answered) * 100).toFixed(0) : 0}%
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader><CardTitle>Histórico dos Últimos Blocos Resolvidos</CardTitle></CardHeader>
-              <CardContent>
-                {studySessions.length === 0 ? (
-                  <p className="text-muted-foreground">Nenhuma sessão registrada no período selecionado.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {studySessions.map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                        <div className="flex-1">
-                          <p className="font-medium">{format(new Date(session.started_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-                          <p className="text-sm text-muted-foreground">{session.questions_answered} questões • {session.correct_answers} acertos • {session.duration_minutes || 0} min</p>
-                        </div>
-                        <Badge variant={session.questions_answered > 0 && (session.correct_answers / session.questions_answered) >= 0.7 ? "default" : "secondary"}>
-                          {session.questions_answered > 0 ? ((session.correct_answers / session.questions_answered) * 100).toFixed(0) : 0}%
+        <Card>
+          <CardHeader>
+            <CardTitle>Desempenho por Matéria</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {performanceBySubject.length > 0 ? (
+              <div className="space-y-4">
+                {performanceBySubject.map((subject) => (
+                  <div key={subject.name} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{subject.name}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-muted-foreground">{subject.correct}/{subject.total} acertos</span>
+                        <Badge variant={subject.accuracy >= 70 ? "default" : subject.accuracy >= 50 ? "secondary" : "destructive"}>
+                          {subject.accuracy}%
                         </Badge>
                       </div>
-                    ))}
+                    </div>
+                    <Progress value={subject.accuracy} className="h-2" />
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
+            )}
+          </CardContent>
+        </Card>
 
-          <TabsContent value="subjects">
-            <Card>
-              <CardHeader>
-                <CardTitle>Desempenho por Matéria</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {performanceBySubject.length > 0 ? (
-                  <div className="space-y-4">
-                    {performanceBySubject.map((subject) => (
-                      <div key={subject.name} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{subject.name}</span>
-                          <div className="flex items-center gap-4">
-                            <span className="text-sm text-muted-foreground">{subject.correct}/{subject.total} acertos</span>
-                            <Badge variant={subject.accuracy >= 70 ? "default" : subject.accuracy >= 50 ? "secondary" : "destructive"}>
-                              {subject.accuracy}%
-                            </Badge>
-                          </div>
-                        </div>
-                        <Progress value={subject.accuracy} className="h-2" />
+        <Card>
+          <CardHeader>
+            <CardTitle>Mapa de Calor - Desempenho por Conteúdo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {performanceByContent.length > 0 ? (
+              <div className="space-y-3">
+                {performanceByContent.map((content) => (
+                  <div 
+                    key={content.name} 
+                    className={cn(
+                      "p-4 rounded-lg border",
+                      content.accuracy >= 70 && "bg-green-500/10 border-green-500/30",
+                      content.accuracy >= 50 && content.accuracy < 70 && "bg-yellow-500/10 border-yellow-500/30",
+                      content.accuracy < 50 && "bg-red-500/10 border-red-500/30"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium">{content.name}</p>
+                        <p className="text-sm text-muted-foreground">{content.subject}</p>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="contents">
-            <Card>
-              <CardHeader>
-                <CardTitle>Mapa de Calor - Desempenho por Conteúdo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {performanceByContent.length > 0 ? (
-                  <div className="space-y-3">
-                    {performanceByContent.map((content) => (
-                      <div 
-                        key={content.name} 
-                        className={cn(
-                          "p-4 rounded-lg border",
-                          content.accuracy >= 70 && "bg-green-500/10 border-green-500/30",
-                          content.accuracy >= 50 && content.accuracy < 70 && "bg-yellow-500/10 border-yellow-500/30",
-                          content.accuracy < 50 && "bg-red-500/10 border-red-500/30"
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium">{content.name}</p>
-                            <p className="text-sm text-muted-foreground">{content.subject}</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground">{content.correct}/{content.total}</span>
-                            <Badge variant={content.accuracy >= 70 ? "default" : content.accuracy >= 50 ? "secondary" : "destructive"}>
-                              {content.accuracy}%
-                            </Badge>
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">{content.correct}/{content.total}</span>
+                        <Badge variant={content.accuracy >= 70 ? "default" : content.accuracy >= 50 ? "secondary" : "destructive"}>
+                          {content.accuracy}%
+                        </Badge>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
+            )}
+          </CardContent>
+        </Card>
 
-          <TabsContent value="topics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Desempenho por Tópico Específico</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {performanceByTopic.length > 0 ? (
-                  <div className="space-y-3">
-                    {performanceByTopic.map((topic) => (
-                      <div 
-                        key={topic.id}
-                        className={cn(
-                          "p-4 rounded-lg border",
-                          topic.accuracy >= 70 && "bg-green-500/10 border-green-500/30",
-                          topic.accuracy >= 50 && topic.accuracy < 70 && "bg-yellow-500/10 border-yellow-500/30",
-                          topic.accuracy < 50 && "bg-red-500/10 border-red-500/30"
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium">{topic.name}</p>
-                            <p className="text-sm text-muted-foreground">{topic.content}</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground">{topic.correct}/{topic.total}</span>
-                            <Badge variant={topic.accuracy >= 70 ? "default" : topic.accuracy >= 50 ? "secondary" : "destructive"}>
-                              {topic.accuracy}%
-                            </Badge>
-                          </div>
-                        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Desempenho por Tópico Específico</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {performanceByTopic.length > 0 ? (
+              <div className="space-y-3">
+                {performanceByTopic.map((topic) => (
+                  <div 
+                    key={topic.id}
+                    className={cn(
+                      "p-4 rounded-lg border",
+                      topic.accuracy >= 70 && "bg-green-500/10 border-green-500/30",
+                      topic.accuracy >= 50 && topic.accuracy < 70 && "bg-yellow-500/10 border-yellow-500/30",
+                      topic.accuracy < 50 && "bg-red-500/10 border-red-500/30"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium">{topic.name}</p>
+                        <p className="text-sm text-muted-foreground">{topic.content}</p>
                       </div>
-                    ))}
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">{topic.correct}/{topic.total}</span>
+                        <Badge variant={topic.accuracy >= 70 ? "default" : topic.accuracy >= 50 ? "secondary" : "destructive"}>
+                          {topic.accuracy}%
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
+            )}
+          </CardContent>
+        </Card>
 
-          <TabsContent value="exams">
-            <Card>
-              <CardHeader>
-                <CardTitle>Desempenho por Vestibular</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {performanceByExam.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={performanceByExam}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="accuracy" fill="hsl(var(--primary))" name="Taxa de Acerto (%)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <Card>
+          <CardHeader>
+            <CardTitle>Desempenho por Vestibular</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {performanceByExam.length > 0 ? (
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={performanceByExam}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="accuracy" fill="hsl(var(--primary))" name="Taxa de Acerto (%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
