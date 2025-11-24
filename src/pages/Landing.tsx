@@ -127,7 +127,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* DOBRA 03 — PROPOSTA CLARA COM PRICING CARD */}
+      {/* DOBRA 03 — PROPOSTA CLARA */}
       <section className="py-20 container mx-auto px-4">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-4xl md:text-6xl font-black text-foreground mb-12 text-center leading-tight">
@@ -135,85 +135,51 @@ const Landing = () => {
             <span className="text-primary">o que você não tem hoje</span>
           </h2>
           
-          {/* PRICING CARD - Estilo Aprovado */}
-          <div className="max-w-xl mx-auto">
-            <Card className="border-2 border-primary shadow-2xl bg-card overflow-hidden">
-              <CardContent className="p-8 md:p-10 space-y-8">
-                {/* Header com Preço */}
-                <div className="text-center space-y-4">
-                  <div className="inline-block px-6 py-2 bg-primary/10 rounded-full">
-                    <p className="text-sm font-black text-primary uppercase tracking-wider">Aprovado</p>
+          {/* Grid de 4 Features principais */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-12">
+            {[
+              { icon: Database, label: "Banco De Questões" },
+              { icon: BarChart3, label: "Minhas Estatísticas" },
+              { icon: Target, label: "Cronograma de estudos" },
+              { icon: Zap, label: "Simulados" }
+            ].map((item, index) => (
+              <Card 
+                key={index} 
+                className="border-2 border-primary/30 bg-background hover:border-primary hover:shadow-lg transition-all"
+              >
+                <CardContent className="p-6 flex flex-col items-center gap-3 text-center">
+                  <div className="bg-primary/10 p-3 rounded-xl">
+                    <item.icon className="h-8 w-8 text-primary" />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <p className="text-7xl md:text-8xl font-black text-primary leading-none">
-                      R$37,90
-                    </p>
-                    <p className="text-lg text-muted-foreground font-medium">/mês</p>
-                  </div>
-
-                  <Button 
-                    size="lg" 
-                    onClick={() => navigate("/auth")}
-                    className="w-full gap-2 text-xl py-6 font-black bg-gradient-to-r from-[hsl(24,100%,50%)] to-[hsl(24,100%,45%)] hover:from-[hsl(24,100%,55%)] hover:to-[hsl(24,100%,50%)] text-white shadow-lg"
-                  >
-                    EU QUERO
-                  </Button>
-                </div>
-
-                {/* Features Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { icon: Database, label: "Banco De Questões" },
-                    { icon: BarChart3, label: "Minhas Estatísticas" },
-                    { icon: Target, label: "Cronograma de estudos" },
-                    { icon: Zap, label: "Simulados" }
-                  ].map((item, index) => (
-                    <div 
-                      key={index} 
-                      className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-primary/30 bg-background hover:border-primary transition-all"
-                    >
-                      <item.icon className="h-8 w-8 text-primary" />
-                      <p className="text-xs text-center font-semibold text-foreground leading-tight">
-                        {item.label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Benefícios Lista */}
-                <div className="space-y-3 pt-4">
-                  {[
-                    { icon: Database, text: "Banco de questões (+200 mil)" },
-                    { icon: Zap, text: "Questões inéditas (+15 mil)" },
-                    { icon: CheckCircle, text: "Provas atualizadas" },
-                    { icon: Target, text: "Resolução de questões em texto e vídeo (+3 mil)" },
-                    { icon: Filter, text: "Lista de exercícios" },
-                    { icon: TrendingUp, text: "Pontos fortes e a melhorar" },
-                    { icon: CheckCircle, text: "Questões que mais caem por instituição" },
-                    { icon: Database, text: "Download e impressão de provas" },
-                    { icon: CheckCircle, text: "Correção via cartão-resposta por foto" }
-                  ].map((benefit, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <benefit.icon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                      <p className="text-sm text-foreground font-medium">{benefit.text}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA Final Verde */}
-                <Button 
-                  size="lg" 
-                  onClick={() => navigate("/auth")}
-                  className="w-full gap-2 text-xl py-6 font-black bg-[hsl(142,76%,36%)] hover:bg-[hsl(142,76%,40%)] text-white shadow-lg"
-                >
-                  COMEÇAR AGORA
-                </Button>
-              </CardContent>
-            </Card>
+                  <p className="text-sm font-semibold text-foreground leading-tight">
+                    {item.label}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
-          {/* Features Grid abaixo do card */}
+          {/* Lista de Benefícios com ícones */}
+          <div className="space-y-3 max-w-2xl mx-auto mb-12">
+            {[
+              { icon: Database, text: "Banco de questões (+200 mil)" },
+              { icon: Zap, text: "Questões inéditas (+15 mil)" },
+              { icon: CheckCircle, text: "Provas atualizadas" },
+              { icon: Target, text: "Resolução de questões em texto e vídeo (+3 mil)" },
+              { icon: Filter, text: "Lista de exercícios" },
+              { icon: TrendingUp, text: "Pontos fortes e a melhorar" },
+              { icon: CheckCircle, text: "Questões que mais caem por instituição" },
+              { icon: Database, text: "Download e impressão de provas" },
+              { icon: CheckCircle, text: "Correção via cartão-resposta por foto" }
+            ].map((benefit, index) => (
+              <div key={index} className="flex items-start gap-3 p-3">
+                <benefit.icon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <p className="text-base text-foreground font-medium">{benefit.text}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Grid de 6 Cards com descrições detalhadas */}
           <div className="grid md:grid-cols-2 gap-6 mt-16">
             {[
               { icon: Database, text: "Mais de 150.000 questões reais dos principais vestibulares" },
@@ -223,15 +189,23 @@ const Landing = () => {
               { icon: LineChart, text: "Evolução acelerada baseada em dados — não em esperança" },
               { icon: Clock, text: "Economia de tempo com estudo direcionado" }
             ].map((feature, index) => (
-              <Card key={index} className="border-2 border-primary/30 bg-primary/5 hover:border-primary hover:shadow-lg transition-all">
+              <Card key={index} className="border-2 border-border bg-muted/30 hover:border-primary/50 hover:shadow-lg transition-all">
                 <CardContent className="p-6 flex gap-4 items-start">
-                  <div className="bg-primary/20 p-3 rounded-xl shrink-0">
+                  <div className="bg-primary/10 p-3 rounded-xl shrink-0">
                     <feature.icon className="h-6 w-6 text-primary" />
                   </div>
-                  <p className="text-lg text-foreground font-semibold">{feature.text}</p>
+                  <p className="text-base text-foreground font-semibold leading-relaxed">{feature.text}</p>
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* Preço simples */}
+          <div className="mt-12 text-center">
+            <div className="inline-block bg-card border-2 border-primary rounded-2xl p-6 shadow-xl">
+              <p className="text-sm text-muted-foreground mb-2">Tudo isso por apenas</p>
+              <p className="text-5xl font-black text-primary">R$ 37,90/mês</p>
+            </div>
           </div>
         </div>
       </section>
