@@ -57,10 +57,24 @@ const Landing = () => {
             <h1 className="text-2xl font-bold text-foreground">
               SIM Questões
             </h1>
-            <Button onClick={() => navigate("/auth")} size="lg" className="gap-2">
-              Começar Agora
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => navigate("/auth")} 
+                variant="outline"
+                size="lg" 
+                className="gap-2"
+              >
+                Já sou aluno
+              </Button>
+              <Button 
+                onClick={() => navigate("/auth")} 
+                size="lg" 
+                className="gap-2"
+              >
+                Cadastro
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
           </nav>
         </div>
       </header>
@@ -149,14 +163,24 @@ const Landing = () => {
             </div>
 
             <div className="pt-8">
-              <Button 
-                size="lg" 
-                onClick={() => navigate("/auth")}
-                className="gap-2 group text-xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-bold animate-pulse hover:animate-none"
-              >
-                Quero mudar isso agora — R$ 37,90/mês
-                <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate("/auth")}
+                  variant="outline"
+                  className="gap-2 text-xl px-10 py-8 h-auto font-bold"
+                >
+                  Já sou aluno
+                </Button>
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate("/auth")}
+                  className="gap-2 group text-xl px-10 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-bold animate-pulse hover:animate-none"
+                >
+                  Quero mudar isso agora — R$ 37,90/mês
+                  <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -304,16 +328,26 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Botão CTA */}
+              {/* Botões CTA */}
               <div className="text-center pt-4">
-                <Button 
-                  size="lg" 
-                  onClick={() => navigate("/auth")}
-                  className="gap-2 group text-xl px-12 py-7 h-auto shadow-xl hover:shadow-2xl transition-all font-black w-full md:w-auto"
-                >
-                  Começar Agora — R$ 37,90/mês
-                  <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button 
+                    size="lg" 
+                    onClick={() => navigate("/auth")}
+                    variant="outline"
+                    className="gap-2 text-lg px-10 py-6 h-auto font-bold"
+                  >
+                    Já sou aluno
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    onClick={() => navigate("/auth")}
+                    className="gap-2 group text-lg px-10 py-6 h-auto shadow-xl hover:shadow-2xl transition-all font-black"
+                  >
+                    Começar Agora — R$ 37,90/mês
+                    <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
                 <p className="text-sm text-muted-foreground mt-4">
                   ✨ Acesso imediato • Cancele quando quiser
                 </p>
@@ -428,14 +462,24 @@ const Landing = () => {
                 </p>
 
                 <div className="pt-6">
-                  <Button 
-                    size="lg" 
-                    onClick={() => navigate("/auth")}
-                    className="gap-3 group text-2xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-black"
-                  >
-                    Quero evoluir agora — R$ 37,90/mês
-                    <ArrowRight className="h-7 w-7 group-hover:translate-x-1 transition-transform" />
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button 
+                      size="lg" 
+                      onClick={() => navigate("/auth")}
+                      variant="outline"
+                      className="gap-2 text-xl px-10 py-7 h-auto font-bold"
+                    >
+                      Já sou aluno
+                    </Button>
+                    <Button 
+                      size="lg" 
+                      onClick={() => navigate("/auth")}
+                      className="gap-3 group text-2xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-black"
+                    >
+                      Quero evoluir agora — R$ 37,90/mês
+                      <ArrowRight className="h-7 w-7 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground pt-4">
