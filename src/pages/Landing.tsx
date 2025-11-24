@@ -11,12 +11,42 @@ import {
   BarChart3,
   Filter,
   LineChart,
-  Clock
+  Clock,
+  AlertCircle,
+  Users
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 
 const Landing = () => {
   const navigate = useNavigate();
+  
+  // Countdown timer - 24 horas a partir de agora
+  const [timeLeft, setTimeLeft] = useState({
+    hours: 24,
+    minutes: 0,
+    seconds: 0
+  });
+
+  // Vagas restantes (simulado)
+  const [spotsLeft] = useState(47);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev.seconds > 0) {
+          return { ...prev, seconds: prev.seconds - 1 };
+        } else if (prev.minutes > 0) {
+          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
+        } else if (prev.hours > 0) {
+          return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,11 +106,53 @@ const Landing = () => {
               </div>
             </div>
 
+            {/* Urgência Banner */}
+            <div className="bg-destructive/10 border-2 border-destructive/30 rounded-xl p-6 max-w-2xl mx-auto">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <AlertCircle className="h-5 w-5 text-destructive animate-pulse" />
+                <p className="text-sm font-bold text-destructive uppercase tracking-wider">Oferta por tempo limitado</p>
+              </div>
+              
+              <div className="flex justify-center gap-4 mb-4">
+                <div className="text-center">
+                  <div className="bg-card border-2 border-destructive rounded-lg px-4 py-2 min-w-[70px]">
+                    <div className="text-3xl font-black text-foreground">{String(timeLeft.hours).padStart(2, '0')}</div>
+                    <div className="text-xs text-muted-foreground font-semibold">HORAS</div>
+                  </div>
+                </div>
+                <div className="text-center flex items-center">
+                  <span className="text-3xl font-black text-foreground">:</span>
+                </div>
+                <div className="text-center">
+                  <div className="bg-card border-2 border-destructive rounded-lg px-4 py-2 min-w-[70px]">
+                    <div className="text-3xl font-black text-foreground">{String(timeLeft.minutes).padStart(2, '0')}</div>
+                    <div className="text-xs text-muted-foreground font-semibold">MINUTOS</div>
+                  </div>
+                </div>
+                <div className="text-center flex items-center">
+                  <span className="text-3xl font-black text-foreground">:</span>
+                </div>
+                <div className="text-center">
+                  <div className="bg-card border-2 border-destructive rounded-lg px-4 py-2 min-w-[70px]">
+                    <div className="text-3xl font-black text-foreground">{String(timeLeft.seconds).padStart(2, '0')}</div>
+                    <div className="text-xs text-muted-foreground font-semibold">SEGUNDOS</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2">
+                <Users className="h-4 w-4 text-destructive" />
+                <p className="text-sm text-foreground">
+                  Apenas <span className="font-black text-destructive text-lg">{spotsLeft} vagas</span> restantes nesta oferta
+                </p>
+              </div>
+            </div>
+
             <div className="pt-8">
               <Button 
                 size="lg" 
                 onClick={() => navigate("/auth")}
-                className="gap-2 group text-xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-bold"
+                className="gap-2 group text-xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-bold animate-pulse hover:animate-none"
               >
                 Quero mudar isso agora — R$ 37,90/mês
                 <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
@@ -188,6 +260,48 @@ const Landing = () => {
                     <p className="text-sm text-foreground font-medium leading-relaxed">{feature.text}</p>
                   </div>
                 ))}
+              </div>
+
+              {/* Urgência Contador */}
+              <div className="bg-destructive/10 border-2 border-destructive/30 rounded-xl p-6">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <AlertCircle className="h-5 w-5 text-destructive animate-pulse" />
+                  <p className="text-sm font-bold text-destructive uppercase tracking-wider">Garanta sua vaga agora</p>
+                </div>
+                
+                <div className="flex justify-center gap-3 mb-4">
+                  <div className="text-center">
+                    <div className="bg-card border-2 border-destructive rounded-lg px-3 py-2 min-w-[60px]">
+                      <div className="text-2xl font-black text-foreground">{String(timeLeft.hours).padStart(2, '0')}</div>
+                      <div className="text-[10px] text-muted-foreground font-semibold">HORAS</div>
+                    </div>
+                  </div>
+                  <div className="text-center flex items-center">
+                    <span className="text-2xl font-black text-foreground">:</span>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-card border-2 border-destructive rounded-lg px-3 py-2 min-w-[60px]">
+                      <div className="text-2xl font-black text-foreground">{String(timeLeft.minutes).padStart(2, '0')}</div>
+                      <div className="text-[10px] text-muted-foreground font-semibold">MINUTOS</div>
+                    </div>
+                  </div>
+                  <div className="text-center flex items-center">
+                    <span className="text-2xl font-black text-foreground">:</span>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-card border-2 border-destructive rounded-lg px-3 py-2 min-w-[60px]">
+                      <div className="text-2xl font-black text-foreground">{String(timeLeft.seconds).padStart(2, '0')}</div>
+                      <div className="text-[10px] text-muted-foreground font-semibold">SEGUNDOS</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Users className="h-4 w-4 text-destructive" />
+                  <p className="text-sm text-foreground">
+                    <span className="font-black text-destructive">{spotsLeft} vagas</span> restantes
+                  </p>
+                </div>
               </div>
 
               {/* Botão CTA */}
