@@ -136,7 +136,7 @@ const Landing = () => {
           </h2>
           
           {/* Grid de 4 Features principais */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-16">
             {[
               { icon: Database, label: "Banco De Questões" },
               { icon: BarChart3, label: "Minhas Estatísticas" },
@@ -159,28 +159,8 @@ const Landing = () => {
             ))}
           </div>
 
-          {/* Lista de Benefícios com ícones */}
-          <div className="space-y-3 max-w-2xl mx-auto mb-12">
-            {[
-              { icon: Database, text: "Banco de questões (+200 mil)" },
-              { icon: Zap, text: "Questões inéditas (+15 mil)" },
-              { icon: CheckCircle, text: "Provas atualizadas" },
-              { icon: Target, text: "Resolução de questões em texto e vídeo (+3 mil)" },
-              { icon: Filter, text: "Lista de exercícios" },
-              { icon: TrendingUp, text: "Pontos fortes e a melhorar" },
-              { icon: CheckCircle, text: "Questões que mais caem por instituição" },
-              { icon: Database, text: "Download e impressão de provas" },
-              { icon: CheckCircle, text: "Correção via cartão-resposta por foto" }
-            ].map((benefit, index) => (
-              <div key={index} className="flex items-start gap-3 p-3">
-                <benefit.icon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <p className="text-base text-foreground font-medium">{benefit.text}</p>
-              </div>
-            ))}
-          </div>
-
           {/* Grid de 6 Cards com descrições detalhadas */}
-          <div className="grid md:grid-cols-2 gap-6 mt-16">
+          <div className="grid md:grid-cols-2 gap-6">
             {[
               { icon: Database, text: "Mais de 150.000 questões reais dos principais vestibulares" },
               { icon: BarChart3, text: "Microdados completos para você analisar cada erro" },
