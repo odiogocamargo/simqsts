@@ -1,6 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Target, Trophy, Award, CheckCircle, ArrowRight, TrendingUp, GraduationCap } from "lucide-react";
+import { 
+  ArrowRight, 
+  CheckCircle, 
+  XCircle, 
+  TrendingUp, 
+  Target, 
+  Zap,
+  Database,
+  BarChart3,
+  Filter,
+  LineChart,
+  Clock
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const Landing = () => {
@@ -12,14 +24,9 @@ const Landing = () => {
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/95">
         <div className="container mx-auto px-4 py-4">
           <nav className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="bg-gradient-to-br from-primary to-primary/70 p-2 rounded-lg">
-                <GraduationCap className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                SIM Questões
-              </h1>
-            </div>
+            <h1 className="text-2xl font-bold text-foreground">
+              SIM Questões
+            </h1>
             <Button onClick={() => navigate("/auth")} size="lg" className="gap-2">
               Começar Agora
               <ArrowRight className="h-4 w-4" />
@@ -28,241 +35,269 @@ const Landing = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      {/* DOBRA 01 — HERO IMEDIATO */}
+      <section className="container mx-auto px-4 py-20 md:py-32">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center space-y-6 animate-fade-in">
-            <div className="inline-block">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20">
-                <Trophy className="h-4 w-4" />
-                Sua aprovação começa aqui
+          <div className="text-center space-y-8 animate-fade-in">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-foreground leading-[1.1]">
+              Você está estudando{" "}
+              <span className="relative inline-block">
+                <span className="text-destructive">errado</span>
+                <svg className="absolute -bottom-2 left-0 w-full" height="12" viewBox="0 0 200 12" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 8 Q50 4, 100 8 T200 8" stroke="hsl(var(--destructive))" strokeWidth="3" fill="none" strokeLinecap="round"/>
+                </svg>
               </span>
-            </div>
-            
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-              Domine os vestibulares com
-              <span className="block mt-2 bg-gradient-to-r from-primary via-primary to-secondary bg-clip-text text-transparent">
-                prática inteligente
-              </span>
+              {" "}— e isso está custando a sua aprovação.
             </h1>
             
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Treine com questões reais do ENEM e PAES UEMA, acompanhe seu desempenho e conquiste sua vaga nas principais universidades do país
+            <p className="text-2xl md:text-3xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-medium">
+              Se você continuar repetindo o mesmo método, vai repetir o mesmo resultado.
+              <span className="block mt-3 text-foreground font-bold">
+                A diferença é que este ano as vagas estarão ainda mais disputadas.
+              </span>
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
+            {/* Pricing Box */}
+            <div className="bg-card border-2 border-primary rounded-2xl p-8 max-w-2xl mx-auto mt-12 shadow-lg">
+              <div className="grid md:grid-cols-2 gap-6 items-center">
+                <div className="text-left space-y-2">
+                  <p className="text-sm text-muted-foreground uppercase tracking-wide font-semibold">A ferramenta certa custa</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-black text-primary">R$ 37,90</span>
+                    <span className="text-xl text-muted-foreground">/mês</span>
+                  </div>
+                </div>
+                <div className="text-left space-y-2">
+                  <p className="text-sm text-destructive uppercase tracking-wide font-semibold">O preço de continuar errado</p>
+                  <div className="text-3xl font-black text-destructive">
+                    Mais um ano perdido
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8">
               <Button 
                 size="lg" 
                 onClick={() => navigate("/auth")}
-                className="gap-2 group text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all"
+                className="gap-2 group text-xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-bold"
               >
-                Começar a Praticar Grátis
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                Quero mudar isso agora — R$ 37,90/mês
+                <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 md:gap-12 pt-12 max-w-3xl mx-auto">
-              <div className="text-center space-y-2">
-                <div className="text-3xl md:text-4xl font-bold text-primary">12</div>
-                <div className="text-sm text-muted-foreground">Matérias</div>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="text-3xl md:text-4xl font-bold text-primary">73</div>
-                <div className="text-sm text-muted-foreground">Conteúdos</div>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="text-3xl md:text-4xl font-bold text-primary">523</div>
-                <div className="text-sm text-muted-foreground">Tópicos</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Por que escolher o SIM Questões?
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Tudo que você precisa para sua preparação em um só lugar
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg">
-              <CardContent className="p-8 space-y-4">
-                <div className="bg-gradient-to-br from-primary to-primary/70 w-14 h-14 rounded-2xl flex items-center justify-center">
-                  <Target className="h-7 w-7 text-primary-foreground" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground">Estudo Direcionado</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Foque nas matérias e conteúdos que você mais precisa. Filtre por dificuldade, ano e tópico específico.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg">
-              <CardContent className="p-8 space-y-4">
-                <div className="bg-gradient-to-br from-secondary to-secondary/70 w-14 h-14 rounded-2xl flex items-center justify-center">
-                  <TrendingUp className="h-7 w-7 text-secondary-foreground" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground">Acompanhe sua Evolução</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Veja seu desempenho em tempo real, identifique pontos fracos e celebre suas conquistas.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg">
-              <CardContent className="p-8 space-y-4">
-                <div className="bg-gradient-to-br from-accent to-accent/70 w-14 h-14 rounded-2xl flex items-center justify-center">
-                  <BookOpen className="h-7 w-7 text-accent-foreground" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground">Questões Reais</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Pratique com questões dos principais vestibulares organizadas por matéria e conteúdo programático.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works */}
-      <section className="py-20 container mx-auto px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Como funciona?
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Simples, rápido e eficiente. Comece a estudar em 3 passos
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center space-y-4">
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto border-4 border-primary/20">
-                <span className="text-2xl font-bold text-primary">1</span>
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Crie sua conta</h3>
-              <p className="text-muted-foreground">
-                Cadastre-se gratuitamente em menos de 1 minuto
-              </p>
-            </div>
-
-            <div className="text-center space-y-4">
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto border-4 border-primary/20">
-                <span className="text-2xl font-bold text-primary">2</span>
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Escolha sua trilha</h3>
-              <p className="text-muted-foreground">
-                Selecione matérias, conteúdos e tópicos específicos
-              </p>
-            </div>
-
-            <div className="text-center space-y-4">
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto border-4 border-primary/20">
-                <span className="text-2xl font-bold text-primary">3</span>
-              </div>
-              <h3 className="text-xl font-bold text-foreground">Pratique e evolua</h3>
-              <p className="text-muted-foreground">
-                Resolva questões e acompanhe seu progresso
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5 border-y border-border/40">
+      {/* DOBRA 02 — A DOR DIRETA */}
+      <section className="py-20 bg-muted/30 border-y border-border/40">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                O que você vai conseguir
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-8 text-center">
+              Você já sentiu isso:
+            </h2>
+            
+            <div className="space-y-4">
               {[
-                { icon: CheckCircle, title: "Preparação completa", desc: "Cobertura total do conteúdo de ENEM e PAES UEMA" },
-                { icon: TrendingUp, title: "Melhore seus resultados", desc: "Acompanhe sua evolução e identifique pontos de melhoria" },
-                { icon: Target, title: "Estudo eficiente", desc: "Foque no que realmente importa com filtros inteligentes" },
-                { icon: Award, title: "Conquiste sua vaga", desc: "Aumente suas chances de aprovação nas melhores universidades" },
-              ].map((benefit, index) => (
-                <Card key={index} className="border-2 hover:border-primary/50 transition-all">
-                  <CardContent className="p-6 flex gap-4">
-                    <div className="bg-primary/10 w-12 h-12 rounded-xl flex items-center justify-center shrink-0">
-                      <benefit.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-bold text-foreground">{benefit.title}</h4>
-                      <p className="text-sm text-muted-foreground">{benefit.desc}</p>
-                    </div>
+                "Estudar horas e não evoluir.",
+                "Ter a sensação de que \"está indo bem\", até ver o resultado.",
+                "Errar questões simples por não entender o padrão da banca.",
+                "Ficar travado, ansioso, inseguro.",
+                "Sentir que nunca é suficiente."
+              ].map((pain, index) => (
+                <Card key={index} className="border-2 border-border hover:border-destructive/50 transition-all">
+                  <CardContent className="p-6 flex gap-4 items-start">
+                    <XCircle className="h-6 w-6 text-destructive shrink-0 mt-1" />
+                    <p className="text-xl text-foreground font-medium">{pain}</p>
                   </CardContent>
                 </Card>
               ))}
             </div>
+
+            <div className="mt-12 text-center space-y-4">
+              <p className="text-2xl font-bold text-foreground">
+                Isso não é falta de esforço.
+              </p>
+              <p className="text-3xl font-black text-primary">
+                É falta de dados, clareza e direcionamento.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Final */}
+      {/* DOBRA 03 — PROPOSTA CLARA */}
       <section className="py-20 container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-secondary/10 shadow-2xl">
-            <CardContent className="p-12 text-center space-y-6">
-              <div className="inline-flex p-3 bg-primary/20 rounded-2xl">
-                <Trophy className="h-12 w-12 text-primary" />
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6 text-center leading-tight">
+            O SIM Questões entrega exatamente{" "}
+            <span className="text-primary">o que você não tem hoje</span>
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-6 mt-12">
+            {[
+              { icon: Database, text: "Mais de 150.000 questões reais dos principais vestibulares" },
+              { icon: BarChart3, text: "Microdados completos para você analisar cada erro" },
+              { icon: TrendingUp, text: "Indicadores diários mostrando onde focar" },
+              { icon: Filter, text: "Filtros inteligentes por banca, matéria e tópico" },
+              { icon: LineChart, text: "Evolução acelerada baseada em dados — não em esperança" },
+              { icon: Clock, text: "Economia de tempo com estudo direcionado" }
+            ].map((feature, index) => (
+              <Card key={index} className="border-2 border-primary/30 bg-primary/5 hover:border-primary hover:shadow-lg transition-all">
+                <CardContent className="p-6 flex gap-4 items-start">
+                  <div className="bg-primary/20 p-3 rounded-xl shrink-0">
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <p className="text-lg text-foreground font-semibold">{feature.text}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <div className="inline-block bg-card border-2 border-primary rounded-2xl p-6 shadow-xl">
+              <p className="text-sm text-muted-foreground mb-2">Tudo isso por apenas</p>
+              <p className="text-5xl font-black text-primary">R$ 37,90/mês</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DOBRA 04 — A VERDADE QUE MACHUCA */}
+      <section className="py-20 bg-gradient-to-br from-destructive/5 via-background to-destructive/5 border-y border-border/40">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12">
+              {/* SEM DADOS */}
+              <div className="space-y-6">
+                <h3 className="text-3xl font-black text-destructive mb-6 flex items-center gap-3">
+                  <XCircle className="h-8 w-8" />
+                  Se você continuar estudando sem dados:
+                </h3>
+                <div className="space-y-3">
+                  {[
+                    "Vai repetir erros",
+                    "Vai desperdiçar meses",
+                    "Vai chegar inseguro",
+                    "Vai travar novamente",
+                    "Vai sentir a mesma dor da última vez"
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg border border-destructive/30">
+                      <XCircle className="h-5 w-5 text-destructive shrink-0" />
+                      <p className="text-lg font-medium text-foreground">{item}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                Sua aprovação está mais perto do que você imagina
-              </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Junte-se a centenas de estudantes que estão transformando sua preparação com o SIM Questões
-              </p>
-              <div className="pt-4">
-                <Button 
-                  size="lg" 
-                  onClick={() => navigate("/auth")}
-                  className="gap-2 group text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all"
-                >
-                  Começar Minha Preparação Agora
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
+
+              {/* COM DADOS */}
+              <div className="space-y-6">
+                <h3 className="text-3xl font-black text-success mb-6 flex items-center gap-3">
+                  <CheckCircle className="h-8 w-8" />
+                  Com dados, você descobre:
+                </h3>
+                <div className="space-y-3">
+                  {[
+                    "Exatamente onde está fraco",
+                    "Exatamente o que precisa estudar",
+                    "Exatamente como está evoluindo",
+                    "Exatamente como a banca pensa",
+                    "Exatamente como aumentar sua nota rápido"
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center gap-3 p-4 bg-success/10 rounded-lg border border-success/30">
+                      <CheckCircle className="h-5 w-5 text-success shrink-0" />
+                      <p className="text-lg font-medium text-foreground">{item}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                ✨ Grátis para sempre • Sem cartão de crédito
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DOBRA 05 — PROVA DE VALOR */}
+      <section className="py-20 container mx-auto px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-black text-foreground mb-12">
+            Você terá acesso imediato a:
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-6 text-left">
+            {[
+              { icon: Database, title: "150.000+ questões reais", highlight: true },
+              { icon: BarChart3, title: "Relatórios de microdados", highlight: true },
+              { icon: Target, title: "Mapas de calor do seu desempenho", highlight: false },
+              { icon: Zap, title: "Detectores dos seus pontos fracos", highlight: false },
+              { icon: TrendingUp, title: "Evolução diária", highlight: false },
+              { icon: CheckCircle, title: "Estudo direcionado", highlight: false }
+            ].map((item, index) => (
+              <Card key={index} className={`border-2 ${item.highlight ? 'border-primary bg-primary/5' : 'border-border'} hover:shadow-lg transition-all`}>
+                <CardContent className="p-6 flex gap-4 items-center">
+                  <div className={`${item.highlight ? 'bg-primary' : 'bg-muted'} p-3 rounded-xl shrink-0`}>
+                    <item.icon className={`h-6 w-6 ${item.highlight ? 'text-primary-foreground' : 'text-foreground'}`} />
+                  </div>
+                  <p className="text-xl font-bold text-foreground">{item.title}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-12 space-y-4">
+            <p className="text-2xl font-bold text-muted-foreground">Nada mais.</p>
+            <p className="text-2xl font-bold text-muted-foreground">Nada menos.</p>
+            <p className="text-3xl font-black text-primary">Só o que funciona.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* DOBRA 06 — CTA FINAL */}
+      <section className="py-20 bg-gradient-to-br from-primary/10 via-background to-secondary/10 border-y border-border/40">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <Card className="border-2 border-primary shadow-2xl bg-card">
+              <CardContent className="p-12 text-center space-y-8">
+                <h2 className="text-4xl md:text-6xl font-black text-foreground leading-tight">
+                  Você já sabe como é{" "}
+                  <span className="text-destructive">estudar errado</span>.
+                </h2>
+                
+                <p className="text-3xl md:text-4xl font-bold text-foreground">
+                  Agora descubra como é estudar{" "}
+                  <span className="text-primary">do jeito que aprova</span>.
+                </p>
+
+                <div className="pt-6">
+                  <Button 
+                    size="lg" 
+                    onClick={() => navigate("/auth")}
+                    className="gap-3 group text-2xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-black"
+                  >
+                    Quero evoluir agora — R$ 37,90/mês
+                    <ArrowRight className="h-7 w-7 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
+
+                <p className="text-sm text-muted-foreground pt-4">
+                  ✨ Acesso imediato • Cancele quando quiser
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-border/40 bg-muted/20">
         <div className="container mx-auto px-4 py-12">
-          <div className="flex flex-col items-center gap-6 text-center">
-            <div className="flex items-center gap-2">
-              <div className="bg-gradient-to-br from-primary to-primary/70 p-2 rounded-lg">
-                <GraduationCap className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                SIM Questões
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Sua plataforma completa de preparação para ENEM e PAES UEMA. 
-              Pratique, evolua e conquiste sua aprovação.
+          <div className="text-center space-y-4">
+            <p className="text-xl font-bold text-foreground">
+              SIM Questões
             </p>
-            <div className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               © 2024 SIM Questões. Todos os direitos reservados.
-            </div>
+            </p>
           </div>
         </div>
       </footer>
