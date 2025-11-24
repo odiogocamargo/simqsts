@@ -159,34 +159,53 @@ const Landing = () => {
             ))}
           </div>
 
-          {/* Grid de 6 Cards com descrições detalhadas */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {[
-              { icon: Database, text: "Mais de 150.000 questões reais dos principais vestibulares" },
-              { icon: BarChart3, text: "Microdados completos para você analisar cada erro" },
-              { icon: TrendingUp, text: "Indicadores diários mostrando onde focar" },
-              { icon: Filter, text: "Filtros inteligentes por banca, matéria e tópico" },
-              { icon: LineChart, text: "Evolução acelerada baseada em dados — não em esperança" },
-              { icon: Clock, text: "Economia de tempo com estudo direcionado" }
-            ].map((feature, index) => (
-              <Card key={index} className="border-2 border-border bg-muted/30 hover:border-primary/50 hover:shadow-lg transition-all">
-                <CardContent className="p-6 flex gap-4 items-start">
-                  <div className="bg-primary/10 p-3 rounded-xl shrink-0">
-                    <feature.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="text-base text-foreground font-semibold leading-relaxed">{feature.text}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Card Único de Pricing */}
+          <Card className="border-2 border-primary shadow-2xl bg-card max-w-4xl mx-auto">
+            <CardContent className="p-8 md:p-12 space-y-8">
+              {/* Preço */}
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground uppercase tracking-wide font-semibold">Tudo isso por apenas</p>
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className="text-6xl md:text-7xl font-black text-primary">R$ 37,90</span>
+                  <span className="text-2xl text-muted-foreground">/mês</span>
+                </div>
+              </div>
 
-          {/* Preço simples */}
-          <div className="mt-12 text-center">
-            <div className="inline-block bg-card border-2 border-primary rounded-2xl p-6 shadow-xl">
-              <p className="text-sm text-muted-foreground mb-2">Tudo isso por apenas</p>
-              <p className="text-5xl font-black text-primary">R$ 37,90/mês</p>
-            </div>
-          </div>
+              {/* Grid de 6 Features */}
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { icon: Database, text: "Mais de 150.000 questões reais dos principais vestibulares" },
+                  { icon: BarChart3, text: "Microdados completos para você analisar cada erro" },
+                  { icon: TrendingUp, text: "Indicadores diários mostrando onde focar" },
+                  { icon: Filter, text: "Filtros inteligentes por banca, matéria e tópico" },
+                  { icon: LineChart, text: "Evolução acelerada baseada em dados — não em esperança" },
+                  { icon: Clock, text: "Economia de tempo com estudo direcionado" }
+                ].map((feature, index) => (
+                  <div key={index} className="flex gap-3 items-start p-4 rounded-xl bg-muted/30 border border-border hover:border-primary/50 transition-all">
+                    <div className="bg-primary/10 p-2 rounded-lg shrink-0">
+                      <feature.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium leading-relaxed">{feature.text}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Botão CTA */}
+              <div className="text-center pt-4">
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate("/auth")}
+                  className="gap-2 group text-xl px-12 py-7 h-auto shadow-xl hover:shadow-2xl transition-all font-black w-full md:w-auto"
+                >
+                  Começar Agora — R$ 37,90/mês
+                  <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                <p className="text-sm text-muted-foreground mt-4">
+                  ✨ Acesso imediato • Cancele quando quiser
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
