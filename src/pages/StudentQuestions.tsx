@@ -1,17 +1,18 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
+import { Badge } from "@/components/ui/badge";
 
 const StudentQuestions = () => {
   const { user } = useAuth();
@@ -29,12 +30,62 @@ const StudentQuestions = () => {
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [showResult, setShowResult] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<number>(Date.now());
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
   
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
   const { data: topics = [] } = useTopics(selectedContent);
   const { data: exams = [] } = useExams();
   const years = Array.from({ length: 26 }, (_, i) => 2026 - i);
+  
+  // Buscar todos os conteúdos e tópicos para exibição (não apenas os filtrados)
+  const { data: allContents = [] } = useQuery({
+    queryKey: ['all-contents'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contents')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+  
+  const { data: allTopics = [] } = useQuery({
+    queryKey: ['all-topics'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('topics')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+  
+  // Timer para contar tempo de resposta
+  useEffect(() => {
+    if (showResult) return;
+    
+    setStartTime(Date.now());
+    setElapsedTime(0);
+    
+    const interval = setInterval(() => {
+      setElapsedTime((Date.now() - startTime) / 1000);
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [currentQuestionIndex, showResult]);
+  
+  // Formatar tempo em MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
   
   const { data: questions = [], isLoading: isLoadingQuestions } = useQuery({
     queryKey: ['practice-questions', selectedExam, selectedSubject, selectedContent, selectedTopic, selectedYear, selectedDifficulty],
@@ -93,16 +144,32 @@ const StudentQuestions = () => {
     enabled: !!currentQuestion?.id,
   });
   
+  const { data: currentQuestionTopics = [] } = useQuery({
+    queryKey: ['current-question-topics', currentQuestion?.id],
+    queryFn: async () => {
+      if (!currentQuestion?.id) return [];
+      const { data, error } = await supabase
+        .from('question_topics')
+        .select('topic_id')
+        .eq('question_id', currentQuestion.id);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentQuestion?.id,
+  });
+  
   const saveAnswerMutation = useMutation({
-    mutationFn: async ({ questionId, answer, isCorrect }: { questionId: string, answer: string, isCorrect: boolean }) => {
+    mutationFn: async ({ questionId, answer, isCorrect, timeSpent }: { questionId: string, answer: string, isCorrect: boolean, timeSpent: number }) => {
       if (!user?.id || !currentQuestion) return;
 
-      // 1. Salvar resposta do usuário
+      // 1. Salvar resposta do usuário com tempo gasto
       const { error: answerError } = await supabase.from('user_answers').insert({
         user_id: user.id,
         question_id: questionId,
         selected_answer: answer,
         is_correct: isCorrect,
+        time_spent_seconds: timeSpent,
       });
       if (answerError) throw answerError;
 
@@ -200,7 +267,8 @@ const StudentQuestions = () => {
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
     const isCorrect = selectedAnswer.toLowerCase() === currentQuestion.correct_answer?.toLowerCase();
-    saveAnswerMutation.mutate({ questionId: currentQuestion.id, answer: selectedAnswer, isCorrect });
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+    saveAnswerMutation.mutate({ questionId: currentQuestion.id, answer: selectedAnswer, isCorrect, timeSpent });
     setShowResult(true);
     toast({
       title: isCorrect ? "Resposta correta!" : "Resposta incorreta",
@@ -320,6 +388,50 @@ const StudentQuestions = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Informações da Questão e Contador */}
+              <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
+                <Badge variant="outline" className="gap-1.5">
+                  <span className="text-xs font-semibold">Vestibular:</span>
+                  <span className="text-xs">{exams.find(e => e.id === currentQuestion.exam_id)?.name}</span>
+                </Badge>
+                <Badge variant="outline" className="gap-1.5">
+                  <span className="text-xs font-semibold">Matéria:</span>
+                  <span className="text-xs">{subjects.find(s => s.id === currentQuestion.subject_id)?.name}</span>
+                </Badge>
+                <Badge variant="outline" className="gap-1.5">
+                  <span className="text-xs font-semibold">Conteúdo:</span>
+                  <span className="text-xs">{allContents.find(c => c.id === currentQuestion.content_id)?.name}</span>
+                </Badge>
+                {currentQuestionTopics.length > 0 && (
+                  <Badge variant="outline" className="gap-1.5">
+                    <span className="text-xs font-semibold">Tópico:</span>
+                    <span className="text-xs">
+                      {currentQuestionTopics.map(qt => 
+                        allTopics.find(t => t.id === qt.topic_id)?.name
+                      ).filter(Boolean).join(', ')}
+                    </span>
+                  </Badge>
+                )}
+                {currentQuestion.year && (
+                  <Badge variant="outline" className="gap-1.5">
+                    <span className="text-xs font-semibold">Ano:</span>
+                    <span className="text-xs">{currentQuestion.year}</span>
+                  </Badge>
+                )}
+                {currentQuestion.difficulty && (
+                  <Badge variant="outline" className="gap-1.5">
+                    <span className="text-xs font-semibold">Dificuldade:</span>
+                    <span className="text-xs">{currentQuestion.difficulty}</span>
+                  </Badge>
+                )}
+                <div className="ml-auto">
+                  <Badge variant="secondary" className="gap-2 px-3 py-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span className="text-sm font-mono font-semibold">{formatTime(elapsedTime)}</span>
+                  </Badge>
+                </div>
+              </div>
+              
               <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: currentQuestion.statement }} />
               
               {currentQuestionImages.length > 0 && (
