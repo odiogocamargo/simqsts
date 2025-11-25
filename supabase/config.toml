@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.classify-questions-batch]
 verify_jwt = false
+
+[functions.export-taxonomy]
+verify_jwt = false
