@@ -70,8 +70,11 @@ serve(async (req) => {
 
     // Gerar texto formatado para o ChatGPT
     let formattedText = "# TAXONOMIA COMPLETA DO SIM QUESTÕES\n\n";
-    formattedText += "⚠️ IMPORTANTE: Use EXATAMENTE estes IDs ao criar questões. Não invente IDs!\n";
-    formattedText += "⚠️ Se escrever errado um único caractere, o Supabase rejeita.\n\n";
+    formattedText += "🚨 ATENÇÃO CRÍTICA: OS IDs NÃO SÃO UUIDs!\n";
+    formattedText += "🚨 Os IDs são STRINGS em formato kebab-case (exemplo: 'funcao-exponencial')\n";
+    formattedText += "🚨 NUNCA gere UUIDs aleatórios como 'e9f3b7e0-7cd1-4d0a-8b67-9abc2f0bd881'\n";
+    formattedText += "🚨 SEMPRE copie EXATAMENTE os IDs desta lista!\n";
+    formattedText += "🚨 Um único caractere errado = erro no Supabase\n\n";
     
     formattedText += "## 📋 LISTA COMPLETA DE TODOS OS TOPIC_IDS VÁLIDOS\n\n";
     formattedText += "```\n";
@@ -108,6 +111,7 @@ serve(async (req) => {
     formattedText += "## 📊 VALORES ACEITOS PARA difficulty\n\n";
     formattedText += '**Opções:** "facil", "medio", "dificil"\n\n';
     formattedText += "## 📝 EXEMPLO DE JSON VÁLIDO\n\n";
+    formattedText += '🚨 REPARE: Os IDs são STRINGS, não UUIDs!\n\n';
     formattedText += '```json\n';
     formattedText += '{\n';
     formattedText += '  "statement": "Texto da questão aqui",\n';
@@ -125,7 +129,20 @@ serve(async (req) => {
     formattedText += '  "year": 2024,\n';
     formattedText += '  "difficulty": "medio"\n';
     formattedText += '}\n';
-    formattedText += '```\n';
+    formattedText += '```\n\n';
+    formattedText += "## ❌ EXEMPLO DE JSON ERRADO (NÃO FAÇA ISSO!)\n\n";
+    formattedText += '```json\n';
+    formattedText += '{\n';
+    formattedText += '  "subject_id": "e9f3b7e0-7cd1-4d0a-8b67-9abc2f0bd881",  ❌ ERRADO! Não é UUID!\n';
+    formattedText += '  "content_id": "a1b2c3d4-5678-90ab-cdef-123456789abc",  ❌ ERRADO! Não é UUID!\n';
+    formattedText += '  "topic_id": "12345678-1234-1234-1234-123456789abc"     ❌ ERRADO! Não é UUID!\n';
+    formattedText += '}\n';
+    formattedText += '```\n\n';
+    formattedText += "## ✅ FORMATO CORRETO DOS IDs\n\n";
+    formattedText += '- subject_id: texto em kebab-case (ex: "matematica", "ciencias-da-natureza")\n';
+    formattedText += '- content_id: texto em kebab-case (ex: "funcoes", "trigonometria")\n';
+    formattedText += '- topic_id: texto em kebab-case (ex: "funcao-exponencial", "teorema-de-pitagoras")\n';
+    formattedText += '- SEMPRE consulte a lista completa acima para copiar o ID exato!\n';
 
     return new Response(
       JSON.stringify({
