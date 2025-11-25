@@ -58,33 +58,74 @@ serve(async (req) => {
         }))
     }));
 
+    // Criar lista completa de todos os topic_ids
+    const allTopicIds: string[] = [];
+    taxonomy.forEach(subject => {
+      subject.contents.forEach(content => {
+        content.topics.forEach(topic => {
+          allTopicIds.push(topic.topic_id);
+        });
+      });
+    });
+
     // Gerar texto formatado para o ChatGPT
     let formattedText = "# TAXONOMIA COMPLETA DO SIM QUESTÕES\n\n";
-    formattedText += "Use EXATAMENTE estes IDs ao criar questões. Não invente IDs.\n\n";
+    formattedText += "⚠️ IMPORTANTE: Use EXATAMENTE estes IDs ao criar questões. Não invente IDs!\n";
+    formattedText += "⚠️ Se escrever errado um único caractere, o Supabase rejeita.\n\n";
+    
+    formattedText += "## 📋 LISTA COMPLETA DE TODOS OS TOPIC_IDS VÁLIDOS\n\n";
+    formattedText += "```\n";
+    allTopicIds.forEach(topicId => {
+      formattedText += `"${topicId}"\n`;
+    });
+    formattedText += "```\n\n";
+    formattedText += `Total de tópicos disponíveis: ${allTopicIds.length}\n\n`;
+    formattedText += "---\n\n";
+    
+    formattedText += "## 📚 ESTRUTURA HIERÁRQUICA COMPLETA\n\n";
     
     taxonomy.forEach(subject => {
-      formattedText += `## ${subject.subject_name.toUpperCase()}\n`;
-      formattedText += `subject_id: "${subject.subject_id}"\n\n`;
+      formattedText += `### ${subject.subject_name.toUpperCase()}\n`;
+      formattedText += `**subject_id:** "${subject.subject_id}"\n\n`;
       
       subject.contents.forEach(content => {
-        formattedText += `### ${content.content_name}\n`;
-        formattedText += `content_id: "${content.content_id}"\n`;
-        formattedText += `Tópicos disponíveis:\n`;
+        formattedText += `#### ${content.content_name}\n`;
+        formattedText += `**content_id:** "${content.content_id}"\n\n`;
+        formattedText += `**Tópicos disponíveis:**\n`;
         
         content.topics.forEach(topic => {
-          formattedText += `  - topic_id: "${topic.topic_id}" | ${topic.topic_name}\n`;
+          formattedText += `  • **"${topic.topic_id}"** → ${topic.topic_name}\n`;
         });
         formattedText += `\n`;
       });
       formattedText += `\n`;
     });
 
-    formattedText += "\n## VESTIBULARES ACEITOS\n";
-    formattedText += 'exam_id: "enem" ou "paes-uema"\n\n';
-    formattedText += "## VALORES ACEITOS PARA correct_answer\n";
-    formattedText += 'Apenas letras minúsculas: "a", "b", "c", "d", "e"\n\n';
-    formattedText += "## VALORES ACEITOS PARA difficulty\n";
-    formattedText += '"facil", "medio", "dificil"\n';
+    formattedText += "\n## 🎓 VESTIBULARES ACEITOS\n\n";
+    formattedText += '**exam_id:** "enem" ou "paes-uema"\n\n';
+    formattedText += "## ✅ VALORES ACEITOS PARA correct_answer\n\n";
+    formattedText += '**Apenas letras minúsculas:** "a", "b", "c", "d", "e"\n\n';
+    formattedText += "## 📊 VALORES ACEITOS PARA difficulty\n\n";
+    formattedText += '**Opções:** "facil", "medio", "dificil"\n\n';
+    formattedText += "## 📝 EXEMPLO DE JSON VÁLIDO\n\n";
+    formattedText += '```json\n';
+    formattedText += '{\n';
+    formattedText += '  "statement": "Texto da questão aqui",\n';
+    formattedText += '  "option_a": "Alternativa A",\n';
+    formattedText += '  "option_b": "Alternativa B",\n';
+    formattedText += '  "option_c": "Alternativa C",\n';
+    formattedText += '  "option_d": "Alternativa D",\n';
+    formattedText += '  "option_e": "Alternativa E",\n';
+    formattedText += '  "correct_answer": "a",\n';
+    formattedText += '  "explanation": "Explicação detalhada da resposta",\n';
+    formattedText += '  "subject_id": "matematica",\n';
+    formattedText += '  "content_id": "funcoes",\n';
+    formattedText += '  "topic_id": "funcao-exponencial",\n';
+    formattedText += '  "exam_id": "enem",\n';
+    formattedText += '  "year": 2024,\n';
+    formattedText += '  "difficulty": "medio"\n';
+    formattedText += '}\n';
+    formattedText += '```\n';
 
     return new Response(
       JSON.stringify({
