@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, PlusCircle, TrendingUp, BookOpen, List, Users } from "lucide-react";
+import { LayoutDashboard, FileText, PlusCircle, TrendingUp, BookOpen, List, Users, Download } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -20,6 +20,7 @@ const adminNavItems = [
   { title: "Questões", url: "/questions", icon: FileText },
   { title: "Relatório de Taxonomia", url: "/subject-report", icon: List },
   { title: "Usuários", url: "/users", icon: Users },
+  { title: "Exportar Taxonomia", url: "/taxonomy-export", icon: Download },
 ];
 
 // Itens de navegação para aluno
