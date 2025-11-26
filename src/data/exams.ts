@@ -1,4 +1,18 @@
 export const exams = [
   "ENEM",
   "PAES UEMA",
+  "UECE",
+  "UNB",
+  "FUVEST",
+  "ITA",
+  "FGV",
+  "IME",
+  "PUC-SP",
+  "PUC-RJ",
+  "PUC-Campinas",
+  "PUC-GO",
+  "PUC-PR",
+  "PUC-MG",
+  "PUC-RS",
+  "UERJ",
 ];
