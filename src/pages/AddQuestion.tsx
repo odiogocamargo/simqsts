@@ -201,6 +201,28 @@ const AddQuestion = () => {
       return;
     }
 
+    // Validação de campos obrigatórios
+    if (!statement.trim()) {
+      toast({ title: "Erro", description: "O enunciado é obrigatório.", variant: "destructive" });
+      return;
+    }
+    if (!selectedSubject) {
+      toast({ title: "Erro", description: "Selecione a matéria.", variant: "destructive" });
+      return;
+    }
+    if (!selectedContent) {
+      toast({ title: "Erro", description: "Selecione o conteúdo.", variant: "destructive" });
+      return;
+    }
+    if (!selectedExam) {
+      toast({ title: "Erro", description: "Selecione o vestibular.", variant: "destructive" });
+      return;
+    }
+    if (!selectedYear) {
+      toast({ title: "Erro", description: "Selecione o ano.", variant: "destructive" });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
