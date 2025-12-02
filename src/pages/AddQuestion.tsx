@@ -524,7 +524,7 @@ const AddQuestion = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="facil">Fácil</SelectItem>
-                      <SelectItem value="media">Média</SelectItem>
+                      <SelectItem value="medio">Média</SelectItem>
                       <SelectItem value="dificil">Difícil</SelectItem>
                     </SelectContent>
                   </Select>
