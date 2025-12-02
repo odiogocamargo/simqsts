@@ -2,502 +2,318 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowRight, 
-  CheckCircle, 
-  XCircle, 
-  TrendingUp, 
-  Target, 
-  Zap,
-  Database,
   BarChart3,
-  Filter,
-  LineChart,
-  Clock,
-  AlertCircle,
-  Users
+  Target,
+  Zap,
+  BookOpen,
+  TrendingUp,
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { useState, useEffect } from "react";
 
 const Landing = () => {
   const navigate = useNavigate();
-  
-  // Countdown timer - 24 horas a partir de agora
-  const [timeLeft, setTimeLeft] = useState({
-    hours: 24,
-    minutes: 0,
-    seconds: 0
-  });
-
-  // Vagas restantes (simulado)
-  const [spotsLeft] = useState(47);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        } else if (prev.hours > 0) {
-          return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        }
-        return prev;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/95">
-        <div className="container mx-auto px-4 py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+        <div className="container mx-auto px-6 py-4">
           <nav className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">
-              SIM Questões
-            </h1>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="text-lg font-semibold text-foreground tracking-tight">
+                SIM Questões
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
               <Button 
                 onClick={() => navigate("/auth?mode=login")} 
-                variant="outline"
-                size="lg" 
-                className="gap-2"
+                variant="ghost"
+                size="sm"
               >
-                Já sou aluno
+                Entrar
               </Button>
               <Button 
                 onClick={() => navigate("/auth?mode=signup")} 
-                size="lg" 
-                className="gap-2"
+                size="sm"
               >
-                Cadastro
-                <ArrowRight className="h-4 w-4" />
+                Começar grátis
               </Button>
             </div>
           </nav>
         </div>
       </header>
 
-      {/* DOBRA 01 — HERO IMEDIATO */}
-      <section className="container mx-auto px-4 py-20 md:py-32">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center space-y-8 animate-fade-in">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-foreground leading-[1.1]">
-              Você está estudando{" "}
-              <span className="relative inline-block">
-                <span className="text-destructive">errado</span>
-                <svg className="absolute -bottom-2 left-0 w-full" height="12" viewBox="0 0 200 12" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0 8 Q50 4, 100 8 T200 8" stroke="hsl(var(--destructive))" strokeWidth="3" fill="none" strokeLinecap="round"/>
-                </svg>
-              </span>
-              {" "}— e isso está custando a sua aprovação.
+      {/* Hero */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
+              <Sparkles className="h-3.5 w-3.5" />
+              Plataforma de estudos inteligente
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground tracking-tight leading-[1.1]">
+              Estude com dados,{" "}
+              <span className="text-primary">não com achismos</span>
             </h1>
             
-            <p className="text-2xl md:text-3xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-medium">
-              Se você continuar repetindo o mesmo método, vai repetir o mesmo resultado.
-              <span className="block mt-3 text-foreground font-bold">
-                A diferença é que este ano as vagas estarão ainda mais disputadas.
-              </span>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              A plataforma que transforma sua preparação para vestibulares com análise inteligente de desempenho e questões dos principais exames do Brasil.
             </p>
 
-            {/* Pricing Box */}
-            <div className="bg-card border-2 border-primary rounded-2xl p-8 max-w-2xl mx-auto mt-12 shadow-lg">
-              <div className="grid md:grid-cols-2 gap-6 items-center">
-                <div className="text-left space-y-2">
-                  <p className="text-sm text-muted-foreground uppercase tracking-wide font-semibold">A ferramenta certa custa</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-primary">R$ 37,90</span>
-                    <span className="text-xl text-muted-foreground">/mês</span>
-                  </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+              <Button 
+                size="lg" 
+                onClick={() => navigate("/auth?mode=signup")}
+                className="gap-2 group"
+              >
+                Começar agora
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              </Button>
+              <Button 
+                size="lg" 
+                onClick={() => navigate("/auth?mode=login")}
+                variant="outline"
+              >
+                Já tenho conta
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="py-16 border-y border-border/50 bg-muted/30">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            {[
+              { value: "150k+", label: "Questões" },
+              { value: "15+", label: "Vestibulares" },
+              { value: "12", label: "Disciplinas" },
+              { value: "523", label: "Tópicos" }
+            ].map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-foreground">
+                  {stat.value}
                 </div>
-                <div className="text-left space-y-2">
-                  <p className="text-sm text-destructive uppercase tracking-wide font-semibold">O preço de continuar errado</p>
-                  <div className="text-3xl font-black text-destructive">
-                    Mais um ano perdido
-                  </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {stat.label}
                 </div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Urgência Banner */}
-            <div className="bg-destructive/10 border-2 border-destructive/30 rounded-xl p-6 max-w-2xl mx-auto">
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <AlertCircle className="h-5 w-5 text-destructive animate-pulse" />
-                <p className="text-sm font-bold text-destructive uppercase tracking-wider">Oferta por tempo limitado</p>
+      {/* Features */}
+      <section className="py-24 px-6">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Tudo que você precisa para evoluir
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Ferramentas pensadas para quem quer resultados reais na preparação para vestibulares.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                icon: BookOpen,
+                title: "Banco de Questões",
+                description: "Questões reais de ENEM, FUVEST, UECE, PAES UEMA e mais 10 vestibulares organizadas por tema."
+              },
+              {
+                icon: BarChart3,
+                title: "Análise de Desempenho",
+                description: "Acompanhe sua evolução com métricas detalhadas por disciplina, conteúdo e tópico."
+              },
+              {
+                icon: Target,
+                title: "Pontos Fracos",
+                description: "Identifique automaticamente onde você precisa melhorar com nosso detector inteligente."
+              },
+              {
+                icon: TrendingUp,
+                title: "Evolução Diária",
+                description: "Visualize seu progresso ao longo do tempo com gráficos e indicadores claros."
+              },
+              {
+                icon: Zap,
+                title: "Tempo de Resposta",
+                description: "Monitore quanto tempo você leva em cada questão e otimize seu ritmo de prova."
+              },
+              {
+                icon: BarChart3,
+                title: "Mapa de Calor",
+                description: "Veja visualmente suas áreas de domínio e dificuldade em cada disciplina."
+              }
+            ].map((feature, index) => (
+              <div 
+                key={index} 
+                className="p-6 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all"
+              >
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                  <feature.icon className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-24 px-6 bg-muted/30 border-y border-border/50">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Como funciona
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Três passos simples para começar a estudar melhor.
+            </p>
+          </div>
+
+          <div className="space-y-8">
+            {[
+              {
+                step: "01",
+                title: "Crie sua conta",
+                description: "Cadastro rápido e gratuito. Em segundos você já pode começar."
+              },
+              {
+                step: "02",
+                title: "Resolva questões",
+                description: "Escolha o vestibular, disciplina ou tópico que deseja praticar."
+              },
+              {
+                step: "03",
+                title: "Acompanhe sua evolução",
+                description: "Veja seus indicadores de desempenho e saiba exatamente onde focar."
+              }
+            ].map((item, index) => (
+              <div key={index} className="flex gap-6 items-start">
+                <div className="text-4xl font-bold text-primary/20 shrink-0">
+                  {item.step}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-1">
+                    {item.title}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="py-24 px-6">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Simples e acessível
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Um plano completo por menos de R$ 1,30 por dia.
+            </p>
+          </div>
+
+          <div className="max-w-md mx-auto">
+            <div className="rounded-2xl border-2 border-primary bg-card p-8 text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+                Acesso completo
               </div>
               
-              <div className="flex justify-center gap-4 mb-4">
-                <div className="text-center">
-                  <div className="bg-card border-2 border-destructive rounded-lg px-4 py-2 min-w-[70px]">
-                    <div className="text-3xl font-black text-foreground">{String(timeLeft.hours).padStart(2, '0')}</div>
-                    <div className="text-xs text-muted-foreground font-semibold">HORAS</div>
-                  </div>
-                </div>
-                <div className="text-center flex items-center">
-                  <span className="text-3xl font-black text-foreground">:</span>
-                </div>
-                <div className="text-center">
-                  <div className="bg-card border-2 border-destructive rounded-lg px-4 py-2 min-w-[70px]">
-                    <div className="text-3xl font-black text-foreground">{String(timeLeft.minutes).padStart(2, '0')}</div>
-                    <div className="text-xs text-muted-foreground font-semibold">MINUTOS</div>
-                  </div>
-                </div>
-                <div className="text-center flex items-center">
-                  <span className="text-3xl font-black text-foreground">:</span>
-                </div>
-                <div className="text-center">
-                  <div className="bg-card border-2 border-destructive rounded-lg px-4 py-2 min-w-[70px]">
-                    <div className="text-3xl font-black text-foreground">{String(timeLeft.seconds).padStart(2, '0')}</div>
-                    <div className="text-xs text-muted-foreground font-semibold">SEGUNDOS</div>
-                  </div>
-                </div>
+              <div className="mb-6">
+                <span className="text-5xl font-bold text-foreground">R$ 37,90</span>
+                <span className="text-muted-foreground">/mês</span>
               </div>
 
-              <div className="flex items-center justify-center gap-2">
-                <Users className="h-4 w-4 text-destructive" />
-                <p className="text-sm text-foreground">
-                  Apenas <span className="font-black text-destructive text-lg">{spotsLeft} vagas</span> restantes nesta oferta
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-8">
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  size="lg" 
-                  onClick={() => navigate("/auth?mode=login")}
-                  variant="outline"
-                  className="gap-2 text-xl px-10 py-8 h-auto font-bold"
-                >
-                  Já sou aluno
-                </Button>
-                <Button 
-                  size="lg" 
-                  onClick={() => navigate("/auth?mode=signup")}
-                  className="gap-2 group text-xl px-10 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-bold animate-pulse hover:animate-none"
-                >
-                  Quero mudar isso agora — R$ 37,90/mês
-                  <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* DOBRA 02 — A DOR DIRETA */}
-      <section className="py-20 bg-muted/30 border-y border-border/40">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-8 text-center">
-              Você já sentiu isso:
-            </h2>
-            
-            <div className="space-y-4">
-              {[
-                "Estudar horas e não evoluir.",
-                "Ter a sensação de que \"está indo bem\", até ver o resultado.",
-                "Errar questões simples por não entender o padrão da banca.",
-                "Ficar travado, ansioso, inseguro.",
-                "Sentir que nunca é suficiente."
-              ].map((pain, index) => (
-                <Card key={index} className="border-2 border-border hover:border-destructive/50 transition-all">
-                  <CardContent className="p-6 flex gap-4 items-start">
-                    <XCircle className="h-6 w-6 text-destructive shrink-0 mt-1" />
-                    <p className="text-xl text-foreground font-medium">{pain}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <div className="mt-12 text-center space-y-4">
-              <p className="text-2xl font-bold text-foreground">
-                Isso não é falta de esforço.
-              </p>
-              <p className="text-3xl font-black text-primary">
-                É falta de dados, clareza e direcionamento.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* DOBRA 03 — PROPOSTA CLARA */}
-      <section className="py-20 container mx-auto px-4">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-4xl md:text-6xl font-black text-foreground mb-12 text-center leading-tight">
-            O SIM Questões entrega exatamente{" "}
-            <span className="text-primary">o que você não tem hoje</span>
-          </h2>
-          
-          {/* Grid de 4 Features principais */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-16">
-            {[
-              { icon: Database, label: "Banco De Questões" },
-              { icon: BarChart3, label: "Minhas Estatísticas" },
-              { icon: Target, label: "Cronograma de estudos" },
-              { icon: Zap, label: "Simulados" }
-            ].map((item, index) => (
-              <Card 
-                key={index} 
-                className="border-2 border-primary/30 bg-background hover:border-primary hover:shadow-lg transition-all"
-              >
-                <CardContent className="p-6 flex flex-col items-center gap-3 text-center">
-                  <div className="bg-primary/10 p-3 rounded-xl">
-                    <item.icon className="h-8 w-8 text-primary" />
-                  </div>
-                  <p className="text-sm font-semibold text-foreground leading-tight">
-                    {item.label}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Card Único de Pricing */}
-          <Card className="border-2 border-primary shadow-2xl bg-card max-w-4xl mx-auto">
-            <CardContent className="p-8 md:p-12 space-y-8">
-              {/* Preço */}
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground uppercase tracking-wide font-semibold">Tudo isso por apenas</p>
-                <div className="flex items-baseline justify-center gap-2">
-                  <span className="text-6xl md:text-7xl font-black text-primary">R$ 37,90</span>
-                  <span className="text-2xl text-muted-foreground">/mês</span>
-                </div>
-              </div>
-
-              {/* Grid de 6 Features */}
-              <div className="grid md:grid-cols-2 gap-4">
+              <ul className="space-y-3 text-left mb-8">
                 {[
-                  { icon: Database, text: "Mais de 150.000 questões reais dos principais vestibulares" },
-                  { icon: BarChart3, text: "Microdados completos para você analisar cada erro" },
-                  { icon: TrendingUp, text: "Indicadores diários mostrando onde focar" },
-                  { icon: Filter, text: "Filtros inteligentes por banca, matéria e tópico" },
-                  { icon: LineChart, text: "Evolução acelerada baseada em dados — não em esperança" },
-                  { icon: Clock, text: "Economia de tempo com estudo direcionado" }
-                ].map((feature, index) => (
-                  <div key={index} className="flex gap-3 items-start p-4 rounded-xl bg-muted/30 border border-border hover:border-primary/50 transition-all">
-                    <div className="bg-primary/10 p-2 rounded-lg shrink-0">
-                      <feature.icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <p className="text-sm text-foreground font-medium leading-relaxed">{feature.text}</p>
-                  </div>
+                  "Acesso a todas as questões",
+                  "Todos os indicadores de desempenho",
+                  "Detector de pontos fracos",
+                  "Histórico completo de evolução",
+                  "Filtros por banca e disciplina",
+                  "Cancele quando quiser"
+                ].map((item, index) => (
+                  <li key={index} className="flex items-center gap-3 text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-sm">{item}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
 
-              {/* Urgência Contador */}
-              <div className="bg-destructive/10 border-2 border-destructive/30 rounded-xl p-6">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <AlertCircle className="h-5 w-5 text-destructive animate-pulse" />
-                  <p className="text-sm font-bold text-destructive uppercase tracking-wider">Garanta sua vaga agora</p>
-                </div>
-                
-                <div className="flex justify-center gap-3 mb-4">
-                  <div className="text-center">
-                    <div className="bg-card border-2 border-destructive rounded-lg px-3 py-2 min-w-[60px]">
-                      <div className="text-2xl font-black text-foreground">{String(timeLeft.hours).padStart(2, '0')}</div>
-                      <div className="text-[10px] text-muted-foreground font-semibold">HORAS</div>
-                    </div>
-                  </div>
-                  <div className="text-center flex items-center">
-                    <span className="text-2xl font-black text-foreground">:</span>
-                  </div>
-                  <div className="text-center">
-                    <div className="bg-card border-2 border-destructive rounded-lg px-3 py-2 min-w-[60px]">
-                      <div className="text-2xl font-black text-foreground">{String(timeLeft.minutes).padStart(2, '0')}</div>
-                      <div className="text-[10px] text-muted-foreground font-semibold">MINUTOS</div>
-                    </div>
-                  </div>
-                  <div className="text-center flex items-center">
-                    <span className="text-2xl font-black text-foreground">:</span>
-                  </div>
-                  <div className="text-center">
-                    <div className="bg-card border-2 border-destructive rounded-lg px-3 py-2 min-w-[60px]">
-                      <div className="text-2xl font-black text-foreground">{String(timeLeft.seconds).padStart(2, '0')}</div>
-                      <div className="text-[10px] text-muted-foreground font-semibold">SEGUNDOS</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Users className="h-4 w-4 text-destructive" />
-                  <p className="text-sm text-foreground">
-                    <span className="font-black text-destructive">{spotsLeft} vagas</span> restantes
-                  </p>
-                </div>
-              </div>
-
-              {/* Botões CTA */}
-              <div className="text-center pt-4">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button 
-                    size="lg" 
-                    onClick={() => navigate("/auth?mode=login")}
-                    variant="outline"
-                    className="gap-2 text-lg px-10 py-6 h-auto font-bold"
-                  >
-                    Já sou aluno
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    onClick={() => navigate("/auth?mode=signup")}
-                    className="gap-2 group text-lg px-10 py-6 h-auto shadow-xl hover:shadow-2xl transition-all font-black"
-                  >
-                    Começar Agora — R$ 37,90/mês
-                    <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground mt-4">
-                  ✨ Acesso imediato • Cancele quando quiser
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* DOBRA 04 — A VERDADE QUE MACHUCA */}
-      <section className="py-20 bg-gradient-to-br from-destructive/5 via-background to-destructive/5 border-y border-border/40">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12">
-              {/* SEM DADOS */}
-              <div className="space-y-6">
-                <h3 className="text-3xl font-black text-destructive mb-6 flex items-center gap-3">
-                  <XCircle className="h-8 w-8" />
-                  Se você continuar estudando sem dados:
-                </h3>
-                <div className="space-y-3">
-                  {[
-                    "Vai repetir erros",
-                    "Vai desperdiçar meses",
-                    "Vai chegar inseguro",
-                    "Vai travar novamente",
-                    "Vai sentir a mesma dor da última vez"
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg border border-destructive/30">
-                      <XCircle className="h-5 w-5 text-destructive shrink-0" />
-                      <p className="text-lg font-medium text-foreground">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* COM DADOS */}
-              <div className="space-y-6">
-                <h3 className="text-3xl font-black text-success mb-6 flex items-center gap-3">
-                  <CheckCircle className="h-8 w-8" />
-                  Com dados, você descobre:
-                </h3>
-                <div className="space-y-3">
-                  {[
-                    "Exatamente onde está fraco",
-                    "Exatamente o que precisa estudar",
-                    "Exatamente como está evoluindo",
-                    "Exatamente como a banca pensa",
-                    "Exatamente como aumentar sua nota rápido"
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center gap-3 p-4 bg-success/10 rounded-lg border border-success/30">
-                      <CheckCircle className="h-5 w-5 text-success shrink-0" />
-                      <p className="text-lg font-medium text-foreground">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Button 
+                size="lg" 
+                onClick={() => navigate("/auth?mode=signup")}
+                className="w-full gap-2 group"
+              >
+                Começar agora
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* DOBRA 05 — PROVA DE VALOR */}
-      <section className="py-20 container mx-auto px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-black text-foreground mb-12">
-            Você terá acesso imediato a:
+      {/* CTA Final */}
+      <section className="py-24 px-6 bg-primary/5 border-t border-border/50">
+        <div className="container mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            Pronto para estudar de forma inteligente?
           </h2>
-          
-          <div className="grid md:grid-cols-2 gap-6 text-left">
-            {[
-              { icon: Database, title: "150.000+ questões reais", highlight: true },
-              { icon: BarChart3, title: "Relatórios de microdados", highlight: true },
-              { icon: Target, title: "Mapas de calor do seu desempenho", highlight: false },
-              { icon: Zap, title: "Detectores dos seus pontos fracos", highlight: false },
-              { icon: TrendingUp, title: "Evolução diária", highlight: false },
-              { icon: CheckCircle, title: "Estudo direcionado", highlight: false }
-            ].map((item, index) => (
-              <Card key={index} className={`border-2 ${item.highlight ? 'border-primary bg-primary/5' : 'border-border'} hover:shadow-lg transition-all`}>
-                <CardContent className="p-6 flex gap-4 items-center">
-                  <div className={`${item.highlight ? 'bg-primary' : 'bg-muted'} p-3 rounded-xl shrink-0`}>
-                    <item.icon className={`h-6 w-6 ${item.highlight ? 'text-primary-foreground' : 'text-foreground'}`} />
-                  </div>
-                  <p className="text-xl font-bold text-foreground">{item.title}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="mt-12 space-y-4">
-            <p className="text-2xl font-bold text-muted-foreground">Nada mais.</p>
-            <p className="text-2xl font-bold text-muted-foreground">Nada menos.</p>
-            <p className="text-3xl font-black text-primary">Só o que funciona.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* DOBRA 06 — CTA FINAL */}
-      <section className="py-20 bg-gradient-to-br from-primary/10 via-background to-secondary/10 border-y border-border/40">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <Card className="border-2 border-primary shadow-2xl bg-card">
-              <CardContent className="p-12 text-center space-y-8">
-                <h2 className="text-4xl md:text-6xl font-black text-foreground leading-tight">
-                  Você já sabe como é{" "}
-                  <span className="text-destructive">estudar errado</span>.
-                </h2>
-                
-                <p className="text-3xl md:text-4xl font-bold text-foreground">
-                  Agora descubra como é estudar{" "}
-                  <span className="text-primary">do jeito que aprova</span>.
-                </p>
-
-                <div className="pt-6">
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button 
-                      size="lg" 
-                      onClick={() => navigate("/auth?mode=login")}
-                      variant="outline"
-                      className="gap-2 text-xl px-10 py-7 h-auto font-bold"
-                    >
-                      Já sou aluno
-                    </Button>
-                    <Button 
-                      size="lg" 
-                      onClick={() => navigate("/auth?mode=signup")}
-                      className="gap-3 group text-2xl px-12 py-8 h-auto shadow-2xl hover:shadow-xl transition-all font-black"
-                    >
-                      Quero evoluir agora — R$ 37,90/mês
-                      <ArrowRight className="h-7 w-7 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </div>
-                </div>
-
-                <p className="text-sm text-muted-foreground pt-4">
-                  ✨ Acesso imediato • Cancele quando quiser
-                </p>
-              </CardContent>
-            </Card>
+          <p className="text-muted-foreground text-lg mb-8">
+            Junte-se a milhares de estudantes que estão transformando sua preparação.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button 
+              size="lg" 
+              onClick={() => navigate("/auth?mode=signup")}
+              className="gap-2 group"
+            >
+              Criar conta gratuita
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+            </Button>
+            <Button 
+              size="lg" 
+              onClick={() => navigate("/auth?mode=login")}
+              variant="outline"
+            >
+              Entrar na minha conta
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-muted/20">
-        <div className="container mx-auto px-4 py-12">
-          <div className="text-center space-y-4">
-            <p className="text-xl font-bold text-foreground">
-              SIM Questões
-            </p>
+      <footer className="border-t border-border/50 bg-background">
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
+                <Sparkles className="h-3 w-3 text-primary-foreground" />
+              </div>
+              <span className="text-sm font-medium text-foreground">
+                SIM Questões
+              </span>
+            </div>
             <p className="text-sm text-muted-foreground">
               © 2024 SIM Questões. Todos os direitos reservados.
             </p>
