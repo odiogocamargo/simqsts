@@ -17,9 +17,10 @@ import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjec
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ImageUpload, QuestionImage } from "@/components/ImageUpload";
-import { Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle, Upload } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
+import { QuestionImportModal } from "@/components/QuestionImportModal";
 
 const AddQuestion = () => {
   const { toast } = useToast();
@@ -46,6 +47,7 @@ const AddQuestion = () => {
   const [isClassifying, setIsClassifying] = useState(false);
   const [classificationSuggestion, setClassificationSuggestion] = useState<any>(null);
   const [jsonInput, setJsonInput] = useState('');
+  const [importModalOpen, setImportModalOpen] = useState(false);
   
   const { data: subjects = [] } = useSubjects();
   const { data: contents = [] } = useContents(selectedSubject);
@@ -303,9 +305,15 @@ const AddQuestion = () => {
   return (
     <Layout>
       <div className="space-y-8">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground mb-2">Adicionar Questão</h2>
-          <p className="text-muted-foreground">Cadastre uma nova questão - a IA classificará automaticamente conteúdo e tópico</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Adicionar Questão</h2>
+            <p className="text-muted-foreground">Cadastre uma nova questão - a IA classificará automaticamente conteúdo e tópico</p>
+          </div>
+          <Button onClick={() => setImportModalOpen(true)} variant="outline">
+            <Upload className="mr-2 h-4 w-4" />
+            Importar em Lote
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -601,6 +609,14 @@ const AddQuestion = () => {
             </CardContent>
           </Card>
         </form>
+
+        <QuestionImportModal
+          open={importModalOpen}
+          onOpenChange={setImportModalOpen}
+          onSuccess={() => {
+            handleClear();
+          }}
+        />
       </div>
     </Layout>
   );
