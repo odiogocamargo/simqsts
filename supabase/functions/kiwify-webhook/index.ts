@@ -121,28 +121,61 @@ serve(async (req) => {
     const webhookToken = Deno.env.get('KIWIFY_WEBHOOK_TOKEN');
     
     // Kiwify pode enviar o token de diferentes formas:
-    // 1. Header x-kiwify-signature
-    // 2. Query parameter "signature" ou "token"
+    // 1. Header x-kiwify-signature ou authorization
+    // 2. Query parameter "signature", "token", ou "webhook_token"
+    // 3. No body do payload como "token" ou "signature"
     const signature = req.headers.get('x-kiwify-signature');
+    const authHeader = req.headers.get('authorization')?.replace('Bearer ', '');
     const url = new URL(req.url);
-    const querySignature = url.searchParams.get('signature') || url.searchParams.get('token');
+    const querySignature = url.searchParams.get('signature') || 
+                          url.searchParams.get('token') || 
+                          url.searchParams.get('webhook_token');
     
-    const receivedToken = signature || querySignature;
+    // Clonar o request para ler o body sem consumi-lo
+    const clonedReq = req.clone();
+    let bodyToken: string | null = null;
+    try {
+      const bodyText = await clonedReq.text();
+      if (bodyText) {
+        const bodyJson = JSON.parse(bodyText);
+        bodyToken = bodyJson.token || bodyJson.signature || bodyJson.webhook_token;
+      }
+    } catch (e) {
+      // Ignorar erros de parsing do body para token
+    }
     
+    const receivedToken = signature || authHeader || querySignature || bodyToken;
+    
+    // Log detalhado para debug
     console.log('Webhook received. Token validation:', {
       hasConfiguredToken: !!webhookToken,
-      receivedToken: receivedToken ? 'present' : 'missing',
+      configuredTokenPreview: webhookToken ? webhookToken.substring(0, 4) + '...' : 'none',
+      receivedFromHeader: signature ? signature.substring(0, 4) + '...' : 'none',
+      receivedFromAuth: authHeader ? authHeader.substring(0, 4) + '...' : 'none', 
+      receivedFromQuery: querySignature ? querySignature.substring(0, 4) + '...' : 'none',
+      receivedFromBody: bodyToken ? bodyToken.substring(0, 4) + '...' : 'none',
       method: req.method,
+      url: req.url,
     });
     
-    // Validar token se configurado
-    if (webhookToken && webhookToken !== '' && receivedToken !== webhookToken) {
-      console.error('Invalid webhook token. Expected:', webhookToken?.substring(0, 4) + '...', 'Received:', receivedToken?.substring(0, 4) + '...');
+    // Validar token se configurado - ser mais tolerante
+    // Aceitar se qualquer uma das fontes de token corresponder
+    const tokenMatches = !webhookToken || 
+                        webhookToken === '' || 
+                        receivedToken === webhookToken ||
+                        signature === webhookToken ||
+                        querySignature === webhookToken ||
+                        bodyToken === webhookToken;
+    
+    if (!tokenMatches) {
+      console.error('Invalid webhook token. None of the received tokens match the configured token.');
       return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    console.log('Token validation passed!');
 
     const payload: KiwifyWebhookPayload = await req.json();
     console.log('Kiwify webhook payload:', JSON.stringify(payload, null, 2));
