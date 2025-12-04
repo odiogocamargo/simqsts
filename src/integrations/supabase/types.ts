@@ -322,6 +322,51 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          canceled_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          kiwify_customer_cpf: string | null
+          kiwify_customer_email: string
+          kiwify_subscription_id: string | null
+          plan_name: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kiwify_customer_cpf?: string | null
+          kiwify_customer_email: string
+          kiwify_subscription_id?: string | null
+          plan_name?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kiwify_customer_cpf?: string | null
+          kiwify_customer_email?: string
+          kiwify_subscription_id?: string | null
+          plan_name?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       topics: {
         Row: {
           content_id: string
@@ -473,6 +518,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "professor" | "aluno"
       question_type: "multipla_escolha" | "discursiva" | "verdadeiro_falso"
+      subscription_status:
+        | "active"
+        | "canceled"
+        | "late"
+        | "refunded"
+        | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -602,6 +653,13 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "professor", "aluno"],
       question_type: ["multipla_escolha", "discursiva", "verdadeiro_falso"],
+      subscription_status: [
+        "active",
+        "canceled",
+        "late",
+        "refunded",
+        "pending",
+      ],
     },
   },
 } as const
