@@ -120,64 +120,62 @@ serve(async (req) => {
     // Validar token do webhook
     const webhookToken = Deno.env.get('KIWIFY_WEBHOOK_TOKEN');
     
-    // Kiwify pode enviar o token de diferentes formas:
-    // 1. Header x-kiwify-signature ou authorization
-    // 2. Query parameter "signature", "token", ou "webhook_token"
-    // 3. No body do payload como "token" ou "signature"
-    const signature = req.headers.get('x-kiwify-signature');
-    const authHeader = req.headers.get('authorization')?.replace('Bearer ', '');
+    // Kiwify envia a assinatura como query parameter "signature"
+    // A assinatura é um HMAC-SHA1 do body usando o token como chave
     const url = new URL(req.url);
-    const querySignature = url.searchParams.get('signature') || 
-                          url.searchParams.get('token') || 
-                          url.searchParams.get('webhook_token');
+    const receivedSignature = url.searchParams.get('signature');
     
-    // Clonar o request para ler o body sem consumi-lo
-    const clonedReq = req.clone();
-    let bodyToken: string | null = null;
-    try {
-      const bodyText = await clonedReq.text();
-      if (bodyText) {
-        const bodyJson = JSON.parse(bodyText);
-        bodyToken = bodyJson.token || bodyJson.signature || bodyJson.webhook_token;
-      }
-    } catch (e) {
-      // Ignorar erros de parsing do body para token
-    }
+    // Ler o body como texto para validação
+    const bodyText = await req.text();
     
-    const receivedToken = signature || authHeader || querySignature || bodyToken;
-    
-    // Log detalhado para debug
-    console.log('Webhook received. Token validation:', {
+    console.log('Webhook received:', {
       hasConfiguredToken: !!webhookToken,
-      configuredTokenPreview: webhookToken ? webhookToken.substring(0, 4) + '...' : 'none',
-      receivedFromHeader: signature ? signature.substring(0, 4) + '...' : 'none',
-      receivedFromAuth: authHeader ? authHeader.substring(0, 4) + '...' : 'none', 
-      receivedFromQuery: querySignature ? querySignature.substring(0, 4) + '...' : 'none',
-      receivedFromBody: bodyToken ? bodyToken.substring(0, 4) + '...' : 'none',
+      receivedSignature: receivedSignature ? receivedSignature.substring(0, 8) + '...' : 'none',
       method: req.method,
-      url: req.url,
+      bodyLength: bodyText.length,
     });
     
-    // Validar token se configurado - ser mais tolerante
-    // Aceitar se qualquer uma das fontes de token corresponder
-    const tokenMatches = !webhookToken || 
-                        webhookToken === '' || 
-                        receivedToken === webhookToken ||
-                        signature === webhookToken ||
-                        querySignature === webhookToken ||
-                        bodyToken === webhookToken;
-    
-    if (!tokenMatches) {
-      console.error('Invalid webhook token. None of the received tokens match the configured token.');
-      return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Validar assinatura HMAC se token configurado
+    if (webhookToken && webhookToken !== '' && receivedSignature) {
+      // Calcular HMAC-SHA1 do body
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(webhookToken);
+      const bodyData = encoder.encode(bodyText);
+      
+      const key = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-1' },
+        false,
+        ['sign']
+      );
+      
+      const signature = await crypto.subtle.sign('HMAC', key, bodyData);
+      const expectedSignature = Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      
+      console.log('Signature validation:', {
+        expected: expectedSignature.substring(0, 8) + '...',
+        received: receivedSignature.substring(0, 8) + '...',
+        matches: expectedSignature === receivedSignature,
       });
+      
+      if (expectedSignature !== receivedSignature) {
+        console.error('Invalid webhook signature');
+        return new Response(JSON.stringify({ error: 'Unauthorized - Invalid signature' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      console.log('Signature validation passed!');
+    } else if (!receivedSignature) {
+      console.log('No signature received - skipping validation');
     }
     
-    console.log('Token validation passed!');
-
-    const payload: KiwifyWebhookPayload = await req.json();
+    // Parse do payload
+    const payload: KiwifyWebhookPayload = JSON.parse(bodyText);
     console.log('Kiwify webhook payload:', JSON.stringify(payload, null, 2));
 
     // Inicializar cliente Supabase com service role
