@@ -3,35 +3,111 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-kiwify-signature',
 };
 
-// Kiwify webhook event types
-type KiwifyEvent = 
-  | 'order_approved'       // Compra aprovada
-  | 'subscription_renewed' // Assinatura renovada
-  | 'subscription_canceled'// Assinatura cancelada
-  | 'subscription_late'    // Assinatura em atraso
-  | 'order_refunded'       // Compra reembolsada
-  | 'chargeback';          // Chargeback
+// Kiwify webhook triggers (eventos)
+type KiwifyTrigger = 
+  | 'boleto_gerado'
+  | 'pix_gerado'
+  | 'carrinho_abandonado'
+  | 'compra_recusada'
+  | 'compra_aprovada'
+  | 'compra_reembolsada'
+  | 'chargeback'
+  | 'subscription_canceled'
+  | 'subscription_late'
+  | 'subscription_renewed';
 
+// Estrutura do payload da Kiwify (baseado na documentação oficial)
 interface KiwifyWebhookPayload {
+  // Identificadores da venda
   order_id: string;
-  order_ref: string;
+  order_ref?: string;
   order_status: string;
+  
+  // Informações do produto
   product_id: string;
-  product_name: string;
+  product_name?: string;
+  Product?: {
+    id: string;
+    name: string;
+  };
+  product?: {
+    id: string;
+    name: string;
+  };
+  
+  // Informações de assinatura (para produtos recorrentes)
   subscription_id?: string;
-  subscription_status?: string;
-  Customer: {
-    full_name: string;
+  Subscription?: {
+    id: string;
+    status: string;
+    plan?: {
+      id: string;
+      name: string;
+      frequency: string;
+    };
+    charges?: {
+      completed: number;
+    };
+    next_payment?: string;
+    start_date?: string;
+  };
+  
+  // Informações do cliente (Kiwify usa "Customer" com C maiúsculo no webhook)
+  Customer?: {
+    full_name?: string;
+    name?: string;
     email: string;
     mobile?: string;
     CPF?: string;
+    cpf?: string;
   };
-  created_at: string;
+  // Alternativa em lowercase (documentação API)
+  customer?: {
+    id?: string;
+    name?: string;
+    full_name?: string;
+    email: string;
+    cpf?: string;
+    mobile?: string;
+    instagram?: string;
+    country?: string;
+    address?: {
+      street?: string;
+      number?: string;
+      complement?: string;
+      neighborhood?: string;
+      city?: string;
+      state?: string;
+      zipcode?: string;
+    };
+  };
+  
+  // Informações de pagamento
+  payment_method?: string;
+  Commissions?: {
+    charge_amount?: string;
+    product_base_price?: string;
+    kiwify_fee?: string;
+    commissioned_stores?: Array<{
+      id: string;
+      type: string;
+      custom_name: string;
+      email: string;
+      value: string;
+    }>;
+  };
+  
+  // Timestamps
+  created_at?: string;
+  updated_at?: string;
   approved_date?: string;
-  webhook_event_type?: KiwifyEvent;
+  sale_type?: string;
+  
+  // Tipo do evento (quando enviado no payload)
+  webhook_event_type?: KiwifyTrigger;
 }
 
 serve(async (req) => {
@@ -41,35 +117,57 @@ serve(async (req) => {
   }
 
   try {
-    // Validate webhook token
+    // Validar token do webhook
     const webhookToken = Deno.env.get('KIWIFY_WEBHOOK_TOKEN');
-    const authHeader = req.headers.get('x-kiwify-signature') || req.headers.get('authorization');
     
-    // Some webhooks send token in query params
+    // Kiwify pode enviar o token de diferentes formas:
+    // 1. Header x-kiwify-signature
+    // 2. Query parameter "signature" ou "token"
+    const signature = req.headers.get('x-kiwify-signature');
     const url = new URL(req.url);
-    const queryToken = url.searchParams.get('token');
+    const querySignature = url.searchParams.get('signature') || url.searchParams.get('token');
     
-    const receivedToken = authHeader || queryToken;
+    const receivedToken = signature || querySignature;
     
-    if (webhookToken && receivedToken !== webhookToken && receivedToken !== `Bearer ${webhookToken}`) {
-      console.error('Invalid webhook token');
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    console.log('Webhook received. Token validation:', {
+      hasConfiguredToken: !!webhookToken,
+      receivedToken: receivedToken ? 'present' : 'missing',
+      method: req.method,
+    });
+    
+    // Validar token se configurado
+    if (webhookToken && webhookToken !== '' && receivedToken !== webhookToken) {
+      console.error('Invalid webhook token. Expected:', webhookToken?.substring(0, 4) + '...', 'Received:', receivedToken?.substring(0, 4) + '...');
+      return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const payload: KiwifyWebhookPayload = await req.json();
-    console.log('Kiwify webhook received:', JSON.stringify(payload, null, 2));
+    console.log('Kiwify webhook payload:', JSON.stringify(payload, null, 2));
 
-    // Initialize Supabase client with service role for admin operations
+    // Inicializar cliente Supabase com service role
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const customerEmail = payload.Customer?.email?.toLowerCase();
-    const customerCpf = payload.Customer?.CPF?.replace(/\D/g, ''); // Remove non-digits
-    const customerName = payload.Customer?.full_name;
+    // Extrair dados do cliente (aceita ambos os formatos)
+    const customerData = payload.Customer || payload.customer;
+    if (!customerData) {
+      console.error('Customer data not found in payload');
+      return new Response(JSON.stringify({ error: 'Customer data is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    const customerEmail = customerData.email?.toLowerCase();
+    // CPF pode vir em diferentes formatos (CPF ou cpf)
+    const rawCpf = (customerData as any).CPF || (customerData as any).cpf;
+    const customerCpf = rawCpf?.replace(/\D/g, '');
+    const customerName = customerData.full_name || customerData.name || '';
+    const customerPhone = customerData.mobile;
 
     if (!customerEmail) {
       console.error('Customer email is required');
@@ -79,20 +177,37 @@ serve(async (req) => {
       });
     }
 
-    // Determine event type
-    const eventType = payload.webhook_event_type || 
-      (payload.order_status === 'paid' ? 'order_approved' : 
-       payload.subscription_status === 'active' ? 'subscription_renewed' :
-       payload.subscription_status === 'canceled' ? 'subscription_canceled' :
-       payload.subscription_status === 'late' ? 'subscription_late' : 
-       'order_approved');
+    // Determinar o tipo de evento baseado no payload
+    let eventType: KiwifyTrigger = payload.webhook_event_type || 'compra_aprovada';
+    
+    // Se não tiver o tipo explícito, inferir do status
+    if (!payload.webhook_event_type) {
+      const status = payload.order_status?.toLowerCase() || payload.Subscription?.status?.toLowerCase();
+      
+      if (status === 'paid' || status === 'approved' || status === 'completed') {
+        eventType = 'compra_aprovada';
+      } else if (status === 'refunded') {
+        eventType = 'compra_reembolsada';
+      } else if (status === 'canceled' || status === 'cancelled') {
+        eventType = 'subscription_canceled';
+      } else if (status === 'late' || status === 'overdue') {
+        eventType = 'subscription_late';
+      } else if (status === 'renewed' || status === 'active') {
+        // Se tiver subscription_id e status active, provavelmente é renovação
+        if (payload.subscription_id || payload.Subscription?.id) {
+          eventType = 'subscription_renewed';
+        }
+      } else if (status === 'chargeback') {
+        eventType = 'chargeback';
+      }
+    }
 
-    console.log('Processing event:', eventType);
+    console.log('Processing event:', eventType, 'for customer:', customerEmail);
 
-    // Find user by email or CPF
+    // Buscar usuário existente
     let userId: string | null = null;
     
-    // First, try to find by email in auth.users
+    // Primeiro, buscar por email na auth.users
     const { data: authUsers } = await supabase.auth.admin.listUsers();
     const existingAuthUser = authUsers?.users?.find(
       u => u.email?.toLowerCase() === customerEmail
@@ -102,7 +217,7 @@ serve(async (req) => {
       userId = existingAuthUser.id;
       console.log('Found existing user by email:', userId);
     } else if (customerCpf) {
-      // Try to find by CPF in profiles
+      // Tentar buscar por CPF na tabela profiles
       const { data: profileByCpf } = await supabase
         .from('profiles')
         .select('id')
@@ -115,11 +230,12 @@ serve(async (req) => {
       }
     }
 
-    // If user doesn't exist and it's a purchase event, create account
-    if (!userId && (eventType === 'order_approved' || eventType === 'subscription_renewed')) {
+    // Se usuário não existe e é evento de compra, criar conta automaticamente
+    const purchaseEvents: KiwifyTrigger[] = ['compra_aprovada', 'subscription_renewed'];
+    if (!userId && purchaseEvents.includes(eventType)) {
       console.log('Creating new user account for:', customerEmail);
       
-      // Generate a temporary password
+      // Gerar senha temporária
       const tempPassword = crypto.randomUUID();
       
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
@@ -129,40 +245,52 @@ serve(async (req) => {
         user_metadata: {
           full_name: customerName,
           cpf: customerCpf,
+          whatsapp: customerPhone,
         }
       });
 
       if (createError) {
         console.error('Error creating user:', createError);
-        // Don't fail the webhook, just log the error
+        // Não falha o webhook, apenas loga o erro
       } else if (newUser?.user) {
         userId = newUser.user.id;
         console.log('Created new user:', userId);
 
-        // Update profile with CPF if provided
-        if (customerCpf) {
-          await supabase
-            .from('profiles')
-            .update({ cpf: customerCpf, full_name: customerName })
-            .eq('id', userId);
+        // Atualizar profile com dados adicionais
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ 
+            cpf: customerCpf, 
+            full_name: customerName,
+            whatsapp: customerPhone,
+          })
+          .eq('id', userId);
+          
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
         }
 
-        // Send password reset email so user can set their password
+        // Enviar email de recuperação de senha para usuário definir sua senha
         const { error: resetError } = await supabase.auth.admin.generateLink({
           type: 'recovery',
           email: customerEmail,
+          options: {
+            redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/auth`,
+          }
         });
 
         if (resetError) {
           console.error('Error generating password reset link:', resetError);
+        } else {
+          console.log('Password reset link generated for new user');
         }
       }
     }
 
-    // Map Kiwify event to subscription status
+    // Mapear evento para status da assinatura
     let subscriptionStatus: 'active' | 'canceled' | 'late' | 'refunded' | 'pending';
     switch (eventType) {
-      case 'order_approved':
+      case 'compra_aprovada':
       case 'subscription_renewed':
         subscriptionStatus = 'active';
         break;
@@ -172,7 +300,7 @@ serve(async (req) => {
       case 'subscription_late':
         subscriptionStatus = 'late';
         break;
-      case 'order_refunded':
+      case 'compra_reembolsada':
       case 'chargeback':
         subscriptionStatus = 'refunded';
         break;
@@ -180,23 +308,36 @@ serve(async (req) => {
         subscriptionStatus = 'pending';
     }
 
-    // Calculate expiration date (30 days for monthly subscription)
+    // Extrair nome do produto
+    const productName = payload.product_name || 
+                       payload.Product?.name || 
+                       payload.product?.name || 
+                       'Assinatura';
+
+    // Calcular data de expiração (30 dias para assinatura mensal)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
-    // Upsert subscription record
+    // Identificador único da assinatura
+    const subscriptionIdentifier = payload.subscription_id || 
+                                   payload.Subscription?.id || 
+                                   payload.order_id;
+
+    // Upsert do registro de assinatura
     const subscriptionData = {
       user_id: userId,
-      kiwify_subscription_id: payload.subscription_id || payload.order_id,
+      kiwify_subscription_id: subscriptionIdentifier,
       kiwify_customer_email: customerEmail,
-      kiwify_customer_cpf: customerCpf,
-      plan_name: payload.product_name,
+      kiwify_customer_cpf: customerCpf || null,
+      plan_name: productName,
       status: subscriptionStatus,
-      started_at: payload.approved_date ? new Date(payload.approved_date).toISOString() : new Date().toISOString(),
+      started_at: payload.approved_date || payload.created_at || new Date().toISOString(),
       expires_at: subscriptionStatus === 'active' ? expiresAt.toISOString() : null,
       canceled_at: subscriptionStatus === 'canceled' ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),
     };
+
+    console.log('Upserting subscription:', subscriptionData);
 
     const { data: subscription, error: upsertError } = await supabase
       .from('subscriptions')
@@ -208,7 +349,7 @@ serve(async (req) => {
 
     if (upsertError) {
       console.error('Error upserting subscription:', upsertError);
-      return new Response(JSON.stringify({ error: 'Failed to process subscription' }), {
+      return new Response(JSON.stringify({ error: 'Failed to process subscription', details: upsertError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -221,6 +362,7 @@ serve(async (req) => {
       message: `Webhook processed: ${eventType}`,
       subscription_id: subscription.id,
       user_id: userId,
+      status: subscriptionStatus,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
