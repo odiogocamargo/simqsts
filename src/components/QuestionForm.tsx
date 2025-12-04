@@ -119,8 +119,25 @@ export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemo
         body: { statement: question.statement }
       });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Erro ao classificar questão');
+      if (error) {
+        // Check if the error contains specific messages from the edge function
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('402') || errorMessage.includes('Payment Required')) {
+          throw new Error('Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage.');
+        }
+        if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
+          throw new Error('Limite de requisições excedido. Tente novamente em alguns instantes.');
+        }
+        throw new Error('Erro ao conectar com o serviço de IA. Verifique seus créditos em Settings → Workspace → Usage.');
+      }
+      
+      if (!data?.success) {
+        const errorMsg = data?.error || 'Erro ao classificar questão';
+        if (errorMsg.includes('Créditos') || errorMsg.includes('402')) {
+          throw new Error('Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage.');
+        }
+        throw new Error(errorMsg);
+      }
 
       setClassificationSuggestion(data.data);
 
@@ -141,7 +158,7 @@ export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemo
       console.error('Error classifying question:', error);
       toast({
         title: 'Erro na classificação',
-        description: error instanceof Error ? error.message : 'Erro ao classificar questão',
+        description: error instanceof Error ? error.message : 'Erro ao classificar questão. Verifique seus créditos de IA.',
         variant: 'destructive',
       });
     } finally {
