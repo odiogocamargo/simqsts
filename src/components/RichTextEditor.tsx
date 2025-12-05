@@ -3,9 +3,11 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import Image from '@tiptap/extension-image';
-import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, ImageIcon } from 'lucide-react';
+import Mathematics from '@tiptap/extension-mathematics';
+import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, ImageIcon, Sigma, Subscript, Superscript } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import 'katex/dist/katex.min.css';
 
 interface RichTextEditorProps {
   content: string;
@@ -31,6 +33,11 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
         allowBase64: true,
         HTMLAttributes: {
           class: 'max-w-full h-auto rounded-lg my-2',
+        },
+      }),
+      Mathematics.configure({
+        katexOptions: {
+          throwOnError: false,
         },
       }),
     ],
@@ -70,6 +77,30 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
   if (!editor) {
     return null;
   }
+
+  const insertMathFormula = () => {
+    const formula = window.prompt(
+      'Digite a fórmula LaTeX:\n\nExemplos:\n• Química: H_2O, CO_2, Fe^{2+}, CH_3COOH\n• Matemática: x^2 + y^2 = z^2, \\frac{a}{b}, \\sqrt{x}\n• Integral: \\int_{0}^{\\infty} e^{-x} dx',
+      ''
+    );
+    if (formula) {
+      editor.chain().focus().insertContent(`$${formula}$`).run();
+    }
+  };
+
+  const insertSubscript = () => {
+    const text = window.prompt('Texto subscrito (ex: H2O → digite "2"):', '');
+    if (text) {
+      editor.chain().focus().insertContent(`<sub>${text}</sub>`).run();
+    }
+  };
+
+  const insertSuperscript = () => {
+    const text = window.prompt('Texto sobrescrito (ex: x² → digite "2"):', '');
+    if (text) {
+      editor.chain().focus().insertContent(`<sup>${text}</sup>`).run();
+    }
+  };
 
   const MenuButton = ({ 
     onClick, 
@@ -182,6 +213,29 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
           title="Inserir imagem"
         >
           <ImageIcon className="h-4 w-4" />
+        </MenuButton>
+
+        <div className="w-px h-6 bg-border/50 mx-1" />
+
+        <MenuButton
+          onClick={insertMathFormula}
+          title="Inserir fórmula LaTeX ($...$)"
+        >
+          <Sigma className="h-4 w-4" />
+        </MenuButton>
+
+        <MenuButton
+          onClick={insertSubscript}
+          title="Inserir subscrito (H₂O)"
+        >
+          <Subscript className="h-4 w-4" />
+        </MenuButton>
+
+        <MenuButton
+          onClick={insertSuperscript}
+          title="Inserir sobrescrito (x²)"
+        >
+          <Superscript className="h-4 w-4" />
         </MenuButton>
       </div>
 
