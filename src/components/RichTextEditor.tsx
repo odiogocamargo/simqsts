@@ -4,6 +4,8 @@ import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import Image from '@tiptap/extension-image';
 import Mathematics from '@tiptap/extension-mathematics';
+import SubscriptExtension from '@tiptap/extension-subscript';
+import SuperscriptExtension from '@tiptap/extension-superscript';
 import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, ImageIcon, Sigma, Subscript, Superscript } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,6 +27,8 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
         },
       }),
       Underline,
+      SubscriptExtension,
+      SuperscriptExtension,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -88,18 +92,12 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
     }
   };
 
-  const insertSubscript = () => {
-    const text = window.prompt('Texto subscrito (ex: H2O → digite "2"):', '');
-    if (text) {
-      editor.chain().focus().insertContent(`<sub>${text}</sub>`).run();
-    }
+  const toggleSubscript = () => {
+    editor.chain().focus().toggleSubscript().run();
   };
 
-  const insertSuperscript = () => {
-    const text = window.prompt('Texto sobrescrito (ex: x² → digite "2"):', '');
-    if (text) {
-      editor.chain().focus().insertContent(`<sup>${text}</sup>`).run();
-    }
+  const toggleSuperscript = () => {
+    editor.chain().focus().toggleSuperscript().run();
   };
 
   const MenuButton = ({ 
@@ -225,15 +223,17 @@ export const RichTextEditor = ({ content, onChange, placeholder = "Digite aqui..
         </MenuButton>
 
         <MenuButton
-          onClick={insertSubscript}
-          title="Inserir subscrito (H₂O)"
+          onClick={toggleSubscript}
+          isActive={editor.isActive('subscript')}
+          title="Subscrito (H₂O)"
         >
           <Subscript className="h-4 w-4" />
         </MenuButton>
 
         <MenuButton
-          onClick={insertSuperscript}
-          title="Inserir sobrescrito (x²)"
+          onClick={toggleSuperscript}
+          isActive={editor.isActive('superscript')}
+          title="Sobrescrito (x²)"
         >
           <Superscript className="h-4 w-4" />
         </MenuButton>
