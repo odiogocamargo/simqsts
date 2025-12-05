@@ -202,3 +202,45 @@ All colors MUST be HSL.
   pointer-events: none;
   height: 0;
 }
+
+/* Subscript and Superscript */
+.ProseMirror sub {
+  vertical-align: sub;
+  font-size: 0.75em;
+}
+
+.ProseMirror sup {
+  vertical-align: super;
+  font-size: 0.75em;
+}
+
+/* KaTeX Math Formulas */
+.ProseMirror .Tiptap-mathematics-editor,
+.ProseMirror .Tiptap-mathematics-render {
+  display: inline;
+  padding: 0 0.15em;
+}
+
+.ProseMirror .katex {
+  font-size: 1.1em;
+}
+
+/* Ensure formulas render in rendered content outside editor */
+.katex-html {
+  display: inline;
+}
+
+sub, sup {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+sup {
+  top: -0.5em;
+}
