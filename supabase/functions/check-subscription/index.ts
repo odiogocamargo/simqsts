@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const TRIAL_DAYS = 2;
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
@@ -43,42 +45,64 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check trial status based on account creation date
+    const createdAt = new Date(user.created_at);
+    const now = new Date();
+    const trialEndDate = new Date(createdAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+    const isInTrial = now < trialEndDate;
+    const trialDaysRemaining = isInTrial 
+      ? Math.ceil((trialEndDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) 
+      : 0;
+    
+    logStep("Trial status checked", { 
+      createdAt: createdAt.toISOString(), 
+      trialEndDate: trialEndDate.toISOString(),
+      isInTrial,
+      trialDaysRemaining 
+    });
+
+    // Check Stripe subscription
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
-    if (customers.data.length === 0) {
-      logStep("No customer found, user has no subscription");
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
-
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-    
-    const hasActiveSub = subscriptions.data.length > 0;
+    let hasActiveSub = false;
     let productId = null;
     let subscriptionEnd = null;
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
-      productId = subscription.items.data[0].price.product;
-      logStep("Determined subscription product", { productId });
+    if (customers.data.length > 0) {
+      const customerId = customers.data[0].id;
+      logStep("Found Stripe customer", { customerId });
+
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 1,
+      });
+      
+      hasActiveSub = subscriptions.data.length > 0;
+
+      if (hasActiveSub) {
+        const subscription = subscriptions.data[0];
+        subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+        logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
+        productId = subscription.items.data[0].price.product;
+        logStep("Determined subscription product", { productId });
+      } else {
+        logStep("No active subscription found");
+      }
     } else {
-      logStep("No active subscription found");
+      logStep("No Stripe customer found");
     }
+
+    // User has access if: has active subscription OR is in trial period
+    const hasAccess = hasActiveSub || isInTrial;
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
+      has_access: hasAccess,
+      is_in_trial: isInTrial,
+      trial_days_remaining: trialDaysRemaining,
+      trial_end_date: trialEndDate.toISOString(),
       product_id: productId,
       subscription_end: subscriptionEnd
     }), {
