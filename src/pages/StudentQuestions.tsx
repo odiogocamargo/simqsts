@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 import { Badge } from "@/components/ui/badge";
 import { Paywall, TrialBanner } from "@/components/Paywall";
+import DOMPurify from "dompurify";
 
 const StudentQuestions = () => {
   const { user, subscription } = useAuth();
@@ -453,7 +454,7 @@ const StudentQuestions = () => {
                 </div>
               </div>
               
-              <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: currentQuestion.statement }} />
+              <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.statement) }} />
               
               {currentQuestionImages.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -482,7 +483,7 @@ const StudentQuestions = () => {
                     <div key={option} className={cn("flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors", showResult && isCorrect && "border-green-500 bg-green-50 dark:bg-green-950/20", showResult && isSelected && !isCorrect && "border-red-500 bg-red-50 dark:bg-red-950/20", !showResult && "border-border hover:border-primary/50")}>
                       <RadioGroupItem value={option} id={`option-${option}`} />
                       <Label htmlFor={`option-${option}`} className="flex-1 cursor-pointer">
-                        <span className="font-medium">{option})</span> <span dangerouslySetInnerHTML={{ __html: optionValue }} />
+                        <span className="font-medium">{option})</span> <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(optionValue) }} />
                       </Label>
                     </div>
                   );
@@ -498,7 +499,7 @@ const StudentQuestions = () => {
                   {currentQuestion.explanation && (
                     <div className="p-4 bg-muted rounded-lg">
                       <h4 className="font-medium mb-2">Explicação:</h4>
-                      <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: currentQuestion.explanation }} />
+                      <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.explanation) }} />
                     </div>
                   )}
                   <Button onClick={handleNextQuestion} disabled={currentQuestionIndex === questions.length - 1} className="w-full">Próxima Questão</Button>
