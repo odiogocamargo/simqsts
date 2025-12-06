@@ -1,6 +1,9 @@
-import { LayoutDashboard, FileText, PlusCircle, TrendingUp, BookOpen, List, Users, Download } from "lucide-react";
+import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, Download, CreditCard, Crown, Loader2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 import {
   Sidebar,
@@ -32,6 +35,7 @@ const studentNavItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const { role, isLoading } = useUserRole();
+  const { subscription, subscriptionLoading, createCheckout, openCustomerPortal } = useAuth();
 
   const navItems = role === "aluno" ? studentNavItems : adminNavItems;
 
@@ -39,7 +43,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 glass-effect">
-      <SidebarContent>
+      <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
         <div className="flex items-center gap-3 p-4 border-b border-border/50">
           <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shrink-0 premium-glow">
@@ -54,7 +58,7 @@ export function AppSidebar() {
           )}
         </div>
 
-        <SidebarGroup className="mt-2">
+        <SidebarGroup className="mt-2 flex-1">
           <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider">Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
@@ -76,6 +80,54 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Subscription Status */}
+        {role === "aluno" && (
+          <div className="p-4 border-t border-border/50">
+            {subscriptionLoading ? (
+              <div className="flex items-center justify-center py-2">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : subscription.subscribed ? (
+              <div className="space-y-3">
+                {!isCollapsed && (
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Assinante</span>
+                    <Badge variant="secondary" className="text-xs">Ativo</Badge>
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openCustomerPortal}
+                  className="w-full gap-2"
+                  disabled={subscriptionLoading}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {!isCollapsed && "Gerenciar Assinatura"}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {!isCollapsed && (
+                  <p className="text-xs text-muted-foreground">
+                    Assine para ter acesso completo
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  onClick={createCheckout}
+                  className="w-full gap-2"
+                  disabled={subscriptionLoading}
+                >
+                  <Crown className="h-4 w-4" />
+                  {!isCollapsed && "Assinar Agora"}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </SidebarContent>
     </Sidebar>
   );

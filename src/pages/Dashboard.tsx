@@ -1,11 +1,33 @@
 import { Layout } from "@/components/Layout";
 import { MetricCard } from "@/components/MetricCard";
-import { Database, BookOpen, TrendingUp, Calendar } from "lucide-react";
+import { Database, BookOpen, TrendingUp, Calendar, Crown, CreditCard, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 
 const Dashboard = () => {
+  const { subscription, subscriptionLoading, createCheckout, openCustomerPortal, checkSubscription } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle subscription success/cancel from Stripe redirect
+  useEffect(() => {
+    const subscriptionStatus = searchParams.get('subscription');
+    if (subscriptionStatus === 'success') {
+      toast.success('Assinatura realizada com sucesso! Bem-vindo ao SIM Questões.');
+      checkSubscription();
+      setSearchParams({});
+    } else if (subscriptionStatus === 'canceled') {
+      toast.info('Processo de assinatura cancelado.');
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams, checkSubscription]);
+
   // Buscar total de questões
   const { data: totalQuestions = 0 } = useQuery({
     queryKey: ['questions-count'],
@@ -75,6 +97,15 @@ const Dashboard = () => {
     { title: "Última Atualização", value: totalQuestions > 0 ? "Hoje" : "Nenhuma", icon: Calendar, trend: totalQuestions > 0 ? "Recente" : "Adicione questões", variant: "accent" as const },
   ];
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
   return (
     <Layout>
       <div className="space-y-8">
@@ -90,6 +121,67 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
+          {/* Subscription Status Card */}
+          <Card className={subscription.subscribed ? "border-primary/50" : ""}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-primary" />
+                Status da Assinatura
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {subscriptionLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              ) : subscription.subscribed ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground">Assinatura Ativa</span>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary">Premium</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Válida até {formatDate(subscription.subscriptionEnd)}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={openCustomerPortal}
+                    disabled={subscriptionLoading}
+                    className="w-full gap-2"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Gerenciar Assinatura
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-center py-4">
+                    <Crown className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                    <h4 className="font-semibold text-foreground mb-1">Você ainda não é assinante</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Assine para ter acesso completo ao banco de questões e todas as funcionalidades.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={createCheckout}
+                    disabled={subscriptionLoading}
+                    className="w-full gap-2"
+                  >
+                    <Crown className="h-4 w-4" />
+                    Assinar por R$ 37,90/mês
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Distribuição por Matéria</CardTitle>
@@ -106,7 +198,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                 ) : (
-                  subjectStats.map((stat) => (
+                  subjectStats.slice(0, 5).map((stat) => (
                     <div key={stat.subject} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium text-foreground">{stat.subject}</span>
@@ -124,56 +216,38 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Status do Sistema</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 pb-4 border-b">
-                  <div className="h-2 w-2 rounded-full bg-success mt-2" />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium text-foreground">Banco de Dados Conectado</p>
-                    <p className="text-xs text-muted-foreground">
-                      Sistema pronto para receber questões
-                    </p>
-                  </div>
-                </div>
-                {totalQuestions === 0 ? (
-                  <div className="flex items-start gap-3 pb-4 border-b">
-                    <div className="h-2 w-2 rounded-full bg-accent mt-2" />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium text-foreground">Nenhuma questão cadastrada</p>
-                      <p className="text-xs text-muted-foreground">
-                        Comece adicionando suas primeiras questões
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-3 pb-4 border-b">
-                    <div className="h-2 w-2 rounded-full bg-success mt-2" />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium text-foreground">{totalQuestions} questões no banco</p>
-                      <p className="text-xs text-muted-foreground">
-                        Distribuídas em {totalSubjects} matérias
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-start gap-3">
-                  <div className="h-2 w-2 rounded-full bg-primary mt-2" />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium text-foreground">Sistema de Autenticação</p>
-                    <p className="text-xs text-muted-foreground">
-                      Aguardando implementação
-                    </p>
-                  </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Status do Sistema</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="flex items-start gap-3">
+                <div className="h-2 w-2 rounded-full bg-green-500 mt-2" />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium text-foreground">Banco de Dados</p>
+                  <p className="text-xs text-muted-foreground">Conectado e funcionando</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="flex items-start gap-3">
+                <div className="h-2 w-2 rounded-full bg-green-500 mt-2" />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium text-foreground">Autenticação</p>
+                  <p className="text-xs text-muted-foreground">Sistema ativo</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="h-2 w-2 rounded-full bg-green-500 mt-2" />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium text-foreground">Pagamentos (Stripe)</p>
+                  <p className="text-xs text-muted-foreground">Integração ativa</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
