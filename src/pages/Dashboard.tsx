@@ -109,6 +109,39 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="space-y-8">
+        {/* Trial Banner - destacado no topo */}
+        {subscription.isInTrial && (
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 text-white shadow-lg">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSI0Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                  <Clock className="h-7 w-7" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Período de Teste Gratuito</h3>
+                  <p className="text-white/90">
+                    {subscription.trialDaysRemaining === 1 
+                      ? "Seu teste expira amanhã! Não perca o acesso." 
+                      : subscription.trialDaysRemaining === 0
+                      ? "Seu teste expira hoje!"
+                      : `Restam ${subscription.trialDaysRemaining} dias do seu período de teste.`}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={createCheckout}
+                disabled={subscriptionLoading}
+                size="lg"
+                className="bg-white text-orange-600 hover:bg-white/90 font-semibold shadow-md"
+              >
+                <Crown className="h-5 w-5 mr-2" />
+                Assinar Agora - R$ 37,90/mês
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div>
           <h2 className="text-3xl font-bold text-foreground mb-2">Dashboard</h2>
           <p className="text-muted-foreground">Visão geral da saúde do seu banco de questões</p>
