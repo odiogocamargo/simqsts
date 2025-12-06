@@ -4,18 +4,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users as UsersIcon, Mail, Shield, Calendar } from "lucide-react";
-import { useState } from "react";
+import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin } from "lucide-react";
+import { useState, useMemo } from "react";
+
+interface UserWithDetails {
+  id: string;
+  full_name: string | null;
+  cpf: string | null;
+  whatsapp: string | null;
+  endereco: string | null;
+  created_at: string;
+  roles: string[];
+  subscription?: {
+    status: string;
+    plan_name: string | null;
+    expires_at: string | null;
+    started_at: string | null;
+  } | null;
+  isInTrial?: boolean;
+  trialDaysRemaining?: number;
+}
 
 export default function Users() {
   const queryClient = useQueryClient();
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Buscar todos os usuários com seus perfis e roles
-  const { data: users, isLoading } = useQuery({
+  // Buscar todos os usuários com seus perfis, roles e assinaturas
+  const { data: users, isLoading, refetch } = useQuery({
     queryKey: ["users-admin"],
     queryFn: async () => {
       const { data: profiles, error: profilesError } = await supabase
@@ -25,29 +47,47 @@ export default function Users() {
 
       if (profilesError) throw profilesError;
 
-      // Buscar roles de cada usuário
-      const usersWithRoles = await Promise.all(
+      // Buscar roles e assinaturas de cada usuário
+      const usersWithDetails = await Promise.all(
         profiles.map(async (profile) => {
-          const { data: roles } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", profile.id);
+          const [rolesResult, subscriptionResult] = await Promise.all([
+            supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", profile.id),
+            supabase
+              .from("subscriptions")
+              .select("status, plan_name, expires_at, started_at")
+              .eq("user_id", profile.id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          ]);
+
+          // Calcular trial
+          const createdAt = new Date(profile.created_at);
+          const now = new Date();
+          const trialEndDate = new Date(createdAt.getTime() + 2 * 24 * 60 * 60 * 1000);
+          const isInTrial = now < trialEndDate;
+          const trialDaysRemaining = Math.max(0, Math.ceil((trialEndDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
 
           return {
             ...profile,
-            roles: roles?.map((r) => r.role) || [],
-          };
+            roles: rolesResult.data?.map((r) => r.role) || [],
+            subscription: subscriptionResult.data,
+            isInTrial,
+            trialDaysRemaining,
+          } as UserWithDetails;
         })
       );
 
-      return usersWithRoles;
+      return usersWithDetails;
     },
   });
 
   // Atualizar role do usuário
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
-      // Remover roles antigas
       const { error: deleteError } = await supabase
         .from("user_roles")
         .delete()
@@ -55,7 +95,6 @@ export default function Users() {
 
       if (deleteError) throw deleteError;
 
-      // Adicionar nova role
       const { error: insertError } = await supabase
         .from("user_roles")
         .insert([{ user_id: userId, role: newRole as any }]);
@@ -73,9 +112,39 @@ export default function Users() {
     },
   });
 
+  // Deletar usuário
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      // Deletar dados relacionados primeiro
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+      await supabase.from("user_performance").delete().eq("user_id", userId);
+      await supabase.from("user_answers").delete().eq("user_id", userId);
+      await supabase.from("study_sessions").delete().eq("user_id", userId);
+      await supabase.from("subscriptions").delete().eq("user_id", userId);
+      
+      // Por último, deletar o perfil
+      const { error } = await supabase.from("profiles").delete().eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users-admin"] });
+      toast.success("Usuário excluído com sucesso!");
+      setDeletingUserId(null);
+    },
+    onError: (error) => {
+      toast.error("Erro ao excluir usuário: " + error.message);
+      setDeletingUserId(null);
+    },
+  });
+
   const handleRoleChange = (userId: string, newRole: string) => {
     setUpdatingUserId(userId);
     updateRoleMutation.mutate({ userId, newRole });
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    setDeletingUserId(userId);
+    deleteUserMutation.mutate(userId);
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -104,80 +173,213 @@ export default function Users() {
     }
   };
 
+  const getSubscriptionBadge = (user: UserWithDetails) => {
+    if (user.subscription?.status === "active") {
+      return (
+        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Assinante
+        </Badge>
+      );
+    }
+    if (user.isInTrial) {
+      return (
+        <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+          <Clock className="h-3 w-3 mr-1" />
+          Trial ({user.trialDaysRemaining}d)
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        <XCircle className="h-3 w-3 mr-1" />
+        Sem acesso
+      </Badge>
+    );
+  };
+
+  // Filtrar usuários
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!searchTerm.trim()) return users;
+
+    const term = searchTerm.toLowerCase();
+    return users.filter((user) =>
+      user.full_name?.toLowerCase().includes(term) ||
+      user.cpf?.includes(term) ||
+      user.whatsapp?.includes(term)
+    );
+  }, [users, searchTerm]);
+
+  // Estatísticas
+  const stats = useMemo(() => {
+    if (!users) return { total: 0, admins: 0, professors: 0, alunos: 0, subscribers: 0, trial: 0 };
+
+    return {
+      total: users.length,
+      admins: users.filter(u => u.roles.includes("admin")).length,
+      professors: users.filter(u => u.roles.includes("professor")).length,
+      alunos: users.filter(u => u.roles.includes("aluno")).length,
+      subscribers: users.filter(u => u.subscription?.status === "active").length,
+      trial: users.filter(u => u.isInTrial && u.subscription?.status !== "active").length,
+    };
+  }, [users]);
+
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <UsersIcon className="h-8 w-8 text-primary" />
-            Gerenciamento de Usuários
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Visualize e gerencie as permissões de todos os usuários da plataforma
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <UsersIcon className="h-8 w-8 text-primary" />
+              Gerenciamento de Usuários
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Visualize e gerencie as permissões de todos os usuários da plataforma
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => refetch()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Atualizar
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <p className="text-xs text-muted-foreground">Total de Usuários</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-red-500">{stats.admins}</div>
+              <p className="text-xs text-muted-foreground">Administradores</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-blue-500">{stats.professors}</div>
+              <p className="text-xs text-muted-foreground">Professores</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-slate-500">{stats.alunos}</div>
+              <p className="text-xs text-muted-foreground">Alunos</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-green-500">{stats.subscribers}</div>
+              <p className="text-xs text-muted-foreground">Assinantes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold text-amber-500">{stats.trial}</div>
+              <p className="text-xs text-muted-foreground">Em Trial</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Usuários Cadastrados</CardTitle>
-            <CardDescription>
-              Lista completa de usuários com suas informações e permissões
-            </CardDescription>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <CardTitle>Usuários Cadastrados</CardTitle>
+                <CardDescription>
+                  Lista completa de usuários com suas informações e permissões
+                </CardDescription>
+              </div>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome, CPF ou WhatsApp..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="text-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto mb-2" />
                 <p className="text-muted-foreground">Carregando usuários...</p>
               </div>
-            ) : !users || users.length === 0 ? (
+            ) : !filteredUsers || filteredUsers.length === 0 ? (
               <div className="text-center py-8">
                 <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">Nenhum usuário encontrado</p>
+                <p className="text-muted-foreground">
+                  {searchTerm ? "Nenhum usuário encontrado para a busca" : "Nenhum usuário encontrado"}
+                </p>
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Email / CPF</TableHead>
-                      <TableHead>WhatsApp</TableHead>
-                      <TableHead>Role Atual</TableHead>
+                      <TableHead>Usuário</TableHead>
+                      <TableHead>Contato</TableHead>
+                      <TableHead>Assinatura</TableHead>
+                      <TableHead>Role</TableHead>
                       <TableHead>Alterar Role</TableHead>
-                      <TableHead>Data de Cadastro</TableHead>
+                      <TableHead>Cadastro</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
+                    {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <span className="text-xs font-bold text-primary">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <span className="text-sm font-bold text-primary">
                                 {user.full_name?.charAt(0).toUpperCase() || "?"}
                               </span>
                             </div>
-                            {user.full_name || "Sem nome"}
+                            <div>
+                              <p className="font-medium">{user.full_name || "Sem nome"}</p>
+                              {user.cpf && (
+                                <p className="text-xs text-muted-foreground">CPF: {user.cpf}</p>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-sm">
-                              <Mail className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">Email não disponível</span>
-                            </div>
-                            {user.cpf && (
-                              <div className="text-xs text-muted-foreground">
-                                CPF: {user.cpf}
+                          <div className="space-y-1 text-sm">
+                            {user.whatsapp && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {user.whatsapp}
                               </div>
+                            )}
+                            {user.endereco && (
+                              <div className="flex items-center gap-1 text-muted-foreground truncate max-w-[150px]" title={user.endereco}>
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{user.endereco}</span>
+                              </div>
+                            )}
+                            {!user.whatsapp && !user.endereco && (
+                              <span className="text-muted-foreground">-</span>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {user.whatsapp || "-"}
+                          <div className="space-y-1">
+                            {getSubscriptionBadge(user)}
+                            {user.subscription?.expires_at && (
+                              <p className="text-xs text-muted-foreground">
+                                Até {new Date(user.subscription.expires_at).toLocaleDateString("pt-BR")}
+                              </p>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 flex-wrap">
                             {user.roles.map((role) => (
                               <Badge key={role} variant={getRoleBadgeVariant(role)}>
                                 {getRoleLabel(role)}
@@ -194,7 +396,7 @@ export default function Users() {
                             onValueChange={(value) => handleRoleChange(user.id, value)}
                             disabled={updatingUserId === user.id}
                           >
-                            <SelectTrigger className="w-[150px]">
+                            <SelectTrigger className="w-[140px]">
                               <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -209,6 +411,39 @@ export default function Users() {
                             <Calendar className="h-3 w-3" />
                             {new Date(user.created_at).toLocaleDateString("pt-BR")}
                           </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={deletingUserId === user.id}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário
+                                  <strong> {user.full_name || "Sem nome"}</strong> e todos os seus dados
+                                  (respostas, desempenho, sessões de estudo, etc).
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}
