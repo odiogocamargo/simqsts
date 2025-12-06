@@ -112,19 +112,25 @@ export default function Users() {
     },
   });
 
-  // Deletar usuário
+  // Deletar usuário via Edge Function (secure server-side deletion)
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // Deletar dados relacionados primeiro
-      await supabase.from("user_roles").delete().eq("user_id", userId);
-      await supabase.from("user_performance").delete().eq("user_id", userId);
-      await supabase.from("user_answers").delete().eq("user_id", userId);
-      await supabase.from("study_sessions").delete().eq("user_id", userId);
-      await supabase.from("subscriptions").delete().eq("user_id", userId);
-      
-      // Por último, deletar o perfil
-      const { error } = await supabase.from("profiles").delete().eq("id", userId);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      const response = await supabase.functions.invoke("delete-user", {
+        body: { userId },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Erro ao excluir usuário");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-admin"] });
