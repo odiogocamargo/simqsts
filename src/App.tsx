@@ -17,6 +17,7 @@ import SubjectReport from "./pages/SubjectReport";
 import Users from "./pages/Users";
 import TaxonomyExport from "./pages/TaxonomyExport";
 import Auth from "./pages/Auth";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
             {/* Rotas de Admin */}
             <Route path="/dashboard" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Dashboard /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Questions /></RoleBasedRoute></ProtectedRoute>} />
