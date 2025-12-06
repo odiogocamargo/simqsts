@@ -1,6 +1,6 @@
 import { Layout } from "@/components/Layout";
 import { MetricCard } from "@/components/MetricCard";
-import { Database, BookOpen, TrendingUp, Calendar, Crown, CreditCard, CheckCircle } from "lucide-react";
+import { Database, BookOpen, TrendingUp, Calendar, Crown, CreditCard, CheckCircle, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,7 +122,7 @@ const Dashboard = () => {
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Subscription Status Card */}
-          <Card className={subscription.subscribed ? "border-primary/50" : ""}>
+          <Card className={subscription.subscribed ? "border-primary/50" : subscription.isInTrial ? "border-amber-500/50" : ""}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-primary" />
@@ -160,11 +160,43 @@ const Dashboard = () => {
                     Gerenciar Assinatura
                   </Button>
                 </div>
+              ) : subscription.isInTrial ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground">Período de Teste</span>
+                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">Trial</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {subscription.trialDaysRemaining === 1 
+                          ? "Expira amanhã" 
+                          : `${subscription.trialDaysRemaining} dias restantes`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                      Você tem acesso gratuito por 2 dias. Assine agora para não perder o acesso!
+                    </p>
+                  </div>
+                  <Button
+                    onClick={createCheckout}
+                    disabled={subscriptionLoading}
+                    className="w-full gap-2"
+                  >
+                    <Crown className="h-4 w-4" />
+                    Assinar por R$ 37,90/mês
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div className="text-center py-4">
                     <Crown className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
-                    <h4 className="font-semibold text-foreground mb-1">Você ainda não é assinante</h4>
+                    <h4 className="font-semibold text-foreground mb-1">Seu período de teste expirou</h4>
                     <p className="text-sm text-muted-foreground mb-4">
                       Assine para ter acesso completo ao banco de questões e todas as funcionalidades.
                     </p>

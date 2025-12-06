@@ -4,6 +4,10 @@ import { toast } from 'sonner';
 
 interface SubscriptionStatus {
   subscribed: boolean;
+  hasAccess: boolean;
+  isInTrial: boolean;
+  trialDaysRemaining: number;
+  trialEndDate: string | null;
   productId: string | null;
   subscriptionEnd: string | null;
 }
@@ -11,6 +15,10 @@ interface SubscriptionStatus {
 export const useSubscription = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({
     subscribed: false,
+    hasAccess: false,
+    isInTrial: false,
+    trialDaysRemaining: 0,
+    trialEndDate: null,
     productId: null,
     subscriptionEnd: null,
   });
@@ -28,6 +36,10 @@ export const useSubscription = () => {
 
       setSubscriptionStatus({
         subscribed: data?.subscribed ?? false,
+        hasAccess: data?.has_access ?? false,
+        isInTrial: data?.is_in_trial ?? false,
+        trialDaysRemaining: data?.trial_days_remaining ?? 0,
+        trialEndDate: data?.trial_end_date ?? null,
         productId: data?.product_id ?? null,
         subscriptionEnd: data?.subscription_end ?? null,
       });
