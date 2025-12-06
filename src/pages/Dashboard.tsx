@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect } from "react";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 
 const Dashboard = () => {
   const { subscription, subscriptionLoading, createCheckout, openCustomerPortal, checkSubscription } = useAuth();
+  const { isAdmin, isProfessor } = useUserRole();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Handle subscription success/cancel from Stripe redirect
@@ -109,8 +111,8 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="space-y-8">
-        {/* Trial Banner - destacado no topo */}
-        {subscription.isInTrial && (
+        {/* Trial Banner - destacado no topo (apenas para alunos) */}
+        {subscription.isInTrial && !isAdmin && !isProfessor && (
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 text-white shadow-lg">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSI0Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
             <div className="relative flex flex-col md:flex-row items-center justify-between gap-4">
@@ -154,98 +156,100 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Subscription Status Card */}
-          <Card className={subscription.subscribed ? "border-primary/50" : subscription.isInTrial ? "border-amber-500/50" : ""}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Crown className="h-5 w-5 text-primary" />
-                Status da Assinatura
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {subscriptionLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                </div>
-              ) : subscription.subscribed ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">Assinatura Ativa</span>
-                        <Badge variant="secondary" className="bg-primary/10 text-primary">Premium</Badge>
+          {/* Subscription Status Card - apenas para alunos */}
+          {!isAdmin && !isProfessor && (
+            <Card className={subscription.subscribed ? "border-primary/50" : subscription.isInTrial ? "border-amber-500/50" : ""}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-primary" />
+                  Status da Assinatura
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {subscriptionLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  </div>
+                ) : subscription.subscribed ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <CheckCircle className="h-5 w-5 text-primary" />
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Válida até {formatDate(subscription.subscriptionEnd)}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground">Assinatura Ativa</span>
+                          <Badge variant="secondary" className="bg-primary/10 text-primary">Premium</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Válida até {formatDate(subscription.subscriptionEnd)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={openCustomerPortal}
+                      disabled={subscriptionLoading}
+                      className="w-full gap-2"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Gerenciar Assinatura
+                    </Button>
+                  </div>
+                ) : subscription.isInTrial ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                        <Clock className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground">Período de Teste</span>
+                          <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">Trial</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {subscription.trialDaysRemaining === 1 
+                            ? "Expira amanhã" 
+                            : `${subscription.trialDaysRemaining} dias restantes`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                      <p className="text-sm text-amber-700 dark:text-amber-400">
+                        Você tem acesso gratuito por 2 dias. Assine agora para não perder o acesso!
                       </p>
                     </div>
+                    <Button
+                      onClick={createCheckout}
+                      disabled={subscriptionLoading}
+                      className="w-full gap-2"
+                    >
+                      <Crown className="h-4 w-4" />
+                      Assinar por R$ 37,90/mês
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={openCustomerPortal}
-                    disabled={subscriptionLoading}
-                    className="w-full gap-2"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    Gerenciar Assinatura
-                  </Button>
-                </div>
-              ) : subscription.isInTrial ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                      <Clock className="h-5 w-5 text-amber-500" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">Período de Teste</span>
-                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">Trial</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {subscription.trialDaysRemaining === 1 
-                          ? "Expira amanhã" 
-                          : `${subscription.trialDaysRemaining} dias restantes`}
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center py-4">
+                      <Crown className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                      <h4 className="font-semibold text-foreground mb-1">Seu período de teste expirou</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Assine para ter acesso completo ao banco de questões e todas as funcionalidades.
                       </p>
                     </div>
+                    <Button
+                      onClick={createCheckout}
+                      disabled={subscriptionLoading}
+                      className="w-full gap-2"
+                    >
+                      <Crown className="h-4 w-4" />
+                      Assinar por R$ 37,90/mês
+                    </Button>
                   </div>
-                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                    <p className="text-sm text-amber-700 dark:text-amber-400">
-                      Você tem acesso gratuito por 2 dias. Assine agora para não perder o acesso!
-                    </p>
-                  </div>
-                  <Button
-                    onClick={createCheckout}
-                    disabled={subscriptionLoading}
-                    className="w-full gap-2"
-                  >
-                    <Crown className="h-4 w-4" />
-                    Assinar por R$ 37,90/mês
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="text-center py-4">
-                    <Crown className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
-                    <h4 className="font-semibold text-foreground mb-1">Seu período de teste expirou</h4>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Assine para ter acesso completo ao banco de questões e todas as funcionalidades.
-                    </p>
-                  </div>
-                  <Button
-                    onClick={createCheckout}
-                    disabled={subscriptionLoading}
-                    className="w-full gap-2"
-                  >
-                    <Crown className="h-4 w-4" />
-                    Assinar por R$ 37,90/mês
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
