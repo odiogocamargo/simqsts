@@ -18,9 +18,10 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { Paywall, TrialBanner } from "@/components/Paywall";
 
 const StudentPractice = () => {
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
   const [period, setPeriod] = useState<string>("today");
   const [customDate, setCustomDate] = useState<Date>();
 
@@ -214,6 +215,24 @@ const StudentPractice = () => {
     { title: "Sessões de Estudo", value: totalSessions.toString(), icon: Activity, variant: "default" as const }
   ];
 
+  // Check if user has access
+  if (!subscription.hasAccess) {
+    return (
+      <Layout>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Meu Desempenho</h2>
+            <p className="text-muted-foreground">Análise completa do seu progresso e evolução nos estudos</p>
+          </div>
+          <Paywall 
+            title="Acesso ao Desempenho Bloqueado" 
+            description="Seu período de teste expirou. Assine para acompanhar seu progresso e identificar pontos fracos."
+          />
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -221,6 +240,8 @@ const StudentPractice = () => {
           <h2 className="text-3xl font-bold text-foreground mb-2">Meu Desempenho</h2>
           <p className="text-muted-foreground">Análise completa do seu progresso e evolução nos estudos</p>
         </div>
+
+        <TrialBanner />
 
         <Card>
           <CardHeader><CardTitle>Período de Análise</CardTitle></CardHeader>

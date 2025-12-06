@@ -13,9 +13,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 import { Badge } from "@/components/ui/badge";
+import { Paywall, TrialBanner } from "@/components/Paywall";
 
 const StudentQuestions = () => {
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -305,6 +306,24 @@ const StudentQuestions = () => {
     setSessionId(null);
   };
 
+  // Check if user has access
+  if (!subscription.hasAccess) {
+    return (
+      <Layout>
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Prática de Questões</h2>
+            <p className="text-muted-foreground">Selecione os filtros e pratique as questões</p>
+          </div>
+          <Paywall 
+            title="Acesso às Questões Bloqueado" 
+            description="Seu período de teste expirou. Assine para continuar praticando e melhorar seu desempenho."
+          />
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-8">
@@ -312,6 +331,8 @@ const StudentQuestions = () => {
           <h2 className="text-3xl font-bold text-foreground mb-2">Prática de Questões</h2>
           <p className="text-muted-foreground">Selecione os filtros e pratique as questões</p>
         </div>
+
+        <TrialBanner />
 
         <Card>
           <CardHeader><CardTitle>Filtros de Prática</CardTitle></CardHeader>
