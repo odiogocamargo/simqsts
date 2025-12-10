@@ -45,12 +45,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const navigate = useNavigate();
 
-  const checkSubscription = async () => {
-    if (!session) return;
+  const checkSubscription = async (currentSession?: Session | null) => {
+    const sessionToUse = currentSession ?? session;
+    if (!sessionToUse?.access_token) return;
     
     setSubscriptionLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${sessionToUse.access_token}`,
+        },
+      });
       
       if (error) {
         console.error('Error checking subscription:', error);
@@ -116,15 +121,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         setLoading(false);
 
         // Check subscription after auth state changes (deferred)
-        if (session?.user) {
+        if (currentSession?.user) {
           setTimeout(() => {
-            checkSubscription();
+            checkSubscription(currentSession);
           }, 0);
         } else {
           setSubscription({
@@ -141,14 +146,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
       setLoading(false);
       
-      if (session?.user) {
+      if (existingSession?.user) {
         setTimeout(() => {
-          checkSubscription();
+          checkSubscription(existingSession);
         }, 0);
       }
     });
