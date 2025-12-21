@@ -30,6 +30,7 @@ const adminNavItems = [
 const studentNavItems = [
   { title: "Meu Desempenho", url: "/student", icon: TrendingUp },
   { title: "Questões", url: "/student/questions", icon: BookOpen },
+  { title: "Assinatura", url: "/student/subscription", icon: CreditCard },
 ];
 
 export function AppSidebar() {
