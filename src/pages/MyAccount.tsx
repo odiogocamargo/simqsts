@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -54,13 +55,12 @@ const MyAccount = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Minha Conta</h1>
-        <p className="text-muted-foreground mt-1">
-          Gerencie suas informações e assinatura
-        </p>
-      </div>
+    <Layout>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Minha Conta</h2>
+          <p className="text-muted-foreground">Gerencie suas informações e assinatura</p>
+        </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -291,7 +291,8 @@ const MyAccount = () => {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </Layout>
   );
 };
 
