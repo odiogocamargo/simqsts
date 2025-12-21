@@ -18,6 +18,7 @@ import Users from "./pages/Users";
 import TaxonomyExport from "./pages/TaxonomyExport";
 import Auth from "./pages/Auth";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import SubscriptionManagement from "./pages/SubscriptionManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
             {/* Rotas de Aluno */}
             <Route path="/student" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentPractice /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/student/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentQuestions /></RoleBasedRoute></ProtectedRoute>} />
+            <Route path="/student/subscription" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><SubscriptionManagement /></RoleBasedRoute></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
