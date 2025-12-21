@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useRef, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +29,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const SUBSCRIPTION_CACHE_DURATION = 30000; // 30 seconds cache
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -44,41 +46,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const navigate = useNavigate();
+  
+  // Refs for debouncing and caching
+  const lastCheckRef = useRef<number>(0);
+  const checkInProgressRef = useRef<boolean>(false);
+  const pendingCheckRef = useRef<Promise<void> | null>(null);
 
-  const checkSubscription = async (currentSession?: Session | null) => {
+  const checkSubscription = useCallback(async (currentSession?: Session | null) => {
     const sessionToUse = currentSession ?? session;
     if (!sessionToUse?.access_token) return;
     
-    setSubscriptionLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: {
-          Authorization: `Bearer ${sessionToUse.access_token}`,
-        },
-      });
-      
-      if (error) {
-        console.error('Error checking subscription:', error);
-        return;
-      }
-
-      setSubscription({
-        subscribed: data?.subscribed ?? false,
-        hasAccess: data?.has_access ?? false,
-        isInTrial: data?.is_in_trial ?? false,
-        trialDaysRemaining: data?.trial_days_remaining ?? 0,
-        trialEndDate: data?.trial_end_date ?? null,
-        productId: data?.product_id ?? null,
-        subscriptionEnd: data?.subscription_end ?? null,
-      });
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-    } finally {
-      setSubscriptionLoading(false);
+    const now = Date.now();
+    
+    // If we checked recently, skip (cache for 30 seconds)
+    if (now - lastCheckRef.current < SUBSCRIPTION_CACHE_DURATION) {
+      console.log('[useAuth] Skipping subscription check - cached');
+      return;
     }
-  };
+    
+    // If check is already in progress, wait for it instead of starting a new one
+    if (checkInProgressRef.current && pendingCheckRef.current) {
+      console.log('[useAuth] Subscription check already in progress, waiting...');
+      return pendingCheckRef.current;
+    }
+    
+    checkInProgressRef.current = true;
+    setSubscriptionLoading(true);
+    
+    const checkPromise = (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('check-subscription', {
+          headers: {
+            Authorization: `Bearer ${sessionToUse.access_token}`,
+          },
+        });
+        
+        if (error) {
+          console.error('Error checking subscription:', error);
+          return;
+        }
 
-  const createCheckout = async () => {
+        lastCheckRef.current = Date.now();
+        
+        setSubscription({
+          subscribed: data?.subscribed ?? false,
+          hasAccess: data?.has_access ?? false,
+          isInTrial: data?.is_in_trial ?? false,
+          trialDaysRemaining: data?.trial_days_remaining ?? 0,
+          trialEndDate: data?.trial_end_date ?? null,
+          productId: data?.product_id ?? null,
+          subscriptionEnd: data?.subscription_end ?? null,
+        });
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+      } finally {
+        setSubscriptionLoading(false);
+        checkInProgressRef.current = false;
+        pendingCheckRef.current = null;
+      }
+    })();
+    
+    pendingCheckRef.current = checkPromise;
+    return checkPromise;
+  }, [session]);
+
+  const createCheckout = useCallback(async () => {
     if (!session?.access_token) {
       console.error('No session available for checkout');
       return;
@@ -105,9 +137,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setSubscriptionLoading(false);
     }
-  };
+  }, [session]);
 
-  const openCustomerPortal = async () => {
+  const openCustomerPortal = useCallback(async () => {
     if (!session?.access_token) {
       console.error('No session available for customer portal');
       return;
@@ -134,22 +166,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setSubscriptionLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
+    let mounted = true;
+    let initialCheckDone = false;
+    
     // Set up auth state listener FIRST
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        if (!mounted) return;
+        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
 
-        // Check subscription after auth state changes (deferred)
-        if (currentSession?.user) {
+        // Only check subscription on specific events, not every change
+        if (currentSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           setTimeout(() => {
-            checkSubscription(currentSession);
-          }, 0);
-        } else {
+            if (mounted) checkSubscription(currentSession);
+          }, 100);
+        } else if (!currentSession) {
           setSubscription({
             subscribed: false,
             hasAccess: false,
@@ -165,30 +202,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (!mounted) return;
+      
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
       setLoading(false);
       
-      if (existingSession?.user) {
+      // Only do initial check if not already done by auth state change
+      if (existingSession?.user && !initialCheckDone) {
+        initialCheckDone = true;
         setTimeout(() => {
-          checkSubscription(existingSession);
-        }, 0);
+          if (mounted) checkSubscription(existingSession);
+        }, 100);
       }
     });
 
-    return () => authSubscription.unsubscribe();
+    return () => {
+      mounted = false;
+      authSubscription.unsubscribe();
+    };
   }, []);
 
-  // Auto-refresh subscription every minute
+  // Auto-refresh subscription every 2 minutes (reduced from 1 minute)
   useEffect(() => {
     if (!session) return;
 
     const interval = setInterval(() => {
       checkSubscription();
-    }, 60000);
+    }, 120000); // 2 minutes
 
     return () => clearInterval(interval);
-  }, [session]);
+  }, [session, checkSubscription]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -224,7 +268,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Welcome email sent successfully');
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
-        // Don't fail signup if email fails
       }
     }
 

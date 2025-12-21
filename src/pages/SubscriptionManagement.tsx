@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
@@ -25,14 +24,9 @@ const SubscriptionManagement = () => {
   const { 
     subscription, 
     subscriptionLoading, 
-    checkSubscription, 
     openCustomerPortal,
     createCheckout 
   } = useAuth();
-
-  useEffect(() => {
-    checkSubscription();
-  }, [checkSubscription]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
