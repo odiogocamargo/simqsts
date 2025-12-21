@@ -12,9 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { role } = useUserRole();
 
   const getUserInitials = () => {
     if (!user) return 'U';
@@ -51,7 +55,13 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                {role === "aluno" && (
+                  <DropdownMenuItem onClick={() => navigate("/student/account")} className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span className="font-medium">Minha Conta</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span className="font-medium">Sair</span>
                 </DropdownMenuItem>
