@@ -26,11 +26,10 @@ const adminNavItems = [
   { title: "Exportar Taxonomia", url: "/taxonomy-export", icon: Download },
 ];
 
-// Itens de navegação para aluno
+// Itens de navegação para aluno (apenas funcionalidades pedagógicas)
 const studentNavItems = [
   { title: "Meu Desempenho", url: "/student", icon: TrendingUp },
   { title: "Questões", url: "/student/questions", icon: BookOpen },
-  { title: "Minha Conta", url: "/student/account", icon: CreditCard },
 ];
 
 export function AppSidebar() {
