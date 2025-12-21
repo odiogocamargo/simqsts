@@ -28,17 +28,10 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
-    logStep("Authenticating user with token");
-
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
@@ -76,7 +69,52 @@ serve(async (req) => {
     const isInTrial = now < trialEndDate;
     const trialDaysRemaining = isInTrial ? Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
-    logStep("Trial status calculated", { isInTrial, trialDaysRemaining, trialEndDate: trialEndDate.toISOString() });
+    logStep("Trial status calculated", { isInTrial, trialDaysRemaining });
+
+    // FIRST: Check local database for subscription (updated by webhook in real-time)
+    const { data: dbSubscription } = await supabaseClient
+      .from("subscriptions")
+      .select("*")
+      .eq("kiwify_customer_email", user.email)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (dbSubscription) {
+      logStep("Found active subscription in database", { id: dbSubscription.id });
+      return new Response(JSON.stringify({
+        subscribed: true,
+        has_access: true,
+        is_in_trial: false,
+        trial_days_remaining: 0,
+        trial_end_date: trialEndDate.toISOString(),
+        product_id: dbSubscription.plan_name,
+        subscription_end: dbSubscription.expires_at,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Only call Stripe API if no subscription found in database
+    // This reduces Stripe API calls significantly
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      logStep("No Stripe key, returning trial status only");
+      return new Response(JSON.stringify({
+        subscribed: false,
+        has_access: isInTrial,
+        is_in_trial: isInTrial,
+        trial_days_remaining: trialDaysRemaining,
+        trial_end_date: trialEndDate.toISOString(),
+        product_id: null,
+        subscription_end: null,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -114,7 +152,7 @@ serve(async (req) => {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       productId = subscription.items.data[0].price.product;
-      logStep("Active subscription found", { subscriptionId: subscription.id, productId, endDate: subscriptionEnd });
+      logStep("Active Stripe subscription found", { subscriptionId: subscription.id, productId });
     } else {
       logStep("No active subscription found");
     }
