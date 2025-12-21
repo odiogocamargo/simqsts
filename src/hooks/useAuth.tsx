@@ -22,7 +22,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, cpf: string, whatsapp: string, endereco: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  checkSubscription: () => Promise<void>;
+  checkSubscription: (currentSession?: Session | null) => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
 }
@@ -79,9 +79,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const createCheckout = async () => {
+    if (!session?.access_token) {
+      console.error('No session available for checkout');
+      return;
+    }
+    
     setSubscriptionLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout');
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
       
       if (error) {
         console.error('Error creating checkout:', error);
@@ -99,9 +108,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const openCustomerPortal = async () => {
+    if (!session?.access_token) {
+      console.error('No session available for customer portal');
+      return;
+    }
+    
     setSubscriptionLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
       
       if (error) {
         console.error('Error opening customer portal:', error);

@@ -1,22 +1,50 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
-import { CheckCircle, Sparkles } from 'lucide-react';
+import { CheckCircle, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const { checkSubscription } = useAuth();
+  const { checkSubscription, session, subscription, subscriptionLoading } = useAuth();
   const { role } = useUserRole();
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(7);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+  const [checkAttempts, setCheckAttempts] = useState(0);
 
-  useEffect(() => {
-    // Refresh subscription status
-    checkSubscription();
-  }, [checkSubscription]);
+  // Retry checking subscription until it's confirmed or max attempts reached
+  const verifySubscription = useCallback(async () => {
+    if (!session?.access_token) return;
+    
+    setIsCheckingSubscription(true);
+    await checkSubscription(session);
+    setCheckAttempts(prev => prev + 1);
+    setIsCheckingSubscription(false);
+  }, [session, checkSubscription]);
 
+  // Initial check and retry logic
   useEffect(() => {
+    if (!session?.access_token) return;
+
+    // Check immediately
+    verifySubscription();
+
+    // Retry every 2 seconds if not subscribed yet (Stripe webhook might take time)
+    const retryInterval = setInterval(() => {
+      if (!subscription.subscribed && checkAttempts < 5) {
+        verifySubscription();
+      }
+    }, 2000);
+
+    return () => clearInterval(retryInterval);
+  }, [session?.access_token, subscription.subscribed, checkAttempts, verifySubscription]);
+
+  // Countdown and redirect
+  useEffect(() => {
+    // Only start countdown after subscription is confirmed or max attempts reached
+    if (isCheckingSubscription && checkAttempts < 3) return;
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -34,7 +62,7 @@ const PaymentSuccess = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [navigate, role]);
+  }, [navigate, role, isCheckingSubscription, checkAttempts]);
 
   const handleContinue = () => {
     if (role === 'aluno') {
@@ -91,11 +119,18 @@ const PaymentSuccess = () => {
           </ul>
         </div>
 
-        {/* Redirect Info */}
+        {/* Status & Redirect Info */}
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Redirecionando em <span className="font-bold text-primary">{countdown}</span> segundos...
-          </p>
+          {(isCheckingSubscription || subscriptionLoading) && checkAttempts < 3 ? (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Confirmando sua assinatura...
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Redirecionando em <span className="font-bold text-primary">{countdown}</span> segundos...
+            </p>
+          )}
           <Button onClick={handleContinue} className="w-full gap-2">
             Continuar agora
           </Button>
