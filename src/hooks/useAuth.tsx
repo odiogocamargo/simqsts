@@ -118,6 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     setSubscriptionLoading(true);
     try {
+      console.log('[useAuth] Creating checkout session...');
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -126,15 +127,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         console.error('Error creating checkout:', error);
+        setSubscriptionLoading(false);
         return;
       }
 
+      console.log('[useAuth] Checkout response:', data);
+
       if (data?.url) {
-        window.open(data.url, '_blank');
+        console.log('[useAuth] Redirecting to checkout URL:', data.url);
+        // Use window.location.href for more reliable redirect
+        window.location.href = data.url;
+      } else {
+        console.error('[useAuth] No URL in checkout response');
+        setSubscriptionLoading(false);
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
-    } finally {
       setSubscriptionLoading(false);
     }
   }, [session]);
