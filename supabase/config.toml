@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.export-taxonomy]
 verify_jwt = false
 
+[functions.import-taxonomy-v3]
+verify_jwt = false
+
 [functions.create-checkout]
 verify_jwt = false
 
