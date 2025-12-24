@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      areas: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       contents: {
         Row: {
           created_at: string
@@ -175,6 +193,7 @@ export type Database = {
           exam_id: string
           explanation: string | null
           id: string
+          needs_review: boolean | null
           option_a: string | null
           option_b: string | null
           option_c: string | null
@@ -182,6 +201,7 @@ export type Database = {
           option_e: string | null
           question_number: string | null
           question_type: Database["public"]["Enums"]["question_type"]
+          review_reason: string | null
           statement: string
           subject_id: string
           updated_at: string
@@ -196,6 +216,7 @@ export type Database = {
           exam_id: string
           explanation?: string | null
           id?: string
+          needs_review?: boolean | null
           option_a?: string | null
           option_b?: string | null
           option_c?: string | null
@@ -203,6 +224,7 @@ export type Database = {
           option_e?: string | null
           question_number?: string | null
           question_type?: Database["public"]["Enums"]["question_type"]
+          review_reason?: string | null
           statement: string
           subject_id: string
           updated_at?: string
@@ -217,6 +239,7 @@ export type Database = {
           exam_id?: string
           explanation?: string | null
           id?: string
+          needs_review?: boolean | null
           option_a?: string | null
           option_b?: string | null
           option_c?: string | null
@@ -224,6 +247,7 @@ export type Database = {
           option_e?: string | null
           question_number?: string | null
           question_type?: Database["public"]["Enums"]["question_type"]
+          review_reason?: string | null
           statement?: string
           subject_id?: string
           updated_at?: string
@@ -306,21 +330,32 @@ export type Database = {
       }
       subjects: {
         Row: {
+          area_id: string | null
           created_at: string
           id: string
           name: string
         }
         Insert: {
+          area_id?: string | null
           created_at?: string
           id: string
           name: string
         }
         Update: {
+          area_id?: string | null
           created_at?: string
           id?: string
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subjects_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
