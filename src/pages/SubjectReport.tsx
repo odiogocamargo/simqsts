@@ -4,11 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, FileText, Tag, BarChart3 } from "lucide-react";
+import { BookOpen, FileText, Tag, BarChart3, Calendar, GraduationCap, Filter } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, PieChart, Pie, Legend } from "recharts";
+import { useState, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TopicData {
   id: string;
@@ -32,11 +37,58 @@ interface SubjectData {
   questionCount: number;
 }
 
+interface QuestionFullData {
+  id: string;
+  subject_id: string;
+  content_id: string;
+  exam_id: string;
+  year: number;
+}
+
+interface ExamData {
+  id: string;
+  name: string;
+}
+
+const COLORS = [
+  'hsl(var(--primary))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+  'hsl(220, 70%, 50%)',
+  'hsl(280, 65%, 60%)',
+  'hsl(340, 75%, 55%)',
+  'hsl(30, 80%, 55%)',
+  'hsl(160, 60%, 45%)',
+];
+
 const SubjectReport = () => {
+  const [selectedExams, setSelectedExams] = useState<string[]>([]);
+  const [selectedYears, setSelectedYears] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+
+  const { data: exams } = useQuery({
+    queryKey: ['exams-report'],
+    queryFn: async () => {
+      const { data } = await supabase.from('exams').select('*').order('name');
+      return data as ExamData[] || [];
+    },
+  });
+
+  const { data: questionsFullData } = useQuery({
+    queryKey: ['questions-full-report'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('questions')
+        .select('id, subject_id, content_id, exam_id, year');
+      return data as QuestionFullData[] || [];
+    },
+  });
+
   const { data: reportData, isLoading } = useQuery({
     queryKey: ['subject-report'],
     queryFn: async () => {
-      // Buscar todas as matérias
       const { data: subjects } = await supabase
         .from('subjects')
         .select('*')
@@ -44,47 +96,39 @@ const SubjectReport = () => {
 
       if (!subjects) return [];
 
-      // Buscar todos os conteúdos
       const { data: contents } = await supabase
         .from('contents')
         .select('*')
         .order('name');
 
-      // Buscar todos os tópicos
       const { data: topics } = await supabase
         .from('topics')
         .select('*')
         .order('name');
 
-      // Buscar todas as questões
       const { data: questions } = await supabase
         .from('questions')
         .select('id, subject_id, content_id');
 
-      // Buscar relação questões-tópicos
       const { data: questionTopics } = await supabase
         .from('question_topics')
         .select('question_id, topic_id');
 
-      // Contar questões por matéria
       const questionsBySubject = (questions || []).reduce((acc, q) => {
         acc[q.subject_id] = (acc[q.subject_id] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      // Contar questões por conteúdo
       const questionsByContent = (questions || []).reduce((acc, q) => {
         acc[q.content_id] = (acc[q.content_id] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      // Contar questões por tópico
       const questionsByTopic = (questionTopics || []).reduce((acc, qt) => {
         acc[qt.topic_id] = (acc[qt.topic_id] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      // Organizar dados em estrutura hierárquica
       const organizedData: SubjectData[] = subjects.map(subject => ({
         ...subject,
         questionCount: questionsBySubject[subject.id] || 0,
@@ -106,18 +150,109 @@ const SubjectReport = () => {
     },
   });
 
+  // Extract unique years from questions
+  const availableYears = useMemo(() => {
+    if (!questionsFullData) return [];
+    const years = [...new Set(questionsFullData.map(q => q.year))].sort((a, b) => b - a);
+    return years;
+  }, [questionsFullData]);
+
+  // Filter questions based on selections
+  const filteredQuestions = useMemo(() => {
+    if (!questionsFullData) return [];
+    
+    return questionsFullData.filter(q => {
+      const examMatch = selectedExams.length === 0 || selectedExams.includes(q.exam_id);
+      const yearMatch = selectedYears.length === 0 || selectedYears.includes(String(q.year));
+      const subjectMatch = selectedSubjects.length === 0 || selectedSubjects.includes(q.subject_id);
+      return examMatch && yearMatch && subjectMatch;
+    });
+  }, [questionsFullData, selectedExams, selectedYears, selectedSubjects]);
+
+  // Data for exam chart
+  const chartDataByExam = useMemo(() => {
+    const examCounts = filteredQuestions.reduce((acc, q) => {
+      acc[q.exam_id] = (acc[q.exam_id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(examCounts)
+      .map(([examId, count]) => ({
+        name: exams?.find(e => e.id === examId)?.name || examId,
+        questoes: count,
+        examId
+      }))
+      .sort((a, b) => b.questoes - a.questoes);
+  }, [filteredQuestions, exams]);
+
+  // Data for year chart
+  const chartDataByYear = useMemo(() => {
+    const yearCounts = filteredQuestions.reduce((acc, q) => {
+      acc[q.year] = (acc[q.year] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+
+    return Object.entries(yearCounts)
+      .map(([year, count]) => ({
+        name: year,
+        questoes: count as number,
+        year: Number(year)
+      }))
+      .sort((a, b) => a.year - b.year);
+  }, [filteredQuestions]);
+
+  // Matrix data: exam x year
+  const matrixData = useMemo(() => {
+    const matrix: Record<string, Record<number, number>> = {};
+    
+    filteredQuestions.forEach(q => {
+      if (!matrix[q.exam_id]) matrix[q.exam_id] = {};
+      matrix[q.exam_id][q.year] = (matrix[q.exam_id][q.year] || 0) + 1;
+    });
+
+    return matrix;
+  }, [filteredQuestions]);
+
+  const toggleExam = (examId: string) => {
+    setSelectedExams(prev => 
+      prev.includes(examId) 
+        ? prev.filter(e => e !== examId)
+        : [...prev, examId]
+    );
+  };
+
+  const toggleYear = (year: string) => {
+    setSelectedYears(prev => 
+      prev.includes(year) 
+        ? prev.filter(y => y !== year)
+        : [...prev, year]
+    );
+  };
+
+  const toggleSubject = (subjectId: string) => {
+    setSelectedSubjects(prev => 
+      prev.includes(subjectId) 
+        ? prev.filter(s => s !== subjectId)
+        : [...prev, subjectId]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedExams([]);
+    setSelectedYears([]);
+    setSelectedSubjects([]);
+  };
+
   const totalContents = reportData?.reduce((acc, subject) => acc + subject.contents.length, 0) || 0;
   const totalTopics = reportData?.reduce((acc, subject) => 
     acc + subject.contents.reduce((sum, content) => sum + content.topics.length, 0), 0) || 0;
   const totalQuestions = reportData?.reduce((acc, subject) => acc + subject.questionCount, 0) || 0;
 
-  // Preparar dados para o gráfico de matérias
   const chartDataBySubject = reportData?.map(subject => ({
     name: subject.name,
     questoes: subject.questionCount
   })).sort((a, b) => b.questoes - a.questoes) || [];
 
-  // Preparar lista de todos os tópicos com contagem
   const allTopicsWithCount = reportData?.flatMap(subject => 
     subject.contents.flatMap(content => 
       content.topics.map(topic => ({
@@ -198,9 +333,11 @@ const SubjectReport = () => {
         </div>
 
         <Tabs defaultValue="hierarchy" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="hierarchy">Hierarquia</TabsTrigger>
-            <TabsTrigger value="chart">Gráfico</TabsTrigger>
+            <TabsTrigger value="chart">Por Matéria</TabsTrigger>
+            <TabsTrigger value="exams">Por Vestibular</TabsTrigger>
+            <TabsTrigger value="years">Por Ano</TabsTrigger>
             <TabsTrigger value="topics">Por Tópicos</TabsTrigger>
           </TabsList>
 
@@ -315,6 +452,317 @@ const SubjectReport = () => {
                 </ChartContainer>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="exams">
+            <div className="grid gap-6 lg:grid-cols-4">
+              {/* Filters Sidebar */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Filter className="h-4 w-4" />
+                    Filtros
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-sm font-medium">Anos</Label>
+                      {(selectedExams.length > 0 || selectedYears.length > 0 || selectedSubjects.length > 0) && (
+                        <button 
+                          onClick={clearFilters}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Limpar filtros
+                        </button>
+                      )}
+                    </div>
+                    <ScrollArea className="h-32">
+                      <div className="space-y-2">
+                        {availableYears.map(year => (
+                          <div key={year} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`year-exam-${year}`}
+                              checked={selectedYears.includes(String(year))}
+                              onCheckedChange={() => toggleYear(String(year))}
+                            />
+                            <label
+                              htmlFor={`year-exam-${year}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {year}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium mb-3 block">Matérias</Label>
+                    <ScrollArea className="h-40">
+                      <div className="space-y-2">
+                        {reportData?.map(subject => (
+                          <div key={subject.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`subject-exam-${subject.id}`}
+                              checked={selectedSubjects.includes(subject.id)}
+                              onCheckedChange={() => toggleSubject(subject.id)}
+                            />
+                            <label
+                              htmlFor={`subject-exam-${subject.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {subject.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      <strong>{filteredQuestions.length}</strong> questões filtradas
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Chart */}
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    Questões por Vestibular
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {chartDataByExam.length === 0 ? (
+                    <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                      Nenhuma questão encontrada com os filtros selecionados
+                    </div>
+                  ) : (
+                    <ChartContainer
+                      config={{
+                        questoes: {
+                          label: "Questões",
+                          color: "hsl(var(--primary))",
+                        },
+                      }}
+                      className="h-[400px] w-full"
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartDataByExam} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
+                          <YAxis 
+                            dataKey="name" 
+                            type="category"
+                            width={150}
+                            stroke="hsl(var(--muted-foreground))"
+                            tick={{ fontSize: 12 }}
+                          />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar dataKey="questoes" radius={[0, 8, 8, 0]}>
+                            {chartDataByExam.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  )}
+
+                  {/* Matrix Table */}
+                  {Object.keys(matrixData).length > 0 && (
+                    <div className="mt-8">
+                      <h4 className="font-semibold mb-4">Matriz: Vestibular × Ano</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm border-collapse">
+                          <thead>
+                            <tr>
+                              <th className="text-left p-2 border-b border-border font-medium">Vestibular</th>
+                              {availableYears
+                                .filter(y => selectedYears.length === 0 || selectedYears.includes(String(y)))
+                                .map(year => (
+                                  <th key={year} className="p-2 border-b border-border font-medium text-center">
+                                    {year}
+                                  </th>
+                                ))}
+                              <th className="p-2 border-b border-border font-medium text-center bg-muted/50">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(matrixData).map(([examId, yearCounts]) => {
+                              const examName = exams?.find(e => e.id === examId)?.name || examId;
+                              const total = Object.values(yearCounts).reduce((sum, count) => sum + count, 0);
+                              return (
+                                <tr key={examId} className="hover:bg-muted/30">
+                                  <td className="p-2 border-b border-border">{examName}</td>
+                                  {availableYears
+                                    .filter(y => selectedYears.length === 0 || selectedYears.includes(String(y)))
+                                    .map(year => (
+                                      <td key={year} className="p-2 border-b border-border text-center">
+                                        {yearCounts[year] ? (
+                                          <Badge variant={yearCounts[year] > 5 ? "default" : "secondary"}>
+                                            {yearCounts[year]}
+                                          </Badge>
+                                        ) : (
+                                          <span className="text-muted-foreground">-</span>
+                                        )}
+                                      </td>
+                                    ))}
+                                  <td className="p-2 border-b border-border text-center bg-muted/50 font-semibold">
+                                    {total}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="years">
+            <div className="grid gap-6 lg:grid-cols-4">
+              {/* Filters Sidebar */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Filter className="h-4 w-4" />
+                    Filtros
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-sm font-medium">Vestibulares</Label>
+                      {(selectedExams.length > 0 || selectedYears.length > 0 || selectedSubjects.length > 0) && (
+                        <button 
+                          onClick={clearFilters}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Limpar filtros
+                        </button>
+                      )}
+                    </div>
+                    <ScrollArea className="h-40">
+                      <div className="space-y-2">
+                        {exams?.map(exam => (
+                          <div key={exam.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`exam-year-${exam.id}`}
+                              checked={selectedExams.includes(exam.id)}
+                              onCheckedChange={() => toggleExam(exam.id)}
+                            />
+                            <label
+                              htmlFor={`exam-year-${exam.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {exam.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium mb-3 block">Matérias</Label>
+                    <ScrollArea className="h-40">
+                      <div className="space-y-2">
+                        {reportData?.map(subject => (
+                          <div key={subject.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`subject-year-${subject.id}`}
+                              checked={selectedSubjects.includes(subject.id)}
+                              onCheckedChange={() => toggleSubject(subject.id)}
+                            />
+                            <label
+                              htmlFor={`subject-year-${subject.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {subject.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      <strong>{filteredQuestions.length}</strong> questões filtradas
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Chart */}
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Questões por Ano
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {chartDataByYear.length === 0 ? (
+                    <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                      Nenhuma questão encontrada com os filtros selecionados
+                    </div>
+                  ) : (
+                    <ChartContainer
+                      config={{
+                        questoes: {
+                          label: "Questões",
+                          color: "hsl(var(--primary))",
+                        },
+                      }}
+                      className="h-[400px] w-full"
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartDataByYear}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis 
+                            dataKey="name" 
+                            stroke="hsl(var(--muted-foreground))"
+                            tick={{ fontSize: 12 }}
+                          />
+                          <YAxis stroke="hsl(var(--muted-foreground))" />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar dataKey="questoes" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]}>
+                            {chartDataByYear.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  )}
+
+                  {/* Years summary */}
+                  <div className="mt-6 grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    {chartDataByYear.map((item, idx) => (
+                      <div 
+                        key={item.year}
+                        className="p-3 rounded-lg border border-border bg-card text-center"
+                        style={{ borderLeftColor: COLORS[idx % COLORS.length], borderLeftWidth: 4 }}
+                      >
+                        <div className="text-lg font-bold">{item.name}</div>
+                        <div className="text-sm text-muted-foreground">{item.questoes} questões</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="topics">
