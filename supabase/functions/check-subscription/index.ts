@@ -150,9 +150,23 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      productId = subscription.items.data[0].price.product;
-      logStep("Active Stripe subscription found", { subscriptionId: subscription.id, productId });
+      logStep("Subscription data", { 
+        subscriptionId: subscription.id, 
+        currentPeriodEnd: subscription.current_period_end,
+        status: subscription.status 
+      });
+      
+      // Safe handling of current_period_end - it can be a number (timestamp) or undefined
+      if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
+        subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      }
+      
+      // Safe handling of product ID
+      if (subscription.items?.data?.[0]?.price?.product) {
+        productId = subscription.items.data[0].price.product;
+      }
+      
+      logStep("Active Stripe subscription found", { subscriptionId: subscription.id, productId, subscriptionEnd });
     } else {
       logStep("No active subscription found");
     }
