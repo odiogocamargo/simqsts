@@ -470,7 +470,7 @@ const StudentQuestions = () => {
                 </div>
               )}
               
-              <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer} disabled={showResult}>
+              <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer} disabled={showResult} className="space-y-3">
                 {['A', 'B', 'C', 'D', 'E'].map((option) => {
                   const optionKey = `option_${option.toLowerCase()}` as keyof typeof currentQuestion;
                   const optionValue = currentQuestion[optionKey] as string;
@@ -480,11 +480,30 @@ const StudentQuestions = () => {
                   const isSelected = selectedAnswer === option;
                   
                   return (
-                    <div key={option} className={cn("flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors", showResult && isCorrect && "border-green-500 bg-green-50 dark:bg-green-950/20", showResult && isSelected && !isCorrect && "border-red-500 bg-red-50 dark:bg-red-950/20", !showResult && "border-border hover:border-primary/50")}>
-                      <RadioGroupItem value={option} id={`option-${option}`} />
-                      <Label htmlFor={`option-${option}`} className="flex-1 cursor-pointer">
-                        <span className="font-medium">{option})</span> <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(optionValue) }} />
+                    <div 
+                      key={option} 
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer",
+                        showResult && isCorrect && "border-green-500 bg-green-500/10 ring-2 ring-green-500/20",
+                        showResult && isSelected && !isCorrect && "border-red-500 bg-red-500/10 ring-2 ring-red-500/20",
+                        !showResult && isSelected && "border-primary bg-primary/5 ring-2 ring-primary/20",
+                        !showResult && !isSelected && "border-border hover:border-primary/50 hover:bg-muted/50"
+                      )}
+                      onClick={() => !showResult && setSelectedAnswer(option)}
+                    >
+                      <div className={cn(
+                        "flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm shrink-0 transition-colors",
+                        showResult && isCorrect && "bg-green-500 text-white",
+                        showResult && isSelected && !isCorrect && "bg-red-500 text-white",
+                        !showResult && isSelected && "bg-primary text-primary-foreground",
+                        !showResult && !isSelected && "bg-muted text-muted-foreground"
+                      )}>
+                        {option}
+                      </div>
+                      <Label htmlFor={`option-${option}`} className="flex-1 cursor-pointer text-base leading-relaxed">
+                        <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(optionValue) }} />
                       </Label>
+                      <RadioGroupItem value={option} id={`option-${option}`} className="sr-only" />
                     </div>
                   );
                 })}
