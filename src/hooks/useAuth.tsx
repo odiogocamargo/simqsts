@@ -53,9 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pendingCheckRef = useRef<Promise<void> | null>(null);
 
   const checkSubscription = useCallback(async (currentSession?: Session | null) => {
-    const sessionToUse = currentSession ?? session;
-    if (!sessionToUse?.access_token) return;
-    
     const now = Date.now();
     
     // If we checked recently, skip (cache for 30 seconds)
@@ -75,6 +72,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const checkPromise = (async () => {
       try {
+        // Always get fresh session to avoid expired token issues
+        let sessionToUse = currentSession;
+        if (!sessionToUse) {
+          const { data: { session: freshSession } } = await supabase.auth.getSession();
+          sessionToUse = freshSession;
+        }
+        
+        if (!sessionToUse?.access_token) {
+          console.log('[useAuth] No valid session for subscription check');
+          return;
+        }
+        
         const { data, error } = await supabase.functions.invoke('check-subscription', {
           headers: {
             Authorization: `Bearer ${sessionToUse.access_token}`,
@@ -82,7 +91,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         
         if (error) {
-          console.error('Error checking subscription:', error);
+          // If it's an auth error, the session might have expired - don't log as error
+          if (error.message?.includes('Auth') || error.message?.includes('401')) {
+            console.log('[useAuth] Session expired, skipping subscription check');
+          } else {
+            console.error('Error checking subscription:', error);
+          }
           return;
         }
 
@@ -108,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     pendingCheckRef.current = checkPromise;
     return checkPromise;
-  }, [session]);
+  }, []);
 
   const createCheckout = useCallback(async () => {
     if (!session?.access_token) {
