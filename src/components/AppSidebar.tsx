@@ -45,9 +45,11 @@ export function AppSidebar() {
   const { subscription, subscriptionLoading, createCheckout, openCustomerPortal } = useAuth();
 
   const getNavItems = () => {
+    if (isLoading) return [];
     if (role === "aluno") return studentNavItems;
     if (role === "professor") return professorNavItems;
-    return adminNavItems;
+    if (role === "admin") return adminNavItems;
+    return [];
   };
 
   const navItems = getNavItems();
@@ -74,23 +76,32 @@ export function AppSidebar() {
         <SidebarGroup className="mt-2 flex-1">
           <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider">Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {navItems.map((item, index) => (
-                <SidebarMenuItem key={item.title} style={{ animationDelay: `${index * 50}ms` }} className="animate-slide-in">
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="flex items-center gap-3 rounded-xl transition-all duration-300 hover:bg-secondary/50 hover:translate-x-1"
-                      activeClassName="bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:from-primary hover:to-secondary premium-shadow"
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!isCollapsed && <span className="font-medium">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {isLoading ? (
+              <div className="px-3 py-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {!isCollapsed && <span>Carregando menu...</span>}
+                </div>
+              </div>
+            ) : (
+              <SidebarMenu className="space-y-1">
+                {navItems.map((item, index) => (
+                  <SidebarMenuItem key={item.title} style={{ animationDelay: `${index * 50}ms` }} className="animate-slide-in">
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end
+                        className="flex items-center gap-3 rounded-xl transition-all duration-300 hover:bg-secondary/50 hover:translate-x-1"
+                        activeClassName="bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:from-primary hover:to-secondary premium-shadow"
+                      >
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        {!isCollapsed && <span className="font-medium">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            )}
           </SidebarGroupContent>
         </SidebarGroup>
 
