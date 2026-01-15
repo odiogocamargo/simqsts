@@ -205,17 +205,12 @@ const Questions = () => {
     }
   };
 
-  // Filtragem das questões
+  // Filtragem das questões (apenas busca por texto e tópico - os outros filtros já são aplicados na query)
   const filteredQuestions = questions.filter((question) => {
-    const matchesSearch = question.text.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = !selectedSubject || question.subjectId === selectedSubject;
-    const matchesContent = !selectedContent || question.contentId === selectedContent;
+    const matchesSearch = !searchTerm || question.text.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTopic = !selectedTopic || question.topicId === selectedTopic;
-    const matchesExam = !selectedExam || question.exam === selectedExam;
-    const matchesYear = !selectedYear || question.year.toString() === selectedYear;
-    const matchesDifficulty = !selectedDifficulty || question.difficulty === selectedDifficulty;
 
-    return matchesSearch && matchesSubject && matchesContent && matchesTopic && matchesExam && matchesYear && matchesDifficulty;
+    return matchesSearch && matchesTopic;
   });
 
   const hasActiveFilters = selectedSubject || selectedContent || selectedTopic || selectedExam || selectedYear || selectedDifficulty;
