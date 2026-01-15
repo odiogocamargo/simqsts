@@ -41,7 +41,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Dashboard /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Questions /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/add-question" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><AddQuestion /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/subject-report" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><SubjectReport /></RoleBasedRoute></ProtectedRoute>} />
+            <Route path="/subject-report" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><SubjectReport /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Users /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/subscriptions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Subscriptions /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/taxonomy-export" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><TaxonomyExport /></RoleBasedRoute></ProtectedRoute>} />
