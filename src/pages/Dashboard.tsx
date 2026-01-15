@@ -1,6 +1,6 @@
 import { Layout } from "@/components/Layout";
 import { MetricCard } from "@/components/MetricCard";
-import { Database, BookOpen, TrendingUp, Calendar, Crown, CreditCard, CheckCircle, Clock } from "lucide-react";
+import { Database, BookOpen, TrendingUp, Calendar, Crown, CreditCard, CheckCircle, Clock, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,6 +92,32 @@ const Dashboard = () => {
     },
   });
 
+  // Buscar distribuição por vestibular (apenas para admin/professor)
+  const { data: examStats = [] } = useQuery({
+    queryKey: ['exam-distribution'],
+    enabled: isAdmin || isProfessor,
+    queryFn: async () => {
+      const { data: questions } = await supabase
+        .from('questions')
+        .select('exam_id, exams(name)');
+      
+      if (!questions) return [];
+
+      const distribution = questions.reduce((acc: any, q: any) => {
+        const examName = q.exams?.name || 'Desconhecido';
+        acc[examName] = (acc[examName] || 0) + 1;
+        return acc;
+      }, {});
+
+      const total = questions.length || 1;
+      return Object.entries(distribution).map(([exam, count]: [string, any]) => ({
+        exam,
+        count,
+        percentage: Math.round((count / total) * 100),
+      })).sort((a, b) => b.count - a.count);
+    },
+  });
+
   const metrics = [
     { title: "Total de Questões", value: totalQuestions.toString(), icon: Database, variant: "default" as const },
     { title: "Matérias Cobertas", value: totalSubjects.toString(), icon: BookOpen, variant: "default" as const },
@@ -156,6 +182,44 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
+          {/* Distribuição por Vestibular - apenas para admin/professor */}
+          {(isAdmin || isProfessor) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  Questões por Vestibular
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {examStats.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">
+                        Nenhuma questão cadastrada ainda.
+                      </p>
+                    </div>
+                  ) : (
+                    examStats.slice(0, 6).map((stat) => (
+                      <div key={stat.exam} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-foreground">{stat.exam}</span>
+                          <span className="text-muted-foreground">{stat.count} questões</span>
+                        </div>
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-accent to-accent/80 rounded-full transition-all"
+                            style={{ width: `${stat.percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Subscription Status Card - apenas para alunos */}
           {!isAdmin && !isProfessor && (
             <Card className={subscription.subscribed ? "border-primary/50" : subscription.isInTrial ? "border-amber-500/50" : ""}>
