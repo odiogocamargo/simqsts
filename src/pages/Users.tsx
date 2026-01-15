@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin } from "lucide-react";
+import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff } from "lucide-react";
 import { useState, useMemo } from "react";
-
 interface UserWithDetails {
   id: string;
   full_name: string | null;
@@ -35,6 +36,14 @@ export default function Users() {
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Estado para criar funcionário
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newEmployeeEmail, setNewEmployeeEmail] = useState("");
+  const [newEmployeePassword, setNewEmployeePassword] = useState("");
+  const [newEmployeeName, setNewEmployeeName] = useState("");
+  const [newEmployeeRole, setNewEmployeeRole] = useState<"professor" | "admin">("professor");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Buscar todos os usuários com seus perfis, roles e assinaturas
   const { data: users, isLoading, refetch } = useQuery({
@@ -153,6 +162,57 @@ export default function Users() {
     deleteUserMutation.mutate(userId);
   };
 
+  // Criar funcionário via Edge Function
+  const createEmployeeMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      const response = await supabase.functions.invoke("create-employee", {
+        body: { 
+          email: newEmployeeEmail, 
+          password: newEmployeePassword,
+          full_name: newEmployeeName,
+          role: newEmployeeRole
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Erro ao criar funcionário");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users-admin"] });
+      toast.success("Funcionário criado com sucesso! Compartilhe o email e senha com ele.");
+      setIsCreateDialogOpen(false);
+      setNewEmployeeEmail("");
+      setNewEmployeePassword("");
+      setNewEmployeeName("");
+      setNewEmployeeRole("professor");
+    },
+    onError: (error) => {
+      toast.error("Erro ao criar funcionário: " + error.message);
+    },
+  });
+
+  const handleCreateEmployee = () => {
+    if (!newEmployeeEmail || !newEmployeePassword) {
+      toast.error("Email e senha são obrigatórios");
+      return;
+    }
+    if (newEmployeePassword.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+    createEmployeeMutation.mutate();
+  };
+
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case "admin":
@@ -244,10 +304,93 @@ export default function Users() {
               Visualize e gerencie as permissões de todos os usuários da plataforma
             </p>
           </div>
-          <Button variant="outline" onClick={() => refetch()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Atualizar
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Criar Funcionário
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Funcionário</DialogTitle>
+                  <DialogDescription>
+                    Crie uma conta para um novo funcionário. Compartilhe o email e senha com ele após a criação.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-name">Nome completo</Label>
+                    <Input
+                      id="employee-name"
+                      placeholder="Nome do funcionário"
+                      value={newEmployeeName}
+                      onChange={(e) => setNewEmployeeName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-email">Email *</Label>
+                    <Input
+                      id="employee-email"
+                      type="email"
+                      placeholder="email@exemplo.com"
+                      value={newEmployeeEmail}
+                      onChange={(e) => setNewEmployeeEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-password">Senha *</Label>
+                    <div className="relative">
+                      <Input
+                        id="employee-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Mínimo 6 caracteres"
+                        value={newEmployeePassword}
+                        onChange={(e) => setNewEmployeePassword(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-role">Função</Label>
+                    <Select value={newEmployeeRole} onValueChange={(v) => setNewEmployeeRole(v as "professor" | "admin")}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="professor">Professor (apenas adicionar questões)</SelectItem>
+                        <SelectItem value="admin">Administrador (acesso total)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleCreateEmployee} 
+                    disabled={createEmployeeMutation.isPending}
+                  >
+                    {createEmployeeMutation.isPending ? "Criando..." : "Criar Funcionário"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
