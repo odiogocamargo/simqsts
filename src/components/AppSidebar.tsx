@@ -17,7 +17,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-// Itens de navegação para admin
+// Itens de navegação para admin (acesso total)
 const adminNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Questões", url: "/questions", icon: FileText },
@@ -25,6 +25,12 @@ const adminNavItems = [
   { title: "Usuários", url: "/users", icon: Users },
   { title: "Assinaturas", url: "/subscriptions", icon: Receipt },
   { title: "Exportar Taxonomia", url: "/taxonomy-export", icon: Download },
+];
+
+// Itens de navegação para professor (apenas questões)
+const professorNavItems = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Questões", url: "/questions", icon: FileText },
 ];
 
 // Itens de navegação para aluno (apenas funcionalidades pedagógicas)
@@ -38,7 +44,13 @@ export function AppSidebar() {
   const { role, isLoading } = useUserRole();
   const { subscription, subscriptionLoading, createCheckout, openCustomerPortal } = useAuth();
 
-  const navItems = role === "aluno" ? studentNavItems : adminNavItems;
+  const getNavItems = () => {
+    if (role === "aluno") return studentNavItems;
+    if (role === "professor") return professorNavItems;
+    return adminNavItems;
+  };
+
+  const navItems = getNavItems();
 
   const isCollapsed = state === "collapsed";
 
