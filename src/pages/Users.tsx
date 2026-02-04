@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff } from "lucide-react";
+import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key } from "lucide-react";
 import { useState, useMemo } from "react";
 interface UserWithDetails {
   id: string;
@@ -44,6 +44,12 @@ export default function Users() {
   const [newEmployeeName, setNewEmployeeName] = useState("");
   const [newEmployeeRole, setNewEmployeeRole] = useState<"professor" | "admin">("professor");
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Estado para alterar senha
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [selectedUserForPassword, setSelectedUserForPassword] = useState<UserWithDetails | null>(null);
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Buscar todos os usuários com seus perfis, roles e assinaturas
   const { data: users, isLoading, refetch } = useQuery({
@@ -211,6 +217,62 @@ export default function Users() {
       return;
     }
     createEmployeeMutation.mutate();
+  };
+
+  // Alterar senha via Edge Function
+  const updatePasswordMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedUserForPassword) throw new Error("Nenhum usuário selecionado");
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      const response = await supabase.functions.invoke("update-user-password", {
+        body: { 
+          userId: selectedUserForPassword.id, 
+          newPassword: newUserPassword 
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Erro ao alterar senha");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Senha alterada com sucesso!");
+      setIsPasswordDialogOpen(false);
+      setSelectedUserForPassword(null);
+      setNewUserPassword("");
+      setShowNewPassword(false);
+    },
+    onError: (error) => {
+      toast.error("Erro ao alterar senha: " + error.message);
+    },
+  });
+
+  const handleOpenPasswordDialog = (user: UserWithDetails) => {
+    setSelectedUserForPassword(user);
+    setNewUserPassword("");
+    setShowNewPassword(false);
+    setIsPasswordDialogOpen(true);
+  };
+
+  const handleUpdatePassword = () => {
+    if (!newUserPassword) {
+      toast.error("Digite a nova senha");
+      return;
+    }
+    if (newUserPassword.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+    updatePasswordMutation.mutate();
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -382,6 +444,52 @@ export default function Users() {
                     disabled={createEmployeeMutation.isPending}
                   >
                     {createEmployeeMutation.isPending ? "Criando..." : "Criar Funcionário"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Modal Alterar Senha */}
+            <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Alterar Senha</DialogTitle>
+                  <DialogDescription>
+                    Alterar a senha do usuário <strong>{selectedUserForPassword?.full_name || "Sem nome"}</strong>
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">Nova senha *</Label>
+                    <div className="relative">
+                      <Input
+                        id="new-password"
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder="Mínimo 6 caracteres"
+                        value={newUserPassword}
+                        onChange={(e) => setNewUserPassword(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleUpdatePassword} 
+                    disabled={updatePasswordMutation.isPending}
+                  >
+                    {updatePasswordMutation.isPending ? "Alterando..." : "Alterar Senha"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -562,37 +670,47 @@ export default function Users() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                disabled={deletingUserId === user.id}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário
-                                  <strong> {user.full_name || "Sem nome"}</strong> e todos os seus dados
-                                  (respostas, desempenho, sessões de estudo, etc).
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteUser(user.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenPasswordDialog(user)}
+                              title="Alterar senha"
+                            >
+                              <Key className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  disabled={deletingUserId === user.id}
                                 >
-                                  Excluir
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário
+                                    <strong> {user.full_name || "Sem nome"}</strong> e todos os seus dados
+                                    (respostas, desempenho, sessões de estudo, etc).
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteUser(user.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
