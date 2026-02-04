@@ -67,26 +67,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return pendingCheckRef.current;
     }
     
+    // Get session to use - prefer passed session, otherwise get fresh one
+    let sessionToUse = currentSession;
+    if (!sessionToUse) {
+      try {
+        const { data: { session: freshSession } } = await supabase.auth.getSession();
+        sessionToUse = freshSession;
+      } catch (error) {
+        console.log('[useAuth] Failed to get session, skipping subscription check');
+        return;
+      }
+    }
+    
+    // Early exit if no valid session - don't call the edge function at all
+    if (!sessionToUse?.access_token) {
+      console.log('[useAuth] No valid session for subscription check, skipping');
+      return;
+    }
+    
     checkInProgressRef.current = true;
     setSubscriptionLoading(true);
     
     const checkPromise = (async () => {
       try {
-        // Always get fresh session to avoid expired token issues
-        let sessionToUse = currentSession;
-        if (!sessionToUse) {
-          const { data: { session: freshSession } } = await supabase.auth.getSession();
-          sessionToUse = freshSession;
-        }
-        
-        if (!sessionToUse?.access_token) {
-          console.log('[useAuth] No valid session for subscription check');
-          return;
-        }
-        
         const { data, error } = await supabase.functions.invoke('check-subscription', {
           headers: {
-            Authorization: `Bearer ${sessionToUse.access_token}`,
+            Authorization: `Bearer ${sessionToUse!.access_token}`,
           },
         });
         
