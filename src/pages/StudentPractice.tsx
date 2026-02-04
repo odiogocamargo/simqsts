@@ -1,7 +1,7 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, TrendingUp, Target, Clock, CalendarIcon, AlertTriangle, Zap, Activity } from "lucide-react";
+import { BookOpen, TrendingUp, Target, Clock, CalendarIcon, AlertTriangle, Zap, Activity, ClipboardList } from "lucide-react";
 import { MetricCard } from "@/components/MetricCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -135,6 +135,21 @@ const StudentPractice = () => {
     },
   });
 
+  const { data: simulations = [] } = useQuery({
+    queryKey: ['simulations-count', user?.id, startDate, endDate],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from('simulations')
+        .select('id, status, score_percentage')
+        .eq('user_id', user.id)
+        .gte('created_at', startDate)
+        .lte('created_at', endDate);
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
   const totalQuestions = userAnswers.length;
   const totalCorrect = userAnswers.filter(a => a.is_correct).length;
   const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
@@ -208,9 +223,16 @@ const StudentPractice = () => {
     questions: session.questions_answered
   }));
 
+  const totalSimulations = simulations.length;
+  const completedSimulations = simulations.filter(s => s.status === 'completed').length;
+  const avgSimulationScore = completedSimulations > 0
+    ? Math.round(simulations.filter(s => s.status === 'completed').reduce((acc, s) => acc + (s.score_percentage || 0), 0) / completedSimulations)
+    : 0;
+
   const metrics = [
     { title: "Taxa de Acerto Geral", value: `${accuracy}%`, icon: Target, variant: accuracy >= 70 ? "success" as const : "default" as const, trend: accuracy >= 70 ? "Excelente!" : "Continue praticando" },
     { title: "Questões Respondidas", value: totalQuestions.toString(), icon: BookOpen, variant: "default" as const },
+    { title: "Simulados Realizados", value: `${completedSimulations}/${totalSimulations}`, icon: ClipboardList, variant: "default" as const, trend: avgSimulationScore > 0 ? `Média: ${avgSimulationScore}%` : undefined },
     { title: "Tempo Médio", value: `${avgTime}s`, icon: Clock, variant: "default" as const },
     { title: "Sessões de Estudo", value: totalSessions.toString(), icon: Activity, variant: "default" as const }
   ];
