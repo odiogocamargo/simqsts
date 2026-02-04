@@ -100,51 +100,53 @@ export default function Users() {
     },
   });
 
-  // Buscar contagem de questões por professor
+  // Buscar contagem de questões por professor e admin
   const { data: professorQuestionCounts } = useQuery({
     queryKey: ["professor-question-counts"],
     queryFn: async () => {
-      // Buscar todos os professores
-      const { data: professorRoles, error: rolesError } = await supabase
+      // Buscar todos os professores e admins
+      const { data: staffRoles, error: rolesError } = await supabase
         .from("user_roles")
-        .select("user_id")
-        .eq("role", "professor");
+        .select("user_id, role")
+        .in("role", ["professor", "admin"]);
 
       if (rolesError) throw rolesError;
       
-      const professorIds = professorRoles?.map(r => r.user_id) || [];
+      const staffIds = staffRoles?.map(r => r.user_id) || [];
+      const roleMap = new Map(staffRoles?.map(r => [r.user_id, r.role]) || []);
       
-      if (professorIds.length === 0) return [];
+      if (staffIds.length === 0) return [];
 
-      // Buscar questões criadas por professores
+      // Buscar questões criadas por professores e admins
       const { data: questions, error: questionsError } = await supabase
         .from("questions")
         .select("created_by")
-        .in("created_by", professorIds);
+        .in("created_by", staffIds);
 
       if (questionsError) throw questionsError;
 
-      // Contar questões por professor
+      // Contar questões por usuário
       const countMap = new Map<string, number>();
       questions?.forEach(q => {
         const count = countMap.get(q.created_by) || 0;
         countMap.set(q.created_by, count + 1);
       });
 
-      // Buscar nomes dos professores
+      // Buscar nomes dos usuários
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .in("id", professorIds);
+        .in("id", staffIds);
 
       if (profilesError) throw profilesError;
 
       // Montar lista ordenada
-      const result = professorIds.map(id => {
+      const result = staffIds.map(id => {
         const profile = profiles?.find(p => p.id === id);
         return {
           userId: id,
           name: profile?.full_name || "Sem nome",
+          role: roleMap.get(id) || "professor",
           questionCount: countMap.get(id) || 0,
         };
       }).sort((a, b) => b.questionCount - a.questionCount);
@@ -599,12 +601,12 @@ export default function Users() {
         {professorQuestionCounts && professorQuestionCounts.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-amber-500" />
-                Questões Adicionadas por Professor
+                Questões Adicionadas por Equipe
               </CardTitle>
               <CardDescription>
-                Ranking de professores por quantidade de questões cadastradas no banco
+                Ranking de professores e administradores por quantidade de questões cadastradas
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -628,7 +630,12 @@ export default function Users() {
                       }`}>
                         {index + 1}
                       </div>
-                      <span className="font-medium truncate max-w-[150px]">{prof.name}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium truncate max-w-[150px]">{prof.name}</span>
+                        <span className={`text-xs ${prof.role === "admin" ? "text-red-500" : "text-blue-500"}`}>
+                          {prof.role === "admin" ? "Admin" : "Professor"}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 text-primary font-semibold">
                       <BookOpen className="h-4 w-4" />
@@ -638,7 +645,7 @@ export default function Users() {
                 ))}
               </div>
               <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
-                <span>Total de professores: {professorQuestionCounts.length}</span>
+                <span>Total de membros: {professorQuestionCounts.length}</span>
                 <span>Total de questões: {professorQuestionCounts.reduce((acc, p) => acc + p.questionCount, 0)}</span>
               </div>
             </CardContent>
