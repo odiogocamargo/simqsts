@@ -61,14 +61,13 @@ export function AppSidebar() {
       <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
         <div className="flex items-center gap-3 p-4 border-b border-border/50">
-          <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shrink-0 premium-glow">
-            <span className="text-white font-bold text-base tracking-tight">BQ</span>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
+          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+            <span className="text-primary-foreground font-bold text-base tracking-tight">BQ</span>
           </div>
           {!isCollapsed && (
             <div className="animate-slide-in">
               <h1 className="text-base font-bold text-foreground tracking-tight">Banco de Questões</h1>
-              <p className="text-xs text-muted-foreground font-medium">Sistema Premium</p>
+              <p className="text-xs text-muted-foreground font-medium">Sistema de Estudos</p>
             </div>
           )}
         </div>
@@ -91,8 +90,8 @@ export function AppSidebar() {
                       <NavLink
                         to={item.url}
                         end
-                        className="flex items-center gap-3 rounded-xl transition-all duration-300 hover:bg-secondary/50 hover:translate-x-1"
-                        activeClassName="bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:from-primary hover:to-secondary premium-shadow"
+                        className="flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-secondary"
+                        activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
                         {!isCollapsed && <span className="font-medium">{item.title}</span>}

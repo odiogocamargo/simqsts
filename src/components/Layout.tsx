@@ -39,9 +39,9 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:scale-105 transition-transform">
-                  <Avatar className="h-10 w-10 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground font-semibold">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10 border border-border">
+                    <AvatarFallback className="bg-primary text-primary-foreground font-medium">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
