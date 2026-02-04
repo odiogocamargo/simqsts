@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key } from "lucide-react";
+import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy } from "lucide-react";
 import { useState, useMemo } from "react";
 interface UserWithDetails {
   id: string;
@@ -98,6 +98,60 @@ export default function Users() {
 
       return usersWithDetails;
     },
+  });
+
+  // Buscar contagem de questões por professor
+  const { data: professorQuestionCounts } = useQuery({
+    queryKey: ["professor-question-counts"],
+    queryFn: async () => {
+      // Buscar todos os professores
+      const { data: professorRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "professor");
+
+      if (rolesError) throw rolesError;
+      
+      const professorIds = professorRoles?.map(r => r.user_id) || [];
+      
+      if (professorIds.length === 0) return [];
+
+      // Buscar questões criadas por professores
+      const { data: questions, error: questionsError } = await supabase
+        .from("questions")
+        .select("created_by")
+        .in("created_by", professorIds);
+
+      if (questionsError) throw questionsError;
+
+      // Contar questões por professor
+      const countMap = new Map<string, number>();
+      questions?.forEach(q => {
+        const count = countMap.get(q.created_by) || 0;
+        countMap.set(q.created_by, count + 1);
+      });
+
+      // Buscar nomes dos professores
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", professorIds);
+
+      if (profilesError) throw profilesError;
+
+      // Montar lista ordenada
+      const result = professorIds.map(id => {
+        const profile = profiles?.find(p => p.id === id);
+        return {
+          userId: id,
+          name: profile?.full_name || "Sem nome",
+          questionCount: countMap.get(id) || 0,
+        };
+      }).sort((a, b) => b.questionCount - a.questionCount);
+
+      return result;
+    },
+    enabled: !!users,
   });
 
   // Atualizar role do usuário
@@ -540,6 +594,56 @@ export default function Users() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Card de Questões por Professor */}
+        {professorQuestionCounts && professorQuestionCounts.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-amber-500" />
+                Questões Adicionadas por Professor
+              </CardTitle>
+              <CardDescription>
+                Ranking de professores por quantidade de questões cadastradas no banco
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {professorQuestionCounts.map((prof, index) => (
+                  <div
+                    key={prof.userId}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      index === 0 ? "bg-amber-500/10 border-amber-500/30" :
+                      index === 1 ? "bg-slate-500/10 border-slate-500/30" :
+                      index === 2 ? "bg-orange-500/10 border-orange-500/30" :
+                      "bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm ${
+                        index === 0 ? "bg-amber-500 text-white" :
+                        index === 1 ? "bg-slate-400 text-white" :
+                        index === 2 ? "bg-orange-400 text-white" :
+                        "bg-muted-foreground/20 text-muted-foreground"
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <span className="font-medium truncate max-w-[150px]">{prof.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-primary font-semibold">
+                      <BookOpen className="h-4 w-4" />
+                      {prof.questionCount}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
+                <span>Total de professores: {professorQuestionCounts.length}</span>
+                <span>Total de questões: {professorQuestionCounts.reduce((acc, p) => acc + p.questionCount, 0)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
