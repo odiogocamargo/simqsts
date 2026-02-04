@@ -141,10 +141,11 @@ const StudentPractice = () => {
       if (!user?.id) return [];
       const { data } = await supabase
         .from('simulations')
-        .select('id, status, score_percentage')
+        .select('id, status, score_percentage, completed_at, question_count, total_correct')
         .eq('user_id', user.id)
         .gte('created_at', startDate)
-        .lte('created_at', endDate);
+        .lte('created_at', endDate)
+        .order('completed_at', { ascending: true });
       return data || [];
     },
     enabled: !!user?.id,
@@ -228,6 +229,16 @@ const StudentPractice = () => {
   const avgSimulationScore = completedSimulations > 0
     ? Math.round(simulations.filter(s => s.status === 'completed').reduce((acc, s) => acc + (s.score_percentage || 0), 0) / completedSimulations)
     : 0;
+
+  // Evolução dos simulados
+  const simulationEvolution = simulations
+    .filter(s => s.status === 'completed' && s.completed_at)
+    .map(sim => ({
+      date: format(new Date(sim.completed_at!), "dd/MM", { locale: ptBR }),
+      score: Math.round(sim.score_percentage || 0),
+      questions: sim.question_count,
+      correct: sim.total_correct || 0
+    }));
 
   const metrics = [
     { title: "Taxa de Acerto Geral", value: `${accuracy}%`, icon: Target, variant: accuracy >= 70 ? "success" as const : "default" as const, trend: accuracy >= 70 ? "Excelente!" : "Continue praticando" },
@@ -347,6 +358,37 @@ const StudentPractice = () => {
               </ResponsiveContainer>
             ) : (
               <p className="text-muted-foreground text-center py-8">Sem dados suficientes para gráfico de evolução</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Evolução dos Simulados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {simulationEvolution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={simulationEvolution}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === "score") return [`${value}%`, "Nota"];
+                      return [value, name];
+                    }}
+                    labelFormatter={(label) => `Simulado em ${label}`}
+                  />
+                  <Legend />
+                  <Bar dataKey="score" fill="hsl(var(--primary))" name="Nota (%)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">Nenhum simulado completado no período</p>
             )}
           </CardContent>
         </Card>
