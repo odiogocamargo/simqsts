@@ -277,6 +277,116 @@ export type Database = {
           },
         ]
       }
+      simulation_questions: {
+        Row: {
+          answered_at: string | null
+          created_at: string
+          id: string
+          is_correct: boolean | null
+          question_id: string
+          question_order: number
+          selected_answer: string | null
+          simulation_id: string
+          time_spent_seconds: number | null
+        }
+        Insert: {
+          answered_at?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          question_id: string
+          question_order: number
+          selected_answer?: string | null
+          simulation_id: string
+          time_spent_seconds?: number | null
+        }
+        Update: {
+          answered_at?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          question_id?: string
+          question_order?: number
+          selected_answer?: string | null
+          simulation_id?: string
+          time_spent_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_questions_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulations: {
+        Row: {
+          completed_at: string | null
+          content_ids: string[] | null
+          created_at: string
+          difficulty_levels: string[] | null
+          exam_ids: string[] | null
+          id: string
+          question_count: number
+          score_percentage: number | null
+          started_at: string | null
+          status: string
+          subject_ids: string[] | null
+          time_limit_minutes: number | null
+          title: string | null
+          total_answered: number | null
+          total_correct: number | null
+          total_time_seconds: number | null
+          updated_at: string
+          user_id: string
+          years: number[] | null
+        }
+        Insert: {
+          completed_at?: string | null
+          content_ids?: string[] | null
+          created_at?: string
+          difficulty_levels?: string[] | null
+          exam_ids?: string[] | null
+          id?: string
+          question_count: number
+          score_percentage?: number | null
+          started_at?: string | null
+          status?: string
+          subject_ids?: string[] | null
+          time_limit_minutes?: number | null
+          title?: string | null
+          total_answered?: number | null
+          total_correct?: number | null
+          total_time_seconds?: number | null
+          updated_at?: string
+          user_id: string
+          years?: number[] | null
+        }
+        Update: {
+          completed_at?: string | null
+          content_ids?: string[] | null
+          created_at?: string
+          difficulty_levels?: string[] | null
+          exam_ids?: string[] | null
+          id?: string
+          question_count?: number
+          score_percentage?: number | null
+          started_at?: string | null
+          status?: string
+          subject_ids?: string[] | null
+          time_limit_minutes?: number | null
+          title?: string | null
+          total_answered?: number | null
+          total_correct?: number | null
+          total_time_seconds?: number | null
+          updated_at?: string
+          user_id?: string
+          years?: number[] | null
+        }
+        Relationships: []
+      }
       study_sessions: {
         Row: {
           correct_answers: number
