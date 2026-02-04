@@ -331,7 +331,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                 ) : (
-                  subjectStats.slice(0, 5).map((stat) => (
+                  subjectStats.map((stat) => (
                     <div key={stat.subject} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium text-foreground">{stat.subject}</span>
