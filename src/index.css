@@ -8,26 +8,26 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 206 67% 98%;
-    --foreground: 210 67% 13%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 0%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 67% 13%;
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 67% 13%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 206 57% 25%;
+    --primary: 221 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 203 38% 47%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 206 53% 80%;
-    --muted-foreground: 206 57% 25%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 210 67% 13%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 0%;
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -35,41 +35,37 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 206 53% 90%;
-    --input: 206 53% 90%;
-    --ring: 206 57% 25%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 221 100% 50%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(206 57% 25%), hsl(206 57% 35%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
-    --gradient-accent: linear-gradient(135deg, hsl(210 67% 13%), hsl(210 67% 20%));
-    
-    --shadow-sm: 0 2px 8px hsl(210 67% 13% / 0.04);
-    --shadow-md: 0 4px 16px hsl(210 67% 13% / 0.08);
-    --shadow-lg: 0 8px 32px hsl(210 67% 13% / 0.12);
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.04);
+    --shadow-md: 0 2px 8px hsl(0 0% 0% / 0.06);
+    --shadow-lg: 0 4px 16px hsl(0 0% 0% / 0.08);
   }
 
   .dark {
-    --background: 210 67% 13%;
-    --foreground: 206 67% 98%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 100%;
 
-    --card: 206 57% 18%;
-    --card-foreground: 206 67% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 206 57% 18%;
-    --popover-foreground: 206 67% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 203 38% 47%;
+    --primary: 221 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 206 57% 25%;
-    --secondary-foreground: 206 67% 98%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 206 57% 25%;
-    --muted-foreground: 206 53% 80%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 203 38% 47%;
+    --accent: 0 0% 15%;
     --accent-foreground: 0 0% 100%;
 
     --success: 142 76% 36%;
@@ -78,13 +74,13 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 206 57% 25%;
-    --input: 206 57% 25%;
-    --ring: 203 38% 47%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 221 100% 50%;
 
-    --shadow-sm: 0 2px 8px hsl(0 0% 0% / 0.2);
-    --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.3);
-    --shadow-lg: 0 8px 32px hsl(0 0% 0% / 0.4);
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 2px 8px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 4px 16px hsl(0 0% 0% / 0.4);
   }
 }
 
@@ -99,34 +95,18 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
-  .glass-effect {
-    @apply backdrop-blur-xl bg-background/80 border border-border/50;
-  }
-  
-  .glass-card {
-    @apply backdrop-blur-sm bg-card/50 border border-border/30;
+  .card-minimal {
+    @apply bg-card border border-border rounded-lg;
+    box-shadow: var(--shadow-sm);
   }
 
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent;
+  .card-elevated {
+    @apply bg-card border border-border rounded-lg;
+    box-shadow: var(--shadow-md);
   }
 
-  .shine-effect {
-    @apply relative overflow-hidden;
-  }
-
-  .shine-effect::after {
-    content: '';
-    @apply absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/20 to-transparent;
-    animation: shimmer 2s infinite;
-  }
-
-  .premium-shadow {
-    box-shadow: 0 8px 32px -8px hsl(var(--primary) / 0.3), 0 0 0 1px hsl(var(--border) / 0.5);
-  }
-
-  .premium-glow {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.15), 0 0 40px hsl(var(--primary) / 0.05);
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
