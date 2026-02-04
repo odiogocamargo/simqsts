@@ -194,6 +194,32 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in check-subscription", { message: errorMessage });
+
+    // Treat stale/missing sessions as a normal "not subscribed" state to avoid breaking the UI.
+    // These happen when the client still holds an old token/session id (session_not_found).
+    const isAuthSessionIssue =
+      /Auth session missing/i.test(errorMessage) ||
+      /session_not_found/i.test(errorMessage) ||
+      /No authorization header/i.test(errorMessage);
+
+    if (isAuthSessionIssue) {
+      return new Response(
+        JSON.stringify({
+          subscribed: false,
+          has_access: false,
+          is_in_trial: false,
+          trial_days_remaining: 0,
+          trial_end_date: null,
+          product_id: null,
+          subscription_end: null,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
+    }
+
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
