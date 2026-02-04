@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, Download, CreditCard, Crown, Loader2, Receipt } from "lucide-react";
+import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, Download, CreditCard, Crown, Loader2, Receipt, ClipboardList } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +37,7 @@ const professorNavItems = [
 const studentNavItems = [
   { title: "Meu Desempenho", url: "/student", icon: TrendingUp },
   { title: "Questões", url: "/student/questions", icon: BookOpen },
+  { title: "Simulados", url: "/student/simulations", icon: ClipboardList },
 ];
 
 export function AppSidebar() {
