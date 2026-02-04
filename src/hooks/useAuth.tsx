@@ -297,17 +297,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setSubscription({
-      subscribed: false,
-      hasAccess: false,
-      isInTrial: false,
-      trialDaysRemaining: 0,
-      trialEndDate: null,
-      productId: null,
-      subscriptionEnd: null,
-    });
-    navigate('/auth');
+    try {
+      // Clear local state first to ensure UI updates immediately
+      setUser(null);
+      setSession(null);
+      setSubscription({
+        subscribed: false,
+        hasAccess: false,
+        isInTrial: false,
+        trialDaysRemaining: 0,
+        trialEndDate: null,
+        productId: null,
+        subscriptionEnd: null,
+      });
+      
+      // Attempt to sign out from Supabase (may fail if session already expired)
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      // Ignore errors - session may already be expired
+      console.log('[useAuth] Sign out error (likely session already expired):', error);
+    } finally {
+      // Always navigate to auth page
+      navigate('/auth');
+    }
   };
 
   return (
