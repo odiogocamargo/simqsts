@@ -32,7 +32,7 @@ export const Paywall = ({
   }
 
   return (
-    <Card className="border-amber-500/50 bg-gradient-to-br from-amber-500/5 via-background to-primary/5">
+    <Card className="border-amber-500/50 bg-card">
       <CardContent className="py-12">
         <div className="max-w-md mx-auto text-center space-y-6">
           {/* Icon */}
@@ -101,7 +101,7 @@ export const TrialBanner = ({ className }: TrialBannerProps) => {
   }
 
   return (
-    <div className={`bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-primary/10 border border-amber-500/30 rounded-lg p-4 ${className}`}>
+    <div className={`bg-amber-500/5 border border-amber-500/30 rounded-lg p-4 ${className}`}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">

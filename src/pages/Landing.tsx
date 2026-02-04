@@ -87,7 +87,7 @@ const Landing = () => {
       </section>
 
       {/* Stats */}
-      <section className="py-16 border-y border-border/50 bg-muted/30">
+      <section className="py-16 border-y border-border">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             {[
@@ -97,7 +97,7 @@ const Landing = () => {
               { value: "523", label: "Tópicos" }
             ].map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-foreground">
+                <div className="text-3xl md:text-4xl font-bold text-primary">
                   {stat.value}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
@@ -174,7 +174,7 @@ const Landing = () => {
       </section>
 
       {/* How it works */}
-      <section className="py-24 px-6 bg-muted/30 border-y border-border/50">
+      <section className="py-24 px-6 bg-muted/50 border-y border-border">
         <div className="container mx-auto max-w-4xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -223,8 +223,8 @@ const Landing = () => {
 
       {/* Pricing */}
       <section className="py-24 px-6">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-12">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Simples e acessível
             </h2>
@@ -233,21 +233,64 @@ const Landing = () => {
             </p>
           </div>
 
-          <div className="max-w-md mx-auto">
-            <div className="rounded-2xl border-2 border-primary bg-card p-8 text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                Acesso completo
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            {/* Free Plan */}
+            <div className="rounded-2xl border border-border bg-card p-8">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Gratuito</h3>
+                <p className="text-sm text-muted-foreground">Para experimentar a plataforma</p>
               </div>
               
               <div className="mb-6">
-                <span className="text-5xl font-bold text-foreground">R$ 37,90</span>
+                <span className="text-4xl font-bold text-foreground">R$ 0</span>
+                <span className="text-muted-foreground">/7 dias</span>
+              </div>
+
+              <ul className="space-y-3 mb-8">
+                {[
+                  "Acesso a todas as questões",
+                  "Análise básica de desempenho",
+                  "Teste por 7 dias"
+                ].map((item, index) => (
+                  <li key={index} className="flex items-center gap-3 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground/60 shrink-0" />
+                    <span className="text-sm">{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={() => navigate("/auth?mode=signup")}
+                className="w-full"
+              >
+                Começar teste grátis
+              </Button>
+            </div>
+
+            {/* Premium Plan */}
+            <div className="rounded-2xl border-2 border-primary bg-card p-8 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                  Mais popular
+                </span>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Premium</h3>
+                <p className="text-sm text-muted-foreground">Acesso completo à plataforma</p>
+              </div>
+              
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-foreground">R$ 37,90</span>
                 <span className="text-muted-foreground">/mês</span>
               </div>
 
-              <ul className="space-y-3 text-left mb-8">
+              <ul className="space-y-3 mb-8">
                 {[
-                  "Acesso a todas as questões",
-                  "Todos os indicadores de desempenho",
+                  "Acesso ilimitado a todas as questões",
+                  "Análise completa de desempenho",
                   "Detector de pontos fracos",
                   "Histórico completo de evolução",
                   "Filtros por banca e disciplina",
@@ -265,7 +308,7 @@ const Landing = () => {
                 onClick={() => navigate("/auth?mode=signup")}
                 className="w-full gap-2 group"
               >
-                Começar agora
+                Assinar agora
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
               </Button>
             </div>
@@ -274,7 +317,7 @@ const Landing = () => {
       </section>
 
       {/* CTA Final */}
-      <section className="py-24 px-6 bg-primary/5 border-t border-border/50">
+      <section className="py-24 px-6 border-t border-border">
         <div className="container mx-auto max-w-3xl text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Pronto para estudar de forma inteligente?
