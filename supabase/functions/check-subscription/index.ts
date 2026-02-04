@@ -32,9 +32,15 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header provided");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
+    
+    // Use getUser with the token directly - this validates the JWT
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError) {
+      logStep("Auth error details", { message: userError.message, status: userError.status });
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
+    
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
