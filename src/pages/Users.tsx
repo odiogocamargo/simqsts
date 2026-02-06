@@ -11,8 +11,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy } from "lucide-react";
+import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy, CalendarDays } from "lucide-react";
 import { useState, useMemo } from "react";
+import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { DateRange } from "react-day-picker";
 interface UserWithDetails {
   id: string;
   full_name: string | null;
@@ -48,6 +53,10 @@ export default function Users() {
   // Estado para alterar senha
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<UserWithDetails | null>(null);
+  
+  // Estado para filtro de período de questões
+  const [questionsPeriod, setQuestionsPeriod] = useState<string>("all");
+  const [questionsDateRange, setQuestionsDateRange] = useState<DateRange | undefined>();
   const [newUserPassword, setNewUserPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
 
@@ -100,9 +109,35 @@ export default function Users() {
     },
   });
 
+  // Calcular datas para filtro de questões
+  const getQuestionsPeriodDates = useMemo(() => {
+    const now = new Date();
+    switch (questionsPeriod) {
+      case "today":
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case "yesterday":
+        const yesterday = subDays(now, 1);
+        return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+      case "week":
+        return { start: startOfWeek(now, { locale: ptBR }), end: endOfWeek(now, { locale: ptBR }) };
+      case "month":
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case "custom":
+        if (questionsDateRange?.from) {
+          return { 
+            start: startOfDay(questionsDateRange.from), 
+            end: questionsDateRange.to ? endOfDay(questionsDateRange.to) : endOfDay(questionsDateRange.from)
+          };
+        }
+        return null;
+      default:
+        return null; // "all" - sem filtro de data
+    }
+  }, [questionsPeriod, questionsDateRange]);
+
   // Buscar contagem de questões por professor e admin
   const { data: professorQuestionCounts } = useQuery({
-    queryKey: ["professor-question-counts"],
+    queryKey: ["professor-question-counts", questionsPeriod, questionsDateRange?.from?.toISOString(), questionsDateRange?.to?.toISOString()],
     queryFn: async () => {
       // Buscar todos os professores e admins
       const { data: staffRoles, error: rolesError } = await supabase
@@ -115,13 +150,22 @@ export default function Users() {
       const staffIds = staffRoles?.map(r => r.user_id) || [];
       const roleMap = new Map(staffRoles?.map(r => [r.user_id, r.role]) || []);
       
-      if (staffIds.length === 0) return [];
+      if (staffIds.length === 0) return { data: [], periodLabel: "" };
 
-      // Buscar questões criadas por professores e admins
-      const { data: questions, error: questionsError } = await supabase
+      // Buscar questões criadas por professores e admins com filtro de data
+      let query = supabase
         .from("questions")
-        .select("created_by")
+        .select("created_by, created_at")
         .in("created_by", staffIds);
+
+      const periodDates = getQuestionsPeriodDates;
+      if (periodDates) {
+        query = query
+          .gte("created_at", periodDates.start.toISOString())
+          .lte("created_at", periodDates.end.toISOString());
+      }
+
+      const { data: questions, error: questionsError } = await query;
 
       if (questionsError) throw questionsError;
 
@@ -151,7 +195,21 @@ export default function Users() {
         };
       }).sort((a, b) => b.questionCount - a.questionCount);
 
-      return result;
+      // Label do período
+      let periodLabel = "Todo o período";
+      if (periodDates) {
+        if (questionsPeriod === "today") periodLabel = "Hoje";
+        else if (questionsPeriod === "yesterday") periodLabel = "Ontem";
+        else if (questionsPeriod === "week") periodLabel = "Esta semana";
+        else if (questionsPeriod === "month") periodLabel = "Este mês";
+        else if (questionsPeriod === "custom") {
+          periodLabel = questionsDateRange?.to 
+            ? `${format(periodDates.start, "dd/MM/yyyy")} - ${format(periodDates.end, "dd/MM/yyyy")}`
+            : format(periodDates.start, "dd/MM/yyyy");
+        }
+      }
+
+      return { data: result, periodLabel };
     },
     enabled: !!users,
   });
@@ -598,20 +656,72 @@ export default function Users() {
         </div>
 
         {/* Card de Questões por Professor */}
-        {professorQuestionCounts && professorQuestionCounts.length > 0 && (
+        {professorQuestionCounts && professorQuestionCounts.data && professorQuestionCounts.data.length > 0 && (
           <Card>
             <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-amber-500" />
-                Questões Adicionadas por Equipe
-              </CardTitle>
-              <CardDescription>
-                Ranking de professores e administradores por quantidade de questões cadastradas
-              </CardDescription>
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-amber-500" />
+                    Questões Adicionadas por Equipe
+                  </CardTitle>
+                  <CardDescription>
+                    Ranking de professores e administradores por quantidade de questões cadastradas
+                    {professorQuestionCounts.periodLabel && professorQuestionCounts.periodLabel !== "Todo o período" && (
+                      <span className="ml-1 font-medium text-primary">({professorQuestionCounts.periodLabel})</span>
+                    )}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select value={questionsPeriod} onValueChange={setQuestionsPeriod}>
+                    <SelectTrigger className="w-[140px]">
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todo período</SelectItem>
+                      <SelectItem value="today">Hoje</SelectItem>
+                      <SelectItem value="yesterday">Ontem</SelectItem>
+                      <SelectItem value="week">Esta semana</SelectItem>
+                      <SelectItem value="month">Este mês</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {questionsPeriod === "custom" && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {questionsDateRange?.from ? (
+                            questionsDateRange.to ? (
+                              `${format(questionsDateRange.from, "dd/MM")} - ${format(questionsDateRange.to, "dd/MM")}`
+                            ) : (
+                              format(questionsDateRange.from, "dd/MM/yyyy")
+                            )
+                          ) : (
+                            "Selecionar datas"
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <CalendarComponent
+                          initialFocus
+                          mode="range"
+                          defaultMonth={questionsDateRange?.from}
+                          selected={questionsDateRange}
+                          onSelect={setQuestionsDateRange}
+                          numberOfMonths={2}
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {professorQuestionCounts.map((prof, index) => (
+                {professorQuestionCounts.data.map((prof, index) => (
                   <div
                     key={prof.userId}
                     className={`flex items-center justify-between p-3 rounded-lg border ${
@@ -645,8 +755,8 @@ export default function Users() {
                 ))}
               </div>
               <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
-                <span>Total de membros: {professorQuestionCounts.length}</span>
-                <span>Total de questões: {professorQuestionCounts.reduce((acc, p) => acc + p.questionCount, 0)}</span>
+                <span>Total de membros: {professorQuestionCounts.data.length}</span>
+                <span>Total de questões: {professorQuestionCounts.data.reduce((acc, p) => acc + p.questionCount, 0)}</span>
               </div>
             </CardContent>
           </Card>
