@@ -56,7 +56,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1Shj3ILIXpiR468j2crm94cC", // R$5,00/mês - Teste
+          price: "price_1SbMcGLIXpiR468j8A5WBhk7", // R$37,90/mês - Produção
           quantity: 1,
         },
       ],
