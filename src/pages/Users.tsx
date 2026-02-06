@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy, CalendarDays } from "lucide-react";
+import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy, CalendarDays, TrendingUp } from "lucide-react";
 import { useState, useMemo } from "react";
-import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, subMonths, isSameDay, isSameWeek, isSameMonth } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -57,6 +58,7 @@ export default function Users() {
   // Estado para filtro de período de questões
   const [questionsPeriod, setQuestionsPeriod] = useState<string>("all");
   const [questionsDateRange, setQuestionsDateRange] = useState<DateRange | undefined>();
+  const [evolutionPeriod, setEvolutionPeriod] = useState<string>("30days");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
 
@@ -210,6 +212,89 @@ export default function Users() {
       }
 
       return { data: result, periodLabel };
+    },
+    enabled: !!users,
+  });
+
+  // Buscar evolução de questões ao longo do tempo
+  const { data: questionsEvolution } = useQuery({
+    queryKey: ["questions-evolution", evolutionPeriod],
+    queryFn: async () => {
+      const now = new Date();
+      let startDate: Date;
+      let granularity: "day" | "week" | "month";
+
+      switch (evolutionPeriod) {
+        case "7days":
+          startDate = subDays(now, 7);
+          granularity = "day";
+          break;
+        case "30days":
+          startDate = subDays(now, 30);
+          granularity = "day";
+          break;
+        case "3months":
+          startDate = subMonths(now, 3);
+          granularity = "week";
+          break;
+        case "6months":
+          startDate = subMonths(now, 6);
+          granularity = "month";
+          break;
+        case "12months":
+          startDate = subMonths(now, 12);
+          granularity = "month";
+          break;
+        default:
+          startDate = subDays(now, 30);
+          granularity = "day";
+      }
+
+      // Buscar todas as questões no período
+      const { data: questions, error } = await supabase
+        .from("questions")
+        .select("created_at, created_by")
+        .gte("created_at", startOfDay(startDate).toISOString())
+        .lte("created_at", endOfDay(now).toISOString())
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      // Gerar intervalos baseado na granularidade
+      let intervals: Date[];
+      if (granularity === "day") {
+        intervals = eachDayOfInterval({ start: startDate, end: now });
+      } else if (granularity === "week") {
+        intervals = eachWeekOfInterval({ start: startDate, end: now }, { locale: ptBR });
+      } else {
+        intervals = eachMonthOfInterval({ start: startDate, end: now });
+      }
+
+      // Agrupar questões por intervalo
+      const chartData = intervals.map(date => {
+        const count = (questions || []).filter(q => {
+          const qDate = new Date(q.created_at);
+          if (granularity === "day") return isSameDay(qDate, date);
+          if (granularity === "week") return isSameWeek(qDate, date, { locale: ptBR });
+          return isSameMonth(qDate, date);
+        }).length;
+
+        let label: string;
+        if (granularity === "day") {
+          label = format(date, "dd/MM", { locale: ptBR });
+        } else if (granularity === "week") {
+          label = `Sem ${format(date, "dd/MM", { locale: ptBR })}`;
+        } else {
+          label = format(date, "MMM/yy", { locale: ptBR });
+        }
+
+        return {
+          date: label,
+          questoes: count,
+        };
+      });
+
+      return chartData;
     },
     enabled: !!users,
   });
@@ -761,6 +846,81 @@ export default function Users() {
             </CardContent>
           </Card>
         )}
+
+        {/* Card de Evolução de Questões */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Evolução de Questões Adicionadas
+                </CardTitle>
+                <CardDescription>
+                  Acompanhe a quantidade de questões cadastradas ao longo do tempo
+                </CardDescription>
+              </div>
+              <Select value={evolutionPeriod} onValueChange={setEvolutionPeriod}>
+                <SelectTrigger className="w-[160px]">
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                  <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                  <SelectItem value="3months">Últimos 3 meses</SelectItem>
+                  <SelectItem value="6months">Últimos 6 meses</SelectItem>
+                  <SelectItem value="12months">Últimos 12 meses</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {questionsEvolution && questionsEvolution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={questionsEvolution}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--background))", 
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px"
+                    }}
+                    formatter={(value) => [`${value} questões`, "Questões"]}
+                  />
+                  <Bar 
+                    dataKey="questoes" 
+                    fill="hsl(var(--primary))" 
+                    radius={[4, 4, 0, 0]}
+                    name="Questões"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                Nenhuma questão encontrada no período
+              </div>
+            )}
+            {questionsEvolution && questionsEvolution.length > 0 && (
+              <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
+                <span>Período: {evolutionPeriod === "7days" ? "Últimos 7 dias" : evolutionPeriod === "30days" ? "Últimos 30 dias" : evolutionPeriod === "3months" ? "Últimos 3 meses" : evolutionPeriod === "6months" ? "Últimos 6 meses" : "Últimos 12 meses"}</span>
+                <span>Total no período: {questionsEvolution.reduce((acc, d) => acc + d.questoes, 0)} questões</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
