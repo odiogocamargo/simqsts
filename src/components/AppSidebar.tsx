@@ -58,7 +58,7 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50 glass-effect">
+    <Sidebar collapsible="icon" className="border-r border-border/50 bg-background">
       <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
         <div className="flex items-center gap-3 p-4 border-b border-border/50">
