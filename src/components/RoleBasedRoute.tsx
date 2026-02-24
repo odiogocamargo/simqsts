@@ -20,9 +20,17 @@ export const RoleBasedRoute = ({ children, allowedRoles }: RoleBasedRouteProps) 
     );
   }
 
-  // Se o usuário está logado mas não tem role definida, não deixamos "cair" em permissões de admin.
+  // Se o usuário está logado mas não tem role definida, mostra mensagem ao invés de redirecionar
+  // (redirecionar para /auth causaria loop infinito pois Auth redireciona usuários logados de volta)
   if (!role) {
-    return <Navigate to="/auth" replace />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">Sua conta ainda não possui um perfil de acesso configurado.</p>
+          <p className="text-sm text-muted-foreground">Entre em contato com o administrador.</p>
+        </div>
+      </div>
+    );
   }
 
   if (allowedRoles.includes(role)) {

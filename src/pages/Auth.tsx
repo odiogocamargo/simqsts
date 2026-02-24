@@ -39,9 +39,9 @@ export default function Auth() {
     }
   }, [searchParams]);
 
-  // Redirect if already logged in
+  // Redirect if already logged in — usa "/" para o Index decidir a rota correta com base na role
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const validateEmail = (email: string) => {
