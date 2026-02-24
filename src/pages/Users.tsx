@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy, CalendarDays, TrendingUp } from "lucide-react";
 import { useState, useMemo } from "react";
-import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, subMonths, isSameDay, isSameWeek, isSameMonth } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, subMonths } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -250,34 +250,76 @@ export default function Users() {
           granularity = "day";
       }
 
-      // Buscar todas as questões no período
-      const { data: questions, error } = await supabase
-        .from("questions")
-        .select("created_at, created_by")
-        .gte("created_at", startOfDay(startDate).toISOString())
-        .lte("created_at", endOfDay(now).toISOString())
-        .order("created_at", { ascending: true });
+      const rangeStart = startOfDay(startDate).toISOString();
+      const rangeEnd = endOfDay(now).toISOString();
 
-      if (error) throw error;
+      // Buscar todas as questões no período com paginação para evitar limite de 1000
+      let allQuestions: { created_at: string }[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batch, error } = await supabase
+          .from("questions")
+          .select("created_at")
+          .gte("created_at", rangeStart)
+          .lte("created_at", rangeEnd)
+          .order("created_at", { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        if (batch && batch.length > 0) {
+          allQuestions = allQuestions.concat(batch);
+          from += pageSize;
+          hasMore = batch.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
 
       // Gerar intervalos baseado na granularidade
       let intervals: Date[];
+      const intervalStart = startOfDay(startDate);
       if (granularity === "day") {
-        intervals = eachDayOfInterval({ start: startDate, end: now });
+        intervals = eachDayOfInterval({ start: intervalStart, end: now });
       } else if (granularity === "week") {
-        intervals = eachWeekOfInterval({ start: startDate, end: now }, { locale: ptBR });
+        intervals = eachWeekOfInterval({ start: intervalStart, end: now }, { locale: ptBR });
       } else {
-        intervals = eachMonthOfInterval({ start: startDate, end: now });
+        intervals = eachMonthOfInterval({ start: intervalStart, end: now });
       }
 
-      // Agrupar questões por intervalo
+      // Pré-processar questões em buckets para performance
+      const buckets = new Map<string, number>();
+      allQuestions.forEach(q => {
+        const qDate = new Date(q.created_at);
+        let key: string;
+        if (granularity === "day") {
+          key = format(qDate, "yyyy-MM-dd");
+        } else if (granularity === "week") {
+          // Encontrar o início da semana para agrupar
+          const weekStart = startOfWeek(qDate, { locale: ptBR });
+          key = format(weekStart, "yyyy-MM-dd");
+        } else {
+          key = format(qDate, "yyyy-MM");
+        }
+        buckets.set(key, (buckets.get(key) || 0) + 1);
+      });
+
+      // Montar dados do gráfico
       const chartData = intervals.map(date => {
-        const count = (questions || []).filter(q => {
-          const qDate = new Date(q.created_at);
-          if (granularity === "day") return isSameDay(qDate, date);
-          if (granularity === "week") return isSameWeek(qDate, date, { locale: ptBR });
-          return isSameMonth(qDate, date);
-        }).length;
+        let key: string;
+        if (granularity === "day") {
+          key = format(date, "yyyy-MM-dd");
+        } else if (granularity === "week") {
+          const weekStart = startOfWeek(date, { locale: ptBR });
+          key = format(weekStart, "yyyy-MM-dd");
+        } else {
+          key = format(date, "yyyy-MM");
+        }
+
+        const count = buckets.get(key) || 0;
 
         let label: string;
         if (granularity === "day") {
