@@ -41,7 +41,7 @@ const studentNavItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const { role, isLoading } = useUserRole();
   const { subscription, subscriptionLoading, createCheckout, openCustomerPortal } = useAuth();
 
@@ -93,6 +93,9 @@ export function AppSidebar() {
                         end
                         className="flex items-center gap-3 rounded-xl transition-all duration-200 hover:bg-secondary"
                         activeClassName="bg-primary text-primary-foreground hover:bg-primary/90"
+                        onClick={() => {
+                          if (isMobile) setOpenMobile(false);
+                        }}
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
                         {!isCollapsed && <span className="font-medium">{item.title}</span>}
