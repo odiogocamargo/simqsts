@@ -154,9 +154,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('[useAuth] Checkout response:', data);
 
       if (data?.url) {
-        console.log('[useAuth] Redirecting to checkout URL:', data.url);
-        // Use window.location.href for more reliable redirect
-        window.location.href = data.url;
+        console.log('[useAuth] Opening checkout URL in new tab:', data.url);
+        window.open(data.url, '_blank');
+        setSubscriptionLoading(false);
       } else {
         console.error('[useAuth] No URL in checkout response');
         setSubscriptionLoading(false);
