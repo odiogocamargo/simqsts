@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Paywall, TrialBanner } from "@/components/Paywall";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -47,6 +49,8 @@ const StudentSimulations = () => {
     abandonSimulation,
     deleteSimulation,
   } = useSimulations();
+
+  const { subscription, subscriptionLoading } = useAuth();
 
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [activeSimulation, setActiveSimulation] = useState<Simulation | null>(null);
@@ -280,6 +284,21 @@ const StudentSimulations = () => {
 
   return (
     <Layout>
+      {!subscription.hasAccess ? (
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Simulados</h1>
+            <p className="text-muted-foreground">Pratique com simulados personalizados</p>
+          </div>
+          <Paywall 
+            title="Simulados Bloqueados" 
+            description="Seu período de teste expirou. Assine para criar simulados personalizados e acompanhar seu desempenho."
+          />
+        </div>
+      ) : (
+      <>
+      <TrialBanner className="mb-6" />
+
       {loadingSimulation && (
         <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
           <div className="flex flex-col items-center gap-2">
@@ -335,6 +354,8 @@ const StudentSimulations = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </>
+      )}
     </Layout>
   );
 };
