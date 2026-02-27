@@ -222,52 +222,69 @@ const Landing = () => {
       </section>
 
       {/* Pricing */}
-      <section className="py-24 px-6">
-        <div className="container mx-auto max-w-4xl">
+      <section className="py-24 px-6 relative overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
+        </div>
+
+        <div className="container mx-auto max-w-4xl relative z-10">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Simples e acessível
             </h2>
             <p className="text-muted-foreground text-lg">
-              Um plano completo por menos de R$ 1,30 por dia.
+              Um plano completo por menos de R$ 1,70 por dia.
             </p>
           </div>
 
           <div className="max-w-md mx-auto">
-            <div className="rounded-2xl border-2 border-primary bg-card p-8 text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                Acesso completo
-              </div>
+            <div className="relative rounded-2xl border border-primary/30 bg-card overflow-hidden shadow-lg shadow-primary/5">
+              {/* Top accent bar */}
+              <div className="h-1 w-full bg-gradient-to-r from-primary via-primary/80 to-primary" />
               
-              <div className="mb-6">
-                <span className="text-5xl font-bold text-foreground">R$ 37,90</span>
-                <span className="text-muted-foreground">/mês</span>
+              <div className="p-8 text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6 border border-primary/20">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Acesso completo
+                </div>
+                
+                <div className="mb-2">
+                  <span className="text-6xl font-extrabold text-foreground tracking-tight">R$ 49</span>
+                  <span className="text-2xl font-bold text-foreground">,99</span>
+                  <span className="text-muted-foreground ml-1">/mês</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-8">Cancele quando quiser, sem compromisso</p>
+
+                <div className="bg-muted/50 rounded-xl p-5 text-left mb-8 border border-border/50">
+                  <ul className="space-y-3">
+                    {[
+                      "Acesso a todas as questões",
+                      "Todos os indicadores de desempenho",
+                      "Detector de pontos fracos",
+                      "Histórico completo de evolução",
+                      "Filtros por banca e disciplina",
+                      "Simulados personalizados"
+                    ].map((item, index) => (
+                      <li key={index} className="flex items-center gap-3 text-foreground">
+                        <div className="h-5 w-5 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <span className="text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate("/auth?mode=signup")}
+                  className="w-full gap-2 group text-base h-12"
+                >
+                  Começar agora
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
               </div>
-
-              <ul className="space-y-3 text-left mb-8">
-                {[
-                  "Acesso a todas as questões",
-                  "Todos os indicadores de desempenho",
-                  "Detector de pontos fracos",
-                  "Histórico completo de evolução",
-                  "Filtros por banca e disciplina",
-                  "Cancele quando quiser"
-                ].map((item, index) => (
-                  <li key={index} className="flex items-center gap-3 text-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button 
-                size="lg" 
-                onClick={() => navigate("/auth?mode=signup")}
-                className="w-full gap-2 group"
-              >
-                Começar agora
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-              </Button>
             </div>
           </div>
         </div>

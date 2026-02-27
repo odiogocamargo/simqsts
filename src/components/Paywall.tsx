@@ -77,7 +77,7 @@ export const Paywall = ({
             className="w-full gap-2"
           >
             <Crown className="h-5 w-5" />
-            Assinar por R$ 37,90/mês
+            Assinar por R$ 49,99/mês
           </Button>
 
           <p className="text-xs text-muted-foreground">
