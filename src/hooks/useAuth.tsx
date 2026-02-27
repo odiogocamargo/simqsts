@@ -22,7 +22,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, cpf: string, whatsapp: string, endereco: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  checkSubscription: (currentSession?: Session | null) => Promise<void>;
+  checkSubscription: (currentSession?: Session | null, forceCheck?: boolean) => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
 }
@@ -52,11 +52,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkInProgressRef = useRef<boolean>(false);
   const pendingCheckRef = useRef<Promise<void> | null>(null);
 
-  const checkSubscription = useCallback(async (currentSession?: Session | null) => {
+  const checkSubscription = useCallback(async (currentSession?: Session | null, forceCheck?: boolean) => {
     const now = Date.now();
     
-    // If we checked recently, skip (cache for 30 seconds)
-    if (now - lastCheckRef.current < SUBSCRIPTION_CACHE_DURATION) {
+    // If we checked recently, skip (cache for 30 seconds) — unless forced
+    if (!forceCheck && now - lastCheckRef.current < SUBSCRIPTION_CACHE_DURATION) {
       console.log('[useAuth] Skipping subscription check - cached');
       return;
     }
