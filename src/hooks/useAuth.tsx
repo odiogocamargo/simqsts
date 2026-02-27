@@ -135,7 +135,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('No session available for checkout');
       return;
     }
-    
+
+    // Abre uma aba imediatamente no gesto do usuário para evitar bloqueio de popup
+    const checkoutWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!checkoutWindow) {
+      console.error('[useAuth] Popup blocked by browser');
+      return;
+    }
+
     setSubscriptionLoading(true);
     try {
       console.log('[useAuth] Creating checkout session...');
@@ -144,9 +151,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
-      
+
       if (error) {
         console.error('Error creating checkout:', error);
+        checkoutWindow.close();
         setSubscriptionLoading(false);
         return;
       }
@@ -154,15 +162,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('[useAuth] Checkout response:', data);
 
       if (data?.url) {
-        console.log('[useAuth] Opening checkout URL in new tab:', data.url);
-        window.open(data.url, '_blank');
-        setSubscriptionLoading(false);
+        console.log('[useAuth] Redirecting pre-opened tab to checkout URL:', data.url);
+        checkoutWindow.location.href = data.url;
       } else {
         console.error('[useAuth] No URL in checkout response');
+        checkoutWindow.close();
         setSubscriptionLoading(false);
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
+      checkoutWindow.close();
       setSubscriptionLoading(false);
     }
   }, [session]);
