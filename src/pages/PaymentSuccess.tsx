@@ -18,7 +18,7 @@ const PaymentSuccess = () => {
     if (!session?.access_token) return;
     
     setIsCheckingSubscription(true);
-    await checkSubscription(session);
+    await checkSubscription(session, true); // forceCheck = true to bypass cache
     setCheckAttempts(prev => prev + 1);
     setIsCheckingSubscription(false);
   }, [session, checkSubscription]);
