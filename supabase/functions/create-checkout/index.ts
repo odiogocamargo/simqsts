@@ -56,7 +56,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1SbMcGLIXpiR468j8A5WBhk7", // R$49,99/mês - Produção
+          price: "price_1T5UCTLIXpiR468jMpeOnHGG", // R$49,99/mês - SIM Questões Acesso Completo
           quantity: 1,
         },
       ],
