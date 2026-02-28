@@ -17,7 +17,7 @@ export interface Subject {
 
 export const subjects: Subject[] = [
   {
-    id: "matematica",
+    id: "ma",
     name: "Matemática",
     contents: [
       {
@@ -135,8 +135,8 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "interpretacao-textual",
-    name: "Interpretação Textual",
+    id: "it",
+    name: "Produção/Interpretação Textual",
     contents: [
       {
         id: "compreensao-texto",
@@ -240,7 +240,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "gramatica",
+    id: "gr",
     name: "Gramática",
     contents: [
       {
@@ -359,7 +359,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "literatura",
+    id: "li",
     name: "Literatura",
     contents: [
       {
@@ -491,7 +491,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "fisica",
+    id: "fi",
     name: "Física",
     contents: [
       {
@@ -670,7 +670,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "quimica",
+    id: "qu",
     name: "Química",
     contents: [
       {
@@ -868,7 +868,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "biologia",
+    id: "bi",
     name: "Biologia",
     contents: [
       {
@@ -1068,7 +1068,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "historia",
+    id: "hi",
     name: "História",
     contents: [
       {
@@ -1298,7 +1298,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "geografia",
+    id: "ge",
     name: "Geografia",
     contents: [
       {
@@ -1513,7 +1513,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "filosofia",
+    id: "fl",
     name: "Filosofia",
     contents: [
       {
@@ -1678,7 +1678,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "sociologia",
+    id: "so",
     name: "Sociologia",
     contents: [
       {
@@ -1841,7 +1841,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "ingles",
+    id: "in",
     name: "Inglês",
     contents: [
       {
@@ -1883,7 +1883,7 @@ export const subjects: Subject[] = [
     ],
   },
   {
-    id: "espanhol",
+    id: "es",
     name: "Espanhol",
     contents: [
       {
@@ -1921,6 +1921,61 @@ export const subjects: Subject[] = [
           { id: "tiempos-basicos", name: "Tiempos básicos (presente, pasado, futuro)" },
           { id: "preposiciones-pronombres-conectores", name: "Preposiciones, pronombres y conectores" },
           { id: "negacion-comparativos", name: "Negación y comparativos" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "le",
+    name: "Leitura e Interpretação de Textos",
+    contents: [
+      {
+        id: "le-coesao-textual",
+        name: "Coesão textual",
+        topics: [
+          { id: "le-ct-conectores", name: "Conectores" },
+          { id: "le-ct-pronomes-referenciais", name: "Pronomes referenciais" },
+        ],
+      },
+      {
+        id: "le-compreensao-textual",
+        name: "Compreensão textual",
+        topics: [
+          { id: "le-ct-detalhes-especificos", name: "Detalhes específicos" },
+          { id: "le-ct-ideia-principal", name: "Ideia principal" },
+          { id: "le-ct-inferencia", name: "Inferência" },
+        ],
+      },
+      {
+        id: "le-estrategias-leitura",
+        name: "Estratégias de leitura",
+        topics: [
+          { id: "le-el-scanning", name: "Scanning" },
+          { id: "le-el-skimming", name: "Skimming" },
+        ],
+      },
+      {
+        id: "le-gramatica-aplicada",
+        name: "Gramática aplicada",
+        topics: [
+          { id: "le-ga-modalizacao", name: "Modalização" },
+          { id: "le-ga-tempos-verbais", name: "Tempos verbais" },
+        ],
+      },
+      {
+        id: "le-intencao-comunicativa",
+        name: "Intenção comunicativa",
+        topics: [
+          { id: "le-ic-humor", name: "Humor" },
+          { id: "le-ic-ironia", name: "Ironia" },
+        ],
+      },
+      {
+        id: "le-vocabulario-contexto",
+        name: "Vocabulário em contexto",
+        topics: [
+          { id: "le-vc-cognatos", name: "Cognatos" },
+          { id: "le-vc-falsos-cognatos", name: "Falsos cognatos" },
         ],
       },
     ],

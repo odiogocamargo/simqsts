@@ -93,7 +93,7 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       },
       {
         statement: "Analise o gráfico e responda: qual é o comportamento da função?",
-        subject_id: "matematica",
+        subject_id: "ma",
         content_id: "funcoes",
         topic_id: "funcao_primeiro_grau",
         exam_id: "paes_uema",
@@ -116,7 +116,7 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       },
       {
         statement: "Questão dissertativa: Explique o processo de fotossíntese com base na imagem fornecida.",
-        subject_id: "biologia",
+        subject_id: "bi",
         content_id: "ecologia",
         topic_id: "fotossintese",
         exam_id: "paes_uema",
@@ -133,7 +133,7 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       },
       {
         statement: "INSTRUÇÕES: Para converter suas imagens para base64, você pode usar:\n\n1. Sites online: https://www.base64-image.de/\n2. Python: import base64; base64.b64encode(open('imagem.png', 'rb').read()).decode()\n3. Node.js: Buffer.from(fs.readFileSync('imagem.png')).toString('base64')\n\nO formato completo deve ser: data:image/png;base64,SEU_CODIGO_BASE64_AQUI\n\nSuporte para: PNG, JPG, JPEG, GIF, WebP",
-        subject_id: "matematica",
+        subject_id: "ma",
         content_id: "algebra",
         exam_id: "enem",
         year: 2024,
@@ -418,7 +418,7 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
             <Label htmlFor="json-content">Conteúdo JSON</Label>
             <Textarea
               id="json-content"
-              placeholder='[{"statement": "Qual é...?", "subject_id": "matematica", ...}]'
+              placeholder='[{"statement": "Qual é...?", "subject_id": "ma", ...}]'
               value={jsonContent}
               onChange={(e) => setJsonContent(e.target.value)}
               className="min-h-[300px] font-mono text-sm"
