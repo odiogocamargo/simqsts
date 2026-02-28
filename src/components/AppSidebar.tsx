@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, Download, CreditCard, Crown, Loader2, Receipt, ClipboardList } from "lucide-react";
+import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, CreditCard, Crown, Loader2, Receipt, ClipboardList } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,10 +21,9 @@ import {
 const adminNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Questões", url: "/questions", icon: FileText },
-  { title: "Relatório de Taxonomia", url: "/subject-report", icon: List },
+  { title: "Taxonomia", url: "/subject-report", icon: List },
   { title: "Usuários", url: "/users", icon: Users },
   { title: "Assinaturas", url: "/subscriptions", icon: Receipt },
-  { title: "Exportar Taxonomia", url: "/taxonomy-export", icon: Download },
 ];
 
 // Itens de navegação para professor (apenas questões)

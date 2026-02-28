@@ -16,7 +16,6 @@ import StudentSimulations from "./pages/StudentSimulations";
 import StudentQuestions from "./pages/StudentQuestions";
 import SubjectReport from "./pages/SubjectReport";
 import Users from "./pages/Users";
-import TaxonomyExport from "./pages/TaxonomyExport";
 import TaxonomyMigration from "./pages/TaxonomyMigration";
 import Subscriptions from "./pages/Subscriptions";
 import Auth from "./pages/Auth";
@@ -45,7 +44,6 @@ const App = () => (
             <Route path="/subject-report" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><SubjectReport /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Users /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/subscriptions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Subscriptions /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/taxonomy-export" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><TaxonomyExport /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/taxonomy-migration" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><TaxonomyMigration /></RoleBasedRoute></ProtectedRoute>} />
             {/* Rotas de Aluno */}
             <Route path="/student" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentPractice /></RoleBasedRoute></ProtectedRoute>} />

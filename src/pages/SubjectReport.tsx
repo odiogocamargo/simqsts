@@ -1,10 +1,10 @@
 import { Layout } from "@/components/Layout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, FileText, Tag, BarChart3, Calendar, GraduationCap, Filter } from "lucide-react";
+import { BookOpen, FileText, Tag, BarChart3, Calendar, GraduationCap, Filter, Copy, Download, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -14,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface TopicData {
   id: string;
@@ -64,9 +67,43 @@ const COLORS = [
 ];
 
 const SubjectReport = () => {
+  const { toast } = useToast();
   const [selectedExams, setSelectedExams] = useState<string[]>([]);
   const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [formattedText, setFormattedText] = useState('');
+  const [jsonData, setJsonData] = useState('');
+
+  const fetchTaxonomyExport = async () => {
+    setExportLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('export-taxonomy');
+      if (error) throw error;
+      setFormattedText(data.formatted_text);
+      setJsonData(JSON.stringify(data.taxonomy, null, 2));
+      toast({ title: "Taxonomia exportada!", description: `${data.total_subjects} matérias, ${data.total_contents} conteúdos, ${data.total_topics} tópicos` });
+    } catch (error: any) {
+      toast({ title: "Erro ao exportar", description: error.message, variant: "destructive" });
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copiado!", description: `${label} copiado para a área de transferência` });
+  };
+
+  const downloadAsFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const { data: exams } = useQuery({
     queryKey: ['exams-report'],
@@ -333,12 +370,13 @@ const SubjectReport = () => {
         </div>
 
         <Tabs defaultValue="hierarchy" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5">
+          <TabsList className="grid w-full max-w-3xl grid-cols-6">
             <TabsTrigger value="hierarchy">Hierarquia</TabsTrigger>
             <TabsTrigger value="chart">Por Matéria</TabsTrigger>
             <TabsTrigger value="exams">Por Vestibular</TabsTrigger>
             <TabsTrigger value="years">Por Ano</TabsTrigger>
             <TabsTrigger value="topics">Por Tópicos</TabsTrigger>
+            <TabsTrigger value="export">Exportar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="hierarchy">
@@ -800,6 +838,71 @@ const SubjectReport = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="export">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Download className="h-5 w-5 text-primary" />
+                    Exportar Taxonomia para ChatGPT
+                  </CardTitle>
+                  <CardDescription>
+                    Exporte todos os IDs válidos de matérias, conteúdos e tópicos para usar no seu bot do ChatGPT
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={fetchTaxonomyExport} disabled={exportLoading}>
+                    <RefreshCw className={`mr-2 h-4 w-4 ${exportLoading ? 'animate-spin' : ''}`} />
+                    {exportLoading ? 'Carregando...' : 'Carregar Taxonomia para Exportação'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {formattedText && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dados Exportados</CardTitle>
+                    <CardDescription>Escolha o formato que deseja usar no seu bot do ChatGPT</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="formatted" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2 max-w-md">
+                        <TabsTrigger value="formatted">Texto Formatado</TabsTrigger>
+                        <TabsTrigger value="json">JSON</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="formatted" className="space-y-4">
+                        <div className="flex gap-2">
+                          <Button variant="outline" onClick={() => copyToClipboard(formattedText, 'Texto formatado')}>
+                            <Copy className="mr-2 h-4 w-4" /> Copiar
+                          </Button>
+                          <Button variant="outline" onClick={() => downloadAsFile(formattedText, 'taxonomia-sim-questoes.txt')}>
+                            <Download className="mr-2 h-4 w-4" /> Download
+                          </Button>
+                        </div>
+                        <Textarea value={formattedText} readOnly className="font-mono text-xs h-[500px]" />
+                        <p className="text-sm text-muted-foreground">💡 Cole este texto nas instruções do seu bot do ChatGPT</p>
+                      </TabsContent>
+                      
+                      <TabsContent value="json" className="space-y-4">
+                        <div className="flex gap-2">
+                          <Button variant="outline" onClick={() => copyToClipboard(jsonData, 'JSON')}>
+                            <Copy className="mr-2 h-4 w-4" /> Copiar
+                          </Button>
+                          <Button variant="outline" onClick={() => downloadAsFile(jsonData, 'taxonomia-sim-questoes.json')}>
+                            <Download className="mr-2 h-4 w-4" /> Download
+                          </Button>
+                        </div>
+                        <Textarea value={jsonData} readOnly className="font-mono text-xs h-[500px]" />
+                        <p className="text-sm text-muted-foreground">💡 Use este JSON se seu bot precisar de dados estruturados</p>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
