@@ -104,8 +104,8 @@ Use tool calling para retornar os dados estruturados.`
                 properties: {
                   subject_id: {
                     type: 'string',
-                    enum: ['matematica', 'portugues', 'quimica', 'fisica', 'biologia', 'historia', 'geografia', 'filosofia', 'sociologia', 'ingles', 'espanhol', 'artes'],
-                    description: 'ID da matéria'
+                    enum: ['ma', 'ge', 'hi', 'bi', 'qu', 'fi', 'gr', 'le', 'it', 'li', 'so', 'fl', 'in', 'es'],
+                    description: 'ID da matéria (ex: ma=Matemática, ge=Geografia, hi=História, bi=Biologia, qu=Química, fi=Física, gr=Gramática, le=Leitura, it=Interpretação Textual, li=Literatura, so=Sociologia, fl=Filosofia, in=Inglês, es=Espanhol)'
                   },
                   content_id: {
                     type: 'string',
