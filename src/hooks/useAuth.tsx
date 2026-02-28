@@ -155,9 +155,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (data?.url) {
         console.log('[useAuth] Redirecting to checkout URL:', data.url);
-        // Redireciona na mesma aba - usa window.top para funcionar dentro de iframes
-        const targetWindow = window.top || window;
-        targetWindow.location.href = data.url;
+
+        // Em ambientes com iframe/sandbox (como preview), window.top pode lançar SecurityError.
+        // Prioriza redirecionamento na própria aba/janela atual, com fallback seguro.
+        try {
+          window.location.assign(data.url);
+          return;
+        } catch (redirectError) {
+          console.warn('[useAuth] window.location.assign failed, trying fallback', redirectError);
+        }
+
+        const opened = window.open(data.url, '_self');
+        if (!opened) {
+          throw new Error('Não foi possível redirecionar para o checkout do Stripe.');
+        }
       } else {
         console.error('[useAuth] No URL in checkout response');
         setSubscriptionLoading(false);
