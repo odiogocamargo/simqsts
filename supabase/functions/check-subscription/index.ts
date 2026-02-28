@@ -67,6 +67,30 @@ serve(async (req) => {
       });
     }
 
+    // Check if user is linked to an active school - they get free access
+    const { data: schoolLink } = await supabaseClient
+      .from("school_students")
+      .select("school_id, schools!inner(active)")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (schoolLink) {
+      logStep("User is linked to a school - granting full access", { schoolId: schoolLink.school_id });
+      return new Response(JSON.stringify({
+        subscribed: true,
+        has_access: true,
+        is_in_trial: false,
+        trial_days_remaining: 0,
+        trial_end_date: null,
+        product_id: "school_access",
+        subscription_end: null,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     // Calculate trial status for regular users (alunos)
     const createdAt = new Date(user.created_at);
     const trialEndDate = new Date(createdAt);
