@@ -27,6 +27,26 @@ serve(async (req) => {
   }
 
   try {
+    // Auth check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const supabaseAuth = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const userId = claimsData.claims.sub;
+
+    // Role check - only professors and admins
+    const { data: isProfessor } = await supabaseAuth.rpc('has_role', { _user_id: userId, _role: 'professor' });
+    const { data: isAdmin } = await supabaseAuth.rpc('has_role', { _user_id: userId, _role: 'admin' });
+    if (!isProfessor && !isAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden - professor or admin role required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const { questions } = await req.json();
     
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
