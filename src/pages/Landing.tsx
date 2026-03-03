@@ -296,17 +296,17 @@ const Landing = () => {
       </section>
 
       {/* Escolas e Instituições */}
-      <section className="py-24 px-6 bg-muted/30 border-t border-border">
+      <section className="py-24 px-6 bg-[#0a0a0a] border-t border-white/10">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 text-primary text-sm font-medium mb-4">
               <School className="h-3.5 w-3.5" />
               Para Instituições
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Leve o SIM Questões para sua escola
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-white/60 text-lg max-w-2xl mx-auto">
               Escolas, cursinhos e instituições de ensino podem oferecer acesso completo aos seus alunos com condições exclusivas.
             </p>
           </div>
@@ -336,15 +336,15 @@ const Landing = () => {
             ].map((item, index) => (
               <div
                 key={index}
-                className="p-6 rounded-2xl border border-border/50 bg-card text-center"
+                className="p-6 rounded-2xl border border-white/10 bg-white/5 text-center"
               >
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/15 flex items-center justify-center mx-auto mb-4">
                   <item.icon className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-base font-semibold text-foreground mb-2">
+                <h3 className="text-base font-semibold text-white mb-2">
                   {item.title}
                 </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <p className="text-white/50 text-sm leading-relaxed">
                   {item.description}
                 </p>
               </div>
@@ -361,7 +361,7 @@ const Landing = () => {
               Falar com um especialista
               <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
             </Button>
-            <p className="text-sm text-muted-foreground mt-3">
+            <p className="text-sm text-white/40 mt-3">
               Planos especiais para escolas, cursinhos e redes de ensino
             </p>
           </div>
