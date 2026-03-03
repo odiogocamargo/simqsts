@@ -8,7 +8,12 @@ import {
   BookOpen,
   TrendingUp,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  School,
+  Users,
+  BarChart,
+  Shield,
+  MessageCircle
 } from "lucide-react";
 
 const Landing = () => {
@@ -286,6 +291,79 @@ const Landing = () => {
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Escolas e Instituições */}
+      <section className="py-24 px-6 bg-muted/30 border-t border-border">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+              <School className="h-3.5 w-3.5" />
+              Para Instituições
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Leve o SIM Questões para sua escola
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Escolas, cursinhos e instituições de ensino podem oferecer acesso completo aos seus alunos com condições exclusivas.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {[
+              {
+                icon: Users,
+                title: "Acesso para todos os alunos",
+                description: "Seus estudantes praticam com questões reais sem precisar de assinatura individual."
+              },
+              {
+                icon: BarChart,
+                title: "Relatórios de desempenho",
+                description: "Acompanhe a evolução dos alunos por disciplina, conteúdo e tópico em tempo real."
+              },
+              {
+                icon: Target,
+                title: "Diagnóstico de turma",
+                description: "Identifique os pontos fracos coletivos e direcione suas aulas com precisão."
+              },
+              {
+                icon: Shield,
+                title: "Ambiente seguro",
+                description: "Plataforma confiável com dados protegidos e gestão centralizada pela instituição."
+              }
+            ].map((item, index) => (
+              <div
+                key={index}
+                className="p-6 rounded-2xl border border-border/50 bg-card text-center"
+              >
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <item.icon className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Button
+              size="lg"
+              onClick={() => window.open("https://wa.me/5599999999999?text=Olá! Tenho interesse em ser parceiro do SIM Questões.", "_blank")}
+              className="gap-2 group text-base h-12"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Falar com um especialista
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+            </Button>
+            <p className="text-sm text-muted-foreground mt-3">
+              Planos especiais para escolas, cursinhos e redes de ensino
+            </p>
           </div>
         </div>
       </section>
