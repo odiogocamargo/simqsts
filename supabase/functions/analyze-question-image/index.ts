@@ -26,6 +26,9 @@ const extractToolPayload = (data: any) => {
   return JSON.parse(toolCall.function.arguments);
 };
 
+const isValidDifficulty = (value: unknown) => ["facil", "medio", "dificil"].includes(String(value || ""));
+const isValidAnswer = (value: unknown) => ["a", "b", "c", "d", "e"].includes(String(value || ""));
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -277,15 +280,145 @@ serve(async (req) => {
     const validContentsMap = new Map((contentsResult.data || []).map((item) => [item.id, item.subject_id]));
     const validTopicsMap = new Map((topicsResult.data || []).map((item) => [item.id, item.content_id]));
     const validExams = new Set((examsResult.data || []).map((item) => item.id));
+    const subjectContentsMap = new Map(
+      (subjectsResult.data || []).map((subject) => [
+        subject.id,
+        (contentsResult.data || []).filter((content) => content.subject_id === subject.id),
+      ]),
+    );
+    const contentTopicsMap = new Map(
+      (contentsResult.data || []).map((content) => [
+        content.id,
+        (topicsResult.data || []).filter((topic) => topic.content_id === content.id),
+      ]),
+    );
 
-    const sanitizedQuestions = (extractedData.questions || []).reduce((acc: Record<string, unknown>[], question: Record<string, unknown>) => {
+    const extractedQuestions = Array.isArray(extractedData.questions) ? extractedData.questions : [];
+    const questionsNeedingTaxonomy = extractedQuestions
+      .map((question: Record<string, unknown>, index: number) => ({ question, index }))
+      .filter(({ question }) => {
+        const subjectId = String(question.subject_id || "");
+        const contentId = String(question.content_id || "");
+        const topicId = String(question.topic_id || "");
+
+        if (!validSubjects.has(subjectId)) return false;
+        const hasValidContent = validContentsMap.has(contentId) && validContentsMap.get(contentId) === subjectId;
+        const hasValidTopic = topicId && validTopicsMap.get(topicId) === contentId;
+
+        return !hasValidContent || !hasValidTopic;
+      });
+
+    const taxonomyFixes = new Map<number, { content_id: string; topic_id: string }>();
+
+    if (questionsNeedingTaxonomy.length > 0) {
+      const taxonomyRepairPrompt = questionsNeedingTaxonomy.flatMap(({ question, index }) => {
+        const subjectId = String(question.subject_id || "");
+        const availableContents = subjectContentsMap.get(subjectId) || [];
+
+        return [
+          `QUESTÃO ${index}:`,
+          `subject_id: ${subjectId}`,
+          `statement: ${String(question.statement || "")}`,
+          "CONTEÚDOS POSSÍVEIS:",
+          ...availableContents.map((content) => `- ${content.id}: ${content.name}`),
+          "TÓPICOS POSSÍVEIS POR CONTEÚDO:",
+          ...availableContents.flatMap((content) => {
+            const topics = contentTopicsMap.get(content.id) || [];
+            return topics.length > 0
+              ? topics.map((topic) => `- ${topic.id}: ${topic.name} (content_id: ${content.id})`)
+              : [`- sem-topicos-para-${content.id}`];
+          }),
+          "Escolha o content_id mais aderente. topic_id pode ficar vazio apenas se realmente não houver tópico específico compatível.",
+          "",
+        ];
+      }).join("\n");
+
+      const taxonomyRepairResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: AI_MODEL,
+          messages: [
+            {
+              role: "system",
+              content: "Você é um classificador de taxonomia. Para cada questão, escolha obrigatoriamente um content_id válido entre as opções do subject_id informado. Só deixe topic_id vazio se nenhum tópico disponível se encaixar claramente.",
+            },
+            {
+              role: "user",
+              content: taxonomyRepairPrompt,
+            },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "repair_question_taxonomy",
+                description: "Retorna content_id e topic_id corrigidos para cada questão listada.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    fixes: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          question_index: { type: "integer" },
+                          content_id: { type: "string" },
+                          topic_id: { type: "string" },
+                        },
+                        required: ["question_index", "content_id", "topic_id"],
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  required: ["fixes"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "repair_question_taxonomy" } },
+        }),
+      });
+
+      if (taxonomyRepairResponse.ok) {
+        const taxonomyRepairData = await taxonomyRepairResponse.json();
+        const taxonomyRepairPayload = extractToolPayload(taxonomyRepairData);
+
+        for (const fix of taxonomyRepairPayload.fixes || []) {
+          const questionIndex = Number(fix.question_index);
+          const contentId = String(fix.content_id || "");
+          const topicId = String(fix.topic_id || "");
+          const sourceQuestion = extractedQuestions[questionIndex];
+          const subjectId = String(sourceQuestion?.subject_id || "");
+
+          if (!validContentsMap.has(contentId) || validContentsMap.get(contentId) !== subjectId) continue;
+          taxonomyFixes.set(questionIndex, {
+            content_id: contentId,
+            topic_id: topicId && validTopicsMap.get(topicId) === contentId ? topicId : "",
+          });
+        }
+      } else {
+        const taxonomyRepairError = await taxonomyRepairResponse.text();
+        console.error("AI taxonomy repair error:", taxonomyRepairResponse.status, taxonomyRepairError);
+      }
+    }
+
+    const sanitizedQuestions = extractedQuestions.reduce((acc: Record<string, unknown>[], question: Record<string, unknown>, index: number) => {
       const statement = typeof question.statement === "string" ? question.statement.trim() : "";
       const subjectId = String(question.subject_id || "");
       const contentId = String(question.content_id || "");
       const examId = String(question.exam_id || "");
       const topicId = String(question.topic_id || "");
       const fallbackSubjectId = validSubjects.has(subjectId) ? subjectId : "";
-      const fallbackContentId = validContentsMap.has(contentId) && validContentsMap.get(contentId) === fallbackSubjectId ? contentId : "";
+      const repairedContentId = taxonomyFixes.get(index)?.content_id || "";
+      const repairedTopicId = taxonomyFixes.get(index)?.topic_id || "";
+      const fallbackContentId = validContentsMap.has(contentId) && validContentsMap.get(contentId) === fallbackSubjectId
+        ? contentId
+        : repairedContentId;
       const fallbackExamId = validExams.has(examId) ? examId : "";
 
       if (!statement) return acc;
@@ -296,9 +429,9 @@ serve(async (req) => {
         subject_id: fallbackSubjectId,
         content_id: fallbackContentId,
         exam_id: fallbackExamId,
-        topic_id: topicId && validTopicsMap.get(topicId) === fallbackContentId ? topicId : "",
-        correct_answer: ["a", "b", "c", "d", "e"].includes(String(question.correct_answer || "")) ? question.correct_answer : "",
-        difficulty: ["facil", "medio", "dificil"].includes(String(question.difficulty || "")) ? question.difficulty : "medio",
+        topic_id: repairedTopicId || (topicId && validTopicsMap.get(topicId) === fallbackContentId ? topicId : ""),
+        correct_answer: isValidAnswer(question.correct_answer) ? question.correct_answer : "",
+        difficulty: isValidDifficulty(question.difficulty) ? question.difficulty : "medio",
         should_attach_source_image: Boolean(question.should_attach_source_image),
       });
 
