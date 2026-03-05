@@ -118,10 +118,20 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
       return;
     }
 
-    setSelectedFiles(files);
+    setSelectedFiles((prev) => {
+      const existingKeys = new Set(prev.map((file) => `${file.name}-${file.size}-${file.lastModified}`));
+      const newFiles = files.filter((file) => !existingKeys.has(`${file.name}-${file.size}-${file.lastModified}`));
+      return [...prev, ...newFiles];
+    });
+
+    setPreviewUrls((prev) => {
+      const existingUrls = new Set(prev);
+      const nextUrls = files.map((file) => URL.createObjectURL(file));
+      return [...prev, ...nextUrls.filter((url) => !existingUrls.has(url))];
+    });
+
     setDetectedCount(null);
     setProcessedFiles(0);
-    setPreviewUrls(files.map((file) => URL.createObjectURL(file)));
     event.target.value = "";
   };
 
