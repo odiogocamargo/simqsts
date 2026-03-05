@@ -15,6 +15,17 @@ const toJsonResponse = (body: unknown, status = 200) =>
 
 const normalizeImageBase64 = (value: string) => value.trim();
 
+const extractToolPayload = (data: any) => {
+  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+
+  if (!toolCall?.function?.arguments) {
+    console.error("No tool call in response:", data);
+    throw new Error("Formato de resposta inesperado da IA");
+  }
+
+  return JSON.parse(toolCall.function.arguments);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -73,7 +84,7 @@ serve(async (req) => {
     }
 
     const taxonomyPrompt = [
-      "Você está analisando uma imagem de vestibular brasileiro.",
+      "Você está analisando uma página de vestibular brasileiro que pode conter texto, gráficos, tabelas, figuras, charges, mapas, obras de arte e imagens que fazem parte da questão.",
       "A imagem pode conter uma única questão ou várias questões na mesma página.",
       "Extraia TODAS as questões visíveis e retorne uma lista estruturada.",
       "",
@@ -81,21 +92,24 @@ serve(async (req) => {
       "Transcreva o texto da forma MAIS FIEL possível ao original, preservando a ordem visual e a estrutura do vestibular.",
       "",
       "REGRAS OBRIGATÓRIAS:",
-      "1. Retorne apenas questões claramente legíveis.",
-      "2. Para cada questão, preencha matéria, conteúdo, tópico, vestibular, ano, dificuldade, alternativas, gabarito e explicação curta quando possível.",
-      "3. Use APENAS os IDs reais da taxonomia abaixo; nunca invente IDs.",
-      "4. Se não conseguir identificar um tópico, retorne string vazia para topic_id.",
-      "5. Se não houver alternativas, deixe option_a..option_e vazias e correct_answer vazio.",
-      "6. correct_answer deve ser uma letra minúscula: a, b, c, d ou e.",
-      "7. O campo statement deve vir fiel ao original, preservando títulos, citações, versos, quebras de linha, enumerações, trechos de livros, diálogos e a ordem natural da leitura.",
-      "8. O campo exam_id deve usar um dos IDs abaixo exatamente como informado.",
-      "9. O campo difficulty deve ser apenas: facil, medio ou dificil.",
-      "10. Se a página tiver mais de uma questão, preserve a ordem visual da página.",
-      "11. Leia sempre de cima para baixo e da esquerda para a direita dentro de cada bloco textual.",
-      "12. NUNCA misture linhas de alternativas com o enunciado nem junte trechos de blocos diferentes fora de ordem.",
-      "13. Quando houver poema, letra de música, citação longa ou passagem de livro, preserve a formatação com HTML simples (<p>, <br>, <strong>, <em>, <ul>, <li>) quando isso ajudar a manter o sentido original.",
-      "14. Não reescreva, não resuma, não interprete e não simplifique o texto; transcreva como aparece.",
-      "15. Se parte do texto estiver ilegível, mantenha apenas o trecho confiável e não invente conteúdo.",
+      "1. Retorne questões claramente identificáveis mesmo que exista imagem ilustrativa, gráfico, tabela ou charge dentro da página.",
+      "2. Se a questão tiver imagem de apoio, AINDA ASSIM extraia o texto e marque should_attach_source_image=true.",
+      "3. Para cada questão, preencha matéria, conteúdo, tópico, vestibular, ano, dificuldade, alternativas, gabarito e explicação curta quando possível.",
+      "4. Use APENAS os IDs reais da taxonomia abaixo; nunca invente IDs.",
+      "5. Se não conseguir identificar um tópico, retorne string vazia para topic_id.",
+      "6. Se não houver alternativas, deixe option_a..option_e vazias e correct_answer vazio.",
+      "7. correct_answer deve ser uma letra minúscula: a, b, c, d ou e.",
+      "8. O campo statement deve vir fiel ao original, preservando títulos, citações, versos, quebras de linha, enumerações, trechos de livros, diálogos e a ordem natural da leitura.",
+      "9. O campo exam_id deve usar um dos IDs abaixo exatamente como informado.",
+      "10. O campo difficulty deve ser apenas: facil, medio ou dificil.",
+      "11. Se a página tiver mais de uma questão, preserve a ordem visual da página.",
+      "12. Leia sempre de cima para baixo e da esquerda para a direita dentro de cada bloco textual.",
+      "13. NUNCA misture linhas de alternativas com o enunciado nem junte trechos de blocos diferentes fora de ordem.",
+      "14. Quando houver poema, letra de música, citação longa ou passagem de livro, preserve a formatação com HTML simples (<p>, <br>, <strong>, <em>, <ul>, <li>) quando isso ajudar a manter o sentido original.",
+      "15. Não reescreva, não resuma, não interprete e não simplifique o texto; transcreva como aparece.",
+      "16. Se parte do texto estiver ilegível, mantenha apenas o trecho confiável e não invente conteúdo.",
+      "17. Se existir uma questão com imagem e pouco texto, não descarte automaticamente; extraia todo o texto legível ao redor e preserve a associação com a imagem original.",
+      "18. Considere figuras, gráficos e imagens como parte do contexto da questão, não como motivo para invalidar a questão.",
       "",
       "EXAMES DISPONÍVEIS:",
       ...(examsResult.data || []).map((exam) => `- ${exam.id}: ${exam.name}`),
@@ -109,6 +123,53 @@ serve(async (req) => {
       "TÓPICOS DISPONÍVEIS:",
       ...(topicsResult.data || []).map((topic) => `- ${topic.id}: ${topic.name} (content_id: ${topic.content_id})`),
     ].join("\n");
+
+    const ocrResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: "Extraia todo o texto legível da página preservando ao máximo a ordem visual e a estrutura. Inclua textos próximos a imagens, gráficos, tabelas, poemas e trechos literários. Não resuma.",
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Faça uma OCR fiel desta página de vestibular. Preserve blocos, quebras de linha, alternativas, legendas e trechos literários. Se houver imagens, gráficos ou tabelas, extraia o texto que estiver associado a eles.",
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: normalizeImageBase64(imageBase64),
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!ocrResponse.ok) {
+      const errorText = await ocrResponse.text();
+      console.error("AI OCR Gateway error:", ocrResponse.status, errorText);
+      if (ocrResponse.status === 429) {
+        return toJsonResponse({ error: "Limite de requisições excedido. Tente novamente em alguns instantes." }, 429);
+      }
+      if (ocrResponse.status === 402) {
+        return toJsonResponse({ error: "Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage." }, 402);
+      }
+      return toJsonResponse({ error: "Erro ao extrair texto da imagem com IA" }, 500);
+    }
+
+    const ocrData = await ocrResponse.json();
+    const ocrText = ocrData.choices?.[0]?.message?.content || "";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -128,7 +189,7 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: "Analise esta imagem e extraia todas as questões visíveis para pré-preenchimento do formulário de cadastro. Primeiro reconstrua mentalmente a leitura na ordem visual da página; depois transcreva cada questão de forma fiel ao original, preservando passagens, citações, poemas, versos, diálogos e quebras de linha sempre que necessário. Se houver várias questões, retorne todas.",
+                text: `Analise esta imagem e extraia todas as questões visíveis para pré-preenchimento do formulário de cadastro. Primeiro reconstrua mentalmente a leitura na ordem visual da página; depois transcreva cada questão de forma fiel ao original, preservando passagens, citações, poemas, versos, diálogos e quebras de linha sempre que necessário. Se houver várias questões, retorne todas. Use também esta OCR como apoio, sem perder a fidelidade visual da imagem:\n\n${ocrText}`,
               },
               {
                 type: "image_url",
@@ -168,8 +229,9 @@ serve(async (req) => {
                         option_e: { type: "string", description: "Alternativa E fiel ao original; pode usar HTML simples para preservar quebras." },
                         correct_answer: { type: "string", enum: ["", "a", "b", "c", "d", "e"] },
                         explanation: { type: "string", description: "Explicação curta opcional; se houver citação textual relevante, preserve-a fielmente." },
+                        should_attach_source_image: { type: "boolean", description: "true quando a questão depende ou inclui imagem, gráfico, tabela, charge, mapa ou qualquer apoio visual da página original." },
                       },
-                      required: ["statement", "subject_id", "content_id", "topic_id", "exam_id", "year", "difficulty", "option_a", "option_b", "option_c", "option_d", "option_e", "correct_answer", "explanation"],
+                      required: ["statement", "subject_id", "content_id", "topic_id", "exam_id", "year", "difficulty", "option_a", "option_b", "option_c", "option_d", "option_e", "correct_answer", "explanation", "should_attach_source_image"],
                       additionalProperties: false,
                     },
                   },
@@ -210,14 +272,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-
-    if (!toolCall?.function?.arguments) {
-      console.error("No tool call in response:", data);
-      return toJsonResponse({ error: "Formato de resposta inesperado da IA" }, 500);
-    }
-
-    const extractedData = JSON.parse(toolCall.function.arguments);
+    const extractedData = extractToolPayload(data);
     const validSubjects = new Set((subjectsResult.data || []).map((item) => item.id));
     const validContentsMap = new Map((contentsResult.data || []).map((item) => [item.id, item.subject_id]));
     const validTopicsMap = new Map((topicsResult.data || []).map((item) => [item.id, item.content_id]));
@@ -229,18 +284,22 @@ serve(async (req) => {
       const contentId = String(question.content_id || "");
       const examId = String(question.exam_id || "");
       const topicId = String(question.topic_id || "");
+      const fallbackSubjectId = validSubjects.has(subjectId) ? subjectId : "";
+      const fallbackContentId = validContentsMap.has(contentId) && validContentsMap.get(contentId) === fallbackSubjectId ? contentId : "";
+      const fallbackExamId = validExams.has(examId) ? examId : "";
 
       if (!statement) return acc;
-      if (!validSubjects.has(subjectId)) return acc;
-      if (!validContentsMap.has(contentId) || validContentsMap.get(contentId) !== subjectId) return acc;
-      if (!validExams.has(examId)) return acc;
 
       acc.push({
         ...question,
         statement,
-        topic_id: topicId && validTopicsMap.get(topicId) === contentId ? topicId : "",
+        subject_id: fallbackSubjectId,
+        content_id: fallbackContentId,
+        exam_id: fallbackExamId,
+        topic_id: topicId && validTopicsMap.get(topicId) === fallbackContentId ? topicId : "",
         correct_answer: ["a", "b", "c", "d", "e"].includes(String(question.correct_answer || "")) ? question.correct_answer : "",
         difficulty: ["facil", "medio", "dificil"].includes(String(question.difficulty || "")) ? question.difficulty : "medio",
+        should_attach_source_image: Boolean(question.should_attach_source_image),
       });
 
       return acc;
