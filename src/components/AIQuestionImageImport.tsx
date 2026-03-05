@@ -27,6 +27,7 @@ interface AIExtractedQuestion {
   option_e?: string;
   correct_answer?: string;
   explanation?: string;
+  should_attach_source_image?: boolean;
 }
 
 interface AIResponsePayload {
@@ -52,7 +53,7 @@ const normalizeRichText = (value?: string | null) => {
 
 const normalizeAnswer = (value?: string | null) => value?.trim().toLowerCase().slice(0, 1) || "";
 
-const buildQuestionFromAI = (question: AIExtractedQuestion): QuestionData => ({
+const buildQuestionFromAI = (question: AIExtractedQuestion, sourceFile?: File): QuestionData => ({
   ...createEmptyQuestion(),
   statement: normalizeRichText(question.statement),
   selectedSubject: question.subject_id || "",
@@ -70,6 +71,9 @@ const buildQuestionFromAI = (question: AIExtractedQuestion): QuestionData => ({
     E: normalizeRichText(question.option_e),
   },
   explanation: normalizeRichText(question.explanation),
+  images: sourceFile && question.should_attach_source_image !== false
+    ? [{ image_url: URL.createObjectURL(sourceFile), image_type: "question", display_order: 0, file: sourceFile }]
+    : [],
 });
 
 const fileToDataUrl = (file: File) =>
@@ -148,7 +152,7 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
       }
 
       const payload = data.data as AIResponsePayload;
-      const extractedQuestions = (payload.questions || []).map(buildQuestionFromAI).filter((question) => question.statement);
+      const extractedQuestions = (payload.questions || []).map((question) => buildQuestionFromAI(question, selectedFile)).filter((question) => question.statement);
 
       if (extractedQuestions.length === 0) {
         throw new Error("Nenhuma questão válida foi identificada na imagem.");

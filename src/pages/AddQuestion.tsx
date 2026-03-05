@@ -53,6 +53,45 @@ const AddQuestion = () => {
     return null;
   };
 
+  const uploadQuestionImage = async (file: File, questionId: string, displayOrder: number) => {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${questionId}/${Date.now()}_${displayOrder}.${fileExt}`;
+
+    const { data, error } = await supabase.storage
+      .from("question-images")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    const { data: publicUrlData } = supabase.storage
+      .from("question-images")
+      .getPublicUrl(data.path);
+
+    return publicUrlData.publicUrl;
+  };
+
+  const persistQuestionImages = async (questionId: string, question: QuestionData) => {
+    const imagesToPersist = question.images.filter((image) => image.file);
+
+    for (const [imageIndex, image] of imagesToPersist.entries()) {
+      if (!image.file) continue;
+
+      const publicUrl = await uploadQuestionImage(image.file, questionId, image.display_order ?? imageIndex);
+
+      const { error } = await supabase.from("question_images").insert({
+        question_id: questionId,
+        image_url: publicUrl,
+        image_type: image.image_type || "question",
+        display_order: image.display_order ?? imageIndex,
+      });
+
+      if (error) throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -109,6 +148,10 @@ const AddQuestion = () => {
               question_id: questionData.id,
               topic_id: q.selectedTopic,
             });
+          }
+
+          if (questionData && q.images.length > 0) {
+            await persistQuestionImages(questionData.id, q);
           }
 
           successCount++;
@@ -209,4 +252,3 @@ const AddQuestion = () => {
 };
 
 export default AddQuestion;
-

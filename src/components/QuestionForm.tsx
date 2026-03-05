@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,6 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ImageUpload, type QuestionImage } from "@/components/ImageUpload";
 
 export interface QuestionData {
   id: string;
@@ -30,6 +30,7 @@ export interface QuestionData {
   correctAnswer: string;
   alternatives: Record<string, string>;
   explanation: string;
+  images: QuestionImage[];
 }
 
 interface QuestionFormProps {
@@ -52,6 +53,7 @@ export const createEmptyQuestion = (): QuestionData => ({
   correctAnswer: "",
   alternatives: { A: "", B: "", C: "", D: "", E: "" },
   explanation: "",
+  images: [],
 });
 
 export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemove }: QuestionFormProps) => {
@@ -120,7 +122,6 @@ export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemo
       });
 
       if (error) {
-        // Check if the error contains specific messages from the edge function
         const errorMessage = error.message || '';
         if (errorMessage.includes('402') || errorMessage.includes('Payment Required')) {
           throw new Error('Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage.');
@@ -141,7 +142,6 @@ export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemo
 
       setClassificationSuggestion(data.data);
 
-      // Aplicar sugestões automaticamente
       const updates: Partial<QuestionData> = {};
       if (data.data.subject_id) updates.selectedSubject = data.data.subject_id;
       if (data.data.content_id) updates.selectedContent = data.data.content_id;
@@ -207,6 +207,14 @@ export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemo
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>Imagem da Questão</Label>
+              <ImageUpload
+                initialImages={question.images}
+                onImagesChange={(images) => handleChange("images", images)}
+              />
+            </div>
+
             <div className="space-y-4">
               <Button
                 type="button"
@@ -229,11 +237,11 @@ export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemo
               </Button>
 
               {classificationSuggestion && (
-                <Alert className="border-blue-500/50 bg-blue-500/10">
-                  <Sparkles className="h-4 w-4 text-blue-500" />
+                <Alert>
+                  <Sparkles className="h-4 w-4 text-primary" />
                   <AlertDescription>
                     <p className="font-medium">Classificação sugerida:</p>
-                    <ul className="text-xs space-y-1 mt-2">
+                    <ul className="mt-2 space-y-1 text-xs">
                       <li>• <strong>Matéria:</strong> {subjects.find(s => s.id === classificationSuggestion.subject_id)?.name || classificationSuggestion.subject_id}</li>
                       <li>• <strong>Conteúdo:</strong> {classificationSuggestion.content_id}</li>
                       <li>• <strong>Tópico:</strong> {classificationSuggestion.topic_id}</li>
