@@ -86,42 +86,50 @@ const fileToDataUrl = (file: File) =>
 
 export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImportProps) => {
   const { toast } = useToast();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [detectedCount, setDetectedCount] = useState<number | null>(null);
+  const [processedFiles, setProcessedFiles] = useState(0);
 
   const helperText = useMemo(() => {
-    if (!selectedFile) {
-      return "Envie uma foto de uma questão ou de uma página inteira do vestibular para a IA preencher matéria, conteúdo, tópico, gabarito e demais campos.";
+    if (selectedFiles.length === 0) {
+      return "Envie uma ou várias fotos de questões ou páginas inteiras do vestibular para a IA preencher matéria, conteúdo, tópico, gabarito e demais campos.";
     }
 
-    return `Arquivo selecionado: ${selectedFile.name}`;
-  }, [selectedFile]);
+    if (selectedFiles.length === 1) {
+      return `1 imagem selecionada: ${selectedFiles[0].name}`;
+    }
+
+    return `${selectedFiles.length} imagens selecionadas para leitura em lote.`;
+  }, [selectedFiles]);
 
   const handleSelectFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
+    const invalidFile = files.find((file) => !file.type.startsWith("image/"));
+    if (invalidFile) {
       toast({
         title: "Arquivo inválido",
-        description: "Selecione uma imagem JPG, PNG, WebP ou similar.",
+        description: "Selecione apenas imagens JPG, PNG, WebP ou similares.",
         variant: "destructive",
       });
       return;
     }
 
-    setSelectedFile(file);
+    setSelectedFiles(files);
     setDetectedCount(null);
-    setPreviewUrl(URL.createObjectURL(file));
+    setProcessedFiles(0);
+    setPreviewUrls(files.map((file) => URL.createObjectURL(file)));
+    event.target.value = "";
   };
 
   const handleAnalyzeImage = async () => {
-    if (!selectedFile) {
+    if (selectedFiles.length === 0) {
       toast({
-        title: "Envie uma imagem",
-        description: "Selecione a imagem da questão ou da página antes de continuar.",
+        title: "Envie ao menos uma imagem",
+        description: "Selecione uma ou mais imagens da questão ou da página antes de continuar.",
         variant: "destructive",
       });
       return;
@@ -129,53 +137,65 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
 
     setIsAnalyzing(true);
     setDetectedCount(null);
+    setProcessedFiles(0);
 
     try {
-      const imageBase64 = await fileToDataUrl(selectedFile);
-      const { data, error } = await supabase.functions.invoke("analyze-question-image", {
-        body: { imageBase64 },
-      });
+      const importedQuestions: QuestionData[] = [];
 
-      if (error) {
-        const errorMessage = error.message || "Erro ao analisar imagem";
-        if (errorMessage.includes("402") || errorMessage.includes("Créditos")) {
-          throw new Error("Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage.");
+      for (const [index, selectedFile] of selectedFiles.entries()) {
+        const imageBase64 = await fileToDataUrl(selectedFile);
+        const { data, error } = await supabase.functions.invoke("analyze-question-image", {
+          body: { imageBase64 },
+        });
+
+        if (error) {
+          const errorMessage = error.message || "Erro ao analisar imagem";
+          if (errorMessage.includes("402") || errorMessage.includes("Créditos")) {
+            throw new Error("Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage.");
+          }
+          if (errorMessage.includes("429") || errorMessage.includes("Limite")) {
+            throw new Error("Limite de requisições excedido. Tente novamente em alguns instantes.");
+          }
+          throw new Error(errorMessage);
         }
-        if (errorMessage.includes("429") || errorMessage.includes("Limite")) {
-          throw new Error("Limite de requisições excedido. Tente novamente em alguns instantes.");
+
+        if (!data?.success) {
+          throw new Error(data?.error || `A IA não conseguiu interpretar a imagem ${index + 1}.`);
         }
-        throw new Error(errorMessage);
+
+        const payload = data.data as AIResponsePayload;
+        const extractedQuestions = (payload.questions || [])
+          .map((question) => buildQuestionFromAI(question, selectedFile))
+          .filter((question) => question.statement);
+
+        importedQuestions.push(...extractedQuestions);
+        setProcessedFiles(index + 1);
       }
 
-      if (!data?.success) {
-        throw new Error(data?.error || "A IA não conseguiu interpretar a imagem.");
+      if (importedQuestions.length === 0) {
+        throw new Error("Nenhuma questão válida foi identificada nas imagens enviadas.");
       }
 
-      const payload = data.data as AIResponsePayload;
-      const extractedQuestions = (payload.questions || []).map((question) => buildQuestionFromAI(question, selectedFile)).filter((question) => question.statement);
-
-      if (extractedQuestions.length === 0) {
-        throw new Error("Nenhuma questão válida foi identificada na imagem.");
-      }
-
-      onImportQuestions(extractedQuestions);
-      setDetectedCount(extractedQuestions.length);
+      onImportQuestions(importedQuestions);
+      setDetectedCount(importedQuestions.length);
 
       toast({
         title: "Questões preenchidas pela IA",
-        description: `${extractedQuestions.length} questão(ões) foram carregadas no formulário para revisão final.`,
+        description: `${importedQuestions.length} questão(ões) foram carregadas no formulário para revisão final.`,
       });
     } catch (error) {
-      console.error("Error analyzing image:", error);
+      console.error("Error analyzing images:", error);
       toast({
         title: "Erro na análise",
-        description: error instanceof Error ? error.message : "Não foi possível analisar a imagem.",
+        description: error instanceof Error ? error.message : "Não foi possível analisar as imagens.",
         variant: "destructive",
       });
     } finally {
       setIsAnalyzing(false);
     }
   };
+
+  const progressValue = selectedFiles.length > 0 ? (processedFiles / selectedFiles.length) * 100 : 0;
 
   return (
     <Card>
@@ -187,16 +207,16 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
               Importação inteligente por imagem
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-foreground">Preencha várias questões com uma única foto</h3>
+              <h3 className="text-xl font-semibold text-foreground">Preencha várias questões com uma ou mais imagens</h3>
               <p className="text-sm text-muted-foreground">{helperText}</p>
             </div>
           </div>
 
-          <Button type="button" variant="outline" onClick={handleAnalyzeImage} disabled={!selectedFile || isAnalyzing}>
+          <Button type="button" variant="outline" onClick={handleAnalyzeImage} disabled={selectedFiles.length === 0 || isAnalyzing}>
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analisando imagem...
+                Analisando imagens...
               </>
             ) : (
               <>
@@ -208,14 +228,14 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
         </div>
 
         <label className="block cursor-pointer rounded-2xl border border-dashed border-border bg-muted/30 p-6 transition-colors hover:border-primary/40 hover:bg-muted/50">
-          <input type="file" accept="image/*" className="hidden" onChange={handleSelectFile} />
+          <input type="file" accept="image/*" multiple className="hidden" onChange={handleSelectFile} />
           <div className="flex flex-col items-center justify-center gap-3 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
               <Upload className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-medium text-foreground">Clique para enviar a imagem do vestibular</p>
-              <p className="text-sm text-muted-foreground">Use uma página inteira ou uma questão isolada com boa nitidez.</p>
+              <p className="font-medium text-foreground">Clique para enviar uma ou mais imagens do vestibular</p>
+              <p className="text-sm text-muted-foreground">Use páginas inteiras ou questões isoladas com boa nitidez.</p>
             </div>
           </div>
         </label>
@@ -224,19 +244,29 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>Extraindo enunciados, alternativas, gabarito e taxonomia</span>
-              <span>IA em andamento</span>
+              <span>{processedFiles}/{selectedFiles.length} imagens processadas</span>
             </div>
-            <Progress value={75} />
+            <Progress value={progressValue} />
           </div>
         )}
 
-        {previewUrl && (
+        {previewUrls.length > 0 && (
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
             <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm text-muted-foreground">
               <FileImage className="h-4 w-4" />
-              Pré-visualização enviada para a IA
+              Pré-visualizações enviadas para a IA
             </div>
-            <img src={previewUrl} alt="Pré-visualização da página enviada" className="max-h-[420px] w-full object-contain" loading="lazy" />
+            <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+              {previewUrls.map((previewUrl, index) => (
+                <img
+                  key={`${previewUrl}-${index}`}
+                  src={previewUrl}
+                  alt={`Pré-visualização da imagem ${index + 1} enviada`}
+                  className="max-h-[320px] w-full rounded-xl border border-border object-contain"
+                  loading="lazy"
+                />
+              ))}
+            </div>
           </div>
         )}
 
