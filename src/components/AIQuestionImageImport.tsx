@@ -145,42 +145,47 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
       return;
     }
 
+    const filesToAnalyze = [...selectedFiles];
+
     setIsAnalyzing(true);
     setDetectedCount(null);
     setProcessedFiles(0);
 
     try {
-      const importedQuestions: QuestionData[] = [];
+      const analysisResults = await Promise.all(
+        filesToAnalyze.map(async (selectedFile) => {
+          try {
+            const imageBase64 = await fileToDataUrl(selectedFile);
+            const { data, error } = await supabase.functions.invoke("analyze-question-image", {
+              body: { imageBase64 },
+            });
 
-      for (const [index, selectedFile] of selectedFiles.entries()) {
-        const imageBase64 = await fileToDataUrl(selectedFile);
-        const { data, error } = await supabase.functions.invoke("analyze-question-image", {
-          body: { imageBase64 },
-        });
+            if (error) {
+              const errorMessage = error.message || "Erro ao analisar imagem";
+              if (errorMessage.includes("402") || errorMessage.includes("Créditos")) {
+                throw new Error("Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage.");
+              }
+              if (errorMessage.includes("429") || errorMessage.includes("Limite")) {
+                throw new Error("Limite de requisições excedido. Tente novamente em alguns instantes.");
+              }
+              throw new Error(errorMessage);
+            }
 
-        if (error) {
-          const errorMessage = error.message || "Erro ao analisar imagem";
-          if (errorMessage.includes("402") || errorMessage.includes("Créditos")) {
-            throw new Error("Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage.");
+            if (!data?.success) {
+              throw new Error(data?.error || `A IA não conseguiu interpretar a imagem ${selectedFile.name}.`);
+            }
+
+            const payload = data.data as AIResponsePayload;
+            return (payload.questions || [])
+              .map((question) => buildQuestionFromAI(question, selectedFile))
+              .filter((question) => question.statement);
+          } finally {
+            setProcessedFiles((prev) => prev + 1);
           }
-          if (errorMessage.includes("429") || errorMessage.includes("Limite")) {
-            throw new Error("Limite de requisições excedido. Tente novamente em alguns instantes.");
-          }
-          throw new Error(errorMessage);
-        }
+        })
+      );
 
-        if (!data?.success) {
-          throw new Error(data?.error || `A IA não conseguiu interpretar a imagem ${index + 1}.`);
-        }
-
-        const payload = data.data as AIResponsePayload;
-        const extractedQuestions = (payload.questions || [])
-          .map((question) => buildQuestionFromAI(question, selectedFile))
-          .filter((question) => question.statement);
-
-        importedQuestions.push(...extractedQuestions);
-        setProcessedFiles(index + 1);
-      }
+      const importedQuestions = analysisResults.flat();
 
       if (importedQuestions.length === 0) {
         throw new Error("Nenhuma questão válida foi identificada nas imagens enviadas.");
