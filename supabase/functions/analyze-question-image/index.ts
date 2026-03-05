@@ -15,15 +15,63 @@ const toJsonResponse = (body: unknown, status = 200) =>
 
 const normalizeImageBase64 = (value: string) => value.trim();
 
-const extractToolPayload = (data: any) => {
-  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+const tryParseJson = (value: string) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
 
-  if (!toolCall?.function?.arguments) {
-    console.error("No tool call in response:", data);
+const extractJsonSubstring = (value: string) => {
+  const cleaned = value
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  const firstBrace = cleaned.search(/[\[{]/);
+  if (firstBrace === -1) return null;
+
+  const openingChar = cleaned[firstBrace];
+  const closingChar = openingChar === "[" ? "]" : "}";
+  const lastBrace = cleaned.lastIndexOf(closingChar);
+  if (lastBrace === -1 || lastBrace <= firstBrace) return null;
+
+  return cleaned.slice(firstBrace, lastBrace + 1);
+};
+
+const parseStructuredPayload = (rawValue: unknown) => {
+  if (typeof rawValue !== "string") return null;
+
+  const directParse = tryParseJson(rawValue);
+  if (directParse) return directParse;
+
+  const extractedJson = extractJsonSubstring(rawValue);
+  return extractedJson ? tryParseJson(extractedJson) : null;
+};
+
+const extractToolPayload = (data: any, requiredKey?: string) => {
+  if (data?.error) {
+    console.error("AI gateway returned error payload:", data);
+    throw new Error(data.error.message || "Erro interno da IA ao analisar a imagem");
+  }
+
+  const message = data?.choices?.[0]?.message;
+  const toolArguments = message?.tool_calls?.[0]?.function?.arguments;
+  const content = typeof message?.content === "string"
+    ? message.content
+    : Array.isArray(message?.content)
+      ? message.content.map((part: any) => typeof part?.text === "string" ? part.text : "").join("\n")
+      : "";
+
+  const payload = parseStructuredPayload(toolArguments) || parseStructuredPayload(content);
+
+  if (!payload || (requiredKey && !(requiredKey in payload))) {
+    console.error("Unable to extract structured payload from AI response:", data);
     throw new Error("Formato de resposta inesperado da IA");
   }
 
-  return JSON.parse(toolCall.function.arguments);
+  return payload;
 };
 
 const isValidDifficulty = (value: unknown) => ["facil", "medio", "dificil"].includes(String(value || ""));
@@ -275,7 +323,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const extractedData = extractToolPayload(data);
+    const extractedData = extractToolPayload(data, "questions");
     const validSubjects = new Set((subjectsResult.data || []).map((item) => item.id));
     const validContentsMap = new Map((contentsResult.data || []).map((item) => [item.id, item.subject_id]));
     const validTopicsMap = new Map((topicsResult.data || []).map((item) => [item.id, item.content_id]));
@@ -386,7 +434,7 @@ serve(async (req) => {
 
       if (taxonomyRepairResponse.ok) {
         const taxonomyRepairData = await taxonomyRepairResponse.json();
-        const taxonomyRepairPayload = extractToolPayload(taxonomyRepairData);
+        const taxonomyRepairPayload = extractToolPayload(taxonomyRepairData, "fixes");
 
         for (const fix of taxonomyRepairPayload.fixes || []) {
           const questionIndex = Number(fix.question_index);
