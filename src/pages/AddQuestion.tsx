@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Upload, Loader2 } from "lucide-react";
 import { QuestionImportModal } from "@/components/QuestionImportModal";
+import { AIQuestionImageImport } from "@/components/AIQuestionImageImport";
 import { QuestionForm, QuestionData, createEmptyQuestion } from "@/components/QuestionForm";
 
 const AddQuestion = () => {
@@ -16,20 +17,30 @@ const AddQuestion = () => {
   const [importModalOpen, setImportModalOpen] = useState(false);
 
   const handleQuestionChange = (id: string, data: Partial<QuestionData>) => {
-    setQuestions(prev => 
-      prev.map(q => q.id === id ? { ...q, ...data } : q)
-    );
+    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, ...data } : q)));
   };
 
   const handleRemoveQuestion = (id: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== id));
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
   };
 
   const handleAddQuestion = () => {
-    setQuestions(prev => [...prev, createEmptyQuestion()]);
+    setQuestions((prev) => [...prev, createEmptyQuestion()]);
     toast({
       title: "Questão adicionada",
       description: `Agora você tem ${questions.length + 1} questões para submeter.`,
+    });
+  };
+
+  const handleAIImportQuestions = (importedQuestions: QuestionData[]) => {
+    setQuestions((prev) => {
+      const hasOnlyEmptyDraft = prev.length === 1 && !prev[0].statement.trim() && !prev[0].selectedSubject;
+      return hasOnlyEmptyDraft ? importedQuestions : [...prev, ...importedQuestions];
+    });
+
+    toast({
+      title: "Questões carregadas no formulário",
+      description: `${importedQuestions.length} questão(ões) foram adicionadas para revisão antes do salvamento.`,
     });
   };
 
@@ -44,7 +55,7 @@ const AddQuestion = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user?.id) {
       toast({
         title: "Erro",
@@ -54,7 +65,6 @@ const AddQuestion = () => {
       return;
     }
 
-    // Validar todas as questões
     for (let i = 0; i < questions.length; i++) {
       const error = validateQuestion(questions[i], i);
       if (error) {
@@ -94,7 +104,6 @@ const AddQuestion = () => {
 
           if (error) throw error;
 
-          // Inserir o tópico da questão
           if (q.selectedTopic && questionData) {
             await supabase.from("question_topics").insert({
               question_id: questionData.id,
@@ -113,8 +122,7 @@ const AddQuestion = () => {
           title: "Questões adicionadas!",
           description: `${successCount} de ${questions.length} questões foram cadastradas com sucesso.`,
         });
-        
-        // Limpar o formulário
+
         setQuestions([createEmptyQuestion()]);
       }
 
@@ -145,11 +153,11 @@ const AddQuestion = () => {
   return (
     <Layout>
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Adicionar Questões</h2>
+            <h2 className="mb-2 text-3xl font-bold text-foreground">Adicionar Questões</h2>
             <p className="text-muted-foreground">
-              Cadastre questões manualmente - adicione quantas quiser antes de submeter
+              Cadastre manualmente, importe via JSON ou use IA para preencher várias questões a partir de uma imagem.
             </p>
           </div>
           <Button onClick={() => setImportModalOpen(true)} variant="outline">
@@ -157,6 +165,8 @@ const AddQuestion = () => {
             Importar JSON
           </Button>
         </div>
+
+        <AIQuestionImageImport onImportQuestions={handleAIImportQuestions} />
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {questions.map((question, index) => (
@@ -170,17 +180,12 @@ const AddQuestion = () => {
             />
           ))}
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleAddQuestion}
-            className="w-full border-dashed"
-          >
+          <Button type="button" variant="outline" onClick={handleAddQuestion} className="w-full border-dashed">
             <Plus className="mr-2 h-4 w-4" />
             Adicionar Mais Uma Questão
           </Button>
 
-          <div className="flex gap-3 pt-4 sticky bottom-4 bg-background/95 backdrop-blur p-4 rounded-lg border shadow-lg">
+          <div className="sticky bottom-4 flex gap-3 rounded-lg border bg-background/95 p-4 pt-4 shadow-lg backdrop-blur">
             <Button type="submit" className="flex-1" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
@@ -197,14 +202,11 @@ const AddQuestion = () => {
           </div>
         </form>
 
-        <QuestionImportModal
-          open={importModalOpen}
-          onOpenChange={setImportModalOpen}
-          onSuccess={handleClear}
-        />
+        <QuestionImportModal open={importModalOpen} onOpenChange={setImportModalOpen} onSuccess={handleClear} />
       </div>
     </Layout>
   );
 };
 
 export default AddQuestion;
+
