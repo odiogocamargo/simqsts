@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Plus, Upload, Loader2 } from "lucide-react";
 import { QuestionImportModal } from "@/components/QuestionImportModal";
 import { AIQuestionImageImport } from "@/components/AIQuestionImageImport";
@@ -12,6 +13,7 @@ import { QuestionForm, QuestionData, createEmptyQuestion } from "@/components/Qu
 const AddQuestion = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { role } = useUserRole();
   const [questions, setQuestions] = useState<QuestionData[]>([createEmptyQuestion()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -104,6 +106,15 @@ const AddQuestion = () => {
       return;
     }
 
+    if (role !== "admin" && role !== "professor") {
+      toast({
+        title: "Sem permissão para cadastrar questões",
+        description: "Sua conta precisa ter perfil de Professor ou Admin para salvar questões no banco.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     for (let i = 0; i < questions.length; i++) {
       const error = validateQuestion(questions[i], i);
       if (error) {
@@ -117,6 +128,7 @@ const AddQuestion = () => {
     try {
       let successCount = 0;
       const errors: string[] = [];
+      let permissionDenied = false;
 
       for (const [index, q] of questions.entries()) {
         try {
@@ -156,8 +168,24 @@ const AddQuestion = () => {
 
           successCount++;
         } catch (error: any) {
-          errors.push(`Questão ${index + 1}: ${error.message}`);
+          const message = String(error?.message || "");
+
+          if (message.includes("row-level security policy") && message.includes("questions")) {
+            permissionDenied = true;
+            break;
+          }
+
+          errors.push(`Questão ${index + 1}: ${message}`);
         }
+      }
+
+      if (permissionDenied) {
+        toast({
+          title: "Permissão insuficiente para salvar",
+          description: "O Supabase bloqueou o cadastro porque sua conta não está com role de Professor ou Admin no banco.",
+          variant: "destructive",
+        });
+        return;
       }
 
       if (successCount > 0) {
