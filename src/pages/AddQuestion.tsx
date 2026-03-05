@@ -228,7 +228,7 @@ const AddQuestion = () => {
           <div>
             <h2 className="mb-2 text-3xl font-bold text-foreground">Adicionar Questões</h2>
             <p className="text-muted-foreground">
-              Cadastre manualmente, importe via JSON ou use IA para preencher várias questões a partir de uma imagem.
+              Cadastre manualmente, importe via JSON ou use IA para preencher várias questões a partir de uma ou mais imagens.
             </p>
           </div>
           <Button onClick={() => setImportModalOpen(true)} variant="outline">
