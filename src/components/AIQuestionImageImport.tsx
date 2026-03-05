@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileImage, Loader2, Sparkles, Upload, Wand2 } from "lucide-react";
+import { FileImage, Loader2, Sparkles, Upload, Wand2, X } from "lucide-react";
 import { createEmptyQuestion, type QuestionData } from "@/components/QuestionForm";
 
 interface AIQuestionImageImportProps {
@@ -133,6 +133,28 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
     setDetectedCount(null);
     setProcessedFiles(0);
     event.target.value = "";
+  };
+
+  const handleRemoveFile = (fileToRemove: File) => {
+    const fileKeyToRemove = `${fileToRemove.name}-${fileToRemove.size}-${fileToRemove.lastModified}`;
+
+    setSelectedFiles((prev) => prev.filter((file) => `${file.name}-${file.size}-${file.lastModified}` !== fileKeyToRemove));
+    setPreviewUrls((prev) => {
+      const previewIndex = selectedFiles.findIndex(
+        (file) => `${file.name}-${file.size}-${file.lastModified}` === fileKeyToRemove
+      );
+
+      if (previewIndex === -1) return prev;
+
+      const previewUrlToRemove = prev[previewIndex];
+      if (previewUrlToRemove) {
+        URL.revokeObjectURL(previewUrlToRemove);
+      }
+
+      return prev.filter((_, index) => index !== previewIndex);
+    });
+    setDetectedCount(null);
+    setProcessedFiles(0);
   };
 
   const handleAnalyzeImage = async () => {
@@ -272,14 +294,26 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
               Pré-visualizações enviadas para a IA
             </div>
             <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
-              {previewUrls.map((previewUrl, index) => (
-                <img
-                  key={`${previewUrl}-${index}`}
-                  src={previewUrl}
-                  alt={`Pré-visualização da imagem ${index + 1} enviada`}
-                  className="max-h-[320px] w-full rounded-xl border border-border object-contain"
-                  loading="lazy"
-                />
+              {selectedFiles.map((file, index) => (
+                <div key={`${file.name}-${file.size}-${file.lastModified}`} className="group relative overflow-hidden rounded-xl border border-border bg-background">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile(file)}
+                    className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/90 text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+                    aria-label={`Remover ${file.name} da fila`}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <img
+                    src={previewUrls[index]}
+                    alt={`Pré-visualização da imagem ${index + 1} enviada`}
+                    className="max-h-[320px] w-full object-contain"
+                    loading="lazy"
+                  />
+                  <div className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                    {file.name}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
