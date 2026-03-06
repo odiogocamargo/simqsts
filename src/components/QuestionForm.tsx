@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { AlternativeInput } from "@/components/AlternativeInput";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 import { Sparkles, Loader2, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
