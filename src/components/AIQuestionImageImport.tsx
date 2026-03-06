@@ -104,7 +104,7 @@ const buildQuestionFromAI = (question: AIExtractedQuestion, sourceFile?: File): 
   },
   explanation: normalizeRichText(question.explanation),
   images: sourceFile && question.should_attach_source_image !== false
-    ? [{ image_url: URL.createObjectURL(sourceFile), image_type: "question", display_order: 0, file: sourceFile }]
+    ? [{ image_url: URL.createObjectURL(sourceFile), image_type: "statement", display_order: 0, file: sourceFile }]
     : [],
 });
 
