@@ -362,19 +362,17 @@ export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemo
             <div className="space-y-4">
               <Label>Alternativas</Label>
               {["A", "B", "C", "D", "E"].map((letter) => (
-                <div key={letter} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-bold text-primary-foreground text-sm shrink-0">
-                      {letter}
-                    </div>
-                    <span className="text-sm font-semibold text-muted-foreground">Alternativa {letter}</span>
+                <div key={letter} className="flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-bold text-primary-foreground text-sm shrink-0 mt-1">
+                    {letter}
                   </div>
-                  <RichTextEditor
-                    content={question.alternatives[letter]}
-                    onChange={(content) => handleAlternativeChange(letter, content)}
-                    placeholder={`Digite a alternativa ${letter}...`}
-                    minHeight="100px"
-                  />
+                  <div className="flex-1">
+                    <AlternativeInput
+                      value={question.alternatives[letter]}
+                      onChange={(content) => handleAlternativeChange(letter, content)}
+                      placeholder={`Digite a alternativa ${letter}... (use $...$ para fórmulas)`}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
