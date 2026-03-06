@@ -39,13 +39,28 @@ interface AIResponsePayload {
   };
 }
 
+const normalizeEscapedText = (value?: string | null) => {
+  if (!value) return "";
+
+  return value
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n|\\r/g, "\n")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\\\$/g, "$")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\u00a0/g, " ");
+};
+
 const normalizeRichText = (value?: string | null) => {
-  if (!value?.trim()) return "";
+  const normalized = normalizeEscapedText(value).trim();
+  if (!normalized) return "";
 
-  const trimmed = value.trim();
-  if (trimmed.startsWith("<")) return trimmed;
+  if (normalized.startsWith("<")) {
+    return normalized;
+  }
 
-  return trimmed
+  return normalized
     .split(/\n{2,}/)
     .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br />")}</p>`)
     .join("");
@@ -53,11 +68,16 @@ const normalizeRichText = (value?: string | null) => {
 
 /** Strips HTML tags and normalises whitespace – used for plain-text fields like alternatives */
 const stripHtml = (value?: string | null) => {
-  if (!value?.trim()) return "";
-  return value
+  const normalized = normalizeEscapedText(value)
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&amp;/gi, "&");
+
+  if (!normalized.trim()) return "";
+
+  return normalized
     .replace(/<br\s*\/?>/gi, " ")
     .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/g, " ")
     .replace(/\n/g, " ")
     .replace(/\s{2,}/g, " ")
     .trim();
