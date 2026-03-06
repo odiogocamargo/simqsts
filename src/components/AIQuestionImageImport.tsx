@@ -51,6 +51,18 @@ const normalizeRichText = (value?: string | null) => {
     .join("");
 };
 
+/** Strips HTML tags and normalises whitespace – used for plain-text fields like alternatives */
+const stripHtml = (value?: string | null) => {
+  if (!value?.trim()) return "";
+  return value
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+};
+
 const normalizeAnswer = (value?: string | null) => value?.trim().toLowerCase().slice(0, 1) || "";
 
 const buildQuestionFromAI = (question: AIExtractedQuestion, sourceFile?: File): QuestionData => ({
@@ -64,11 +76,11 @@ const buildQuestionFromAI = (question: AIExtractedQuestion, sourceFile?: File): 
   selectedDifficulty: question.difficulty || "medio",
   correctAnswer: normalizeAnswer(question.correct_answer),
   alternatives: {
-    A: normalizeRichText(question.option_a),
-    B: normalizeRichText(question.option_b),
-    C: normalizeRichText(question.option_c),
-    D: normalizeRichText(question.option_d),
-    E: normalizeRichText(question.option_e),
+    A: stripHtml(question.option_a),
+    B: stripHtml(question.option_b),
+    C: stripHtml(question.option_c),
+    D: stripHtml(question.option_d),
+    E: stripHtml(question.option_e),
   },
   explanation: normalizeRichText(question.explanation),
   images: sourceFile && question.should_attach_source_image !== false

@@ -25,13 +25,25 @@ const renderWithKatex = (text: string): string => {
 
 const hasLatex = (text: string) => /\$[^$]+\$/.test(text);
 
+/** Strip any HTML tags that may come from AI extraction */
+const sanitizePlainText = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+};
+
 export const AlternativeInput = ({ value, onChange, placeholder }: AlternativeInputProps) => {
   const previewRef = useRef<HTMLDivElement>(null);
-  const [rawValue, setRawValue] = useState(value);
+  const [rawValue, setRawValue] = useState(sanitizePlainText(value));
 
   // Sync external changes
   useEffect(() => {
-    setRawValue(value);
+    setRawValue(sanitizePlainText(value));
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
