@@ -17,6 +17,20 @@ export const normalizeTextArtifacts = (text: string): string => {
     .replace(/\u00a0/g, ' ');
 };
 
+/** Strips HTML tags, collapses whitespace – for plain-text display of alternatives */
+export const stripHtmlToPlain = (text: string): string => {
+  if (!text) return '';
+  return normalizeTextArtifacts(text)
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\n/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+};
+
 /**
  * Processes a string, rendering any $...$ LaTeX expressions with KaTeX.
  * Works with both plain text and HTML content.
@@ -45,7 +59,8 @@ interface KatexTextProps {
  * Sanitizes HTML and processes $...$ expressions.
  */
 export function KatexText({ children, className, as: Tag = 'span' }: KatexTextProps) {
-  const html = renderWithKatex(DOMPurify.sanitize(normalizeTextArtifacts(children)));
+  const plain = stripHtmlToPlain(children);
+  const html = renderWithKatex(plain);
   return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
