@@ -16,6 +16,7 @@ import {
 import { ChevronLeft, ChevronRight, Clock, CheckCircle2, XCircle, Flag, Loader2 } from "lucide-react";
 import { SimulationQuestion } from "@/hooks/useSimulations";
 import DOMPurify from "dompurify";
+import { KatexHtml, KatexText } from "@/components/KatexRenderer";
 
 interface SimulationExecutionProps {
   questions: SimulationQuestion[];
@@ -187,12 +188,7 @@ export function SimulationExecution({
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Enunciado */}
-          <div
-            className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(currentQuestion.question?.statement || ""),
-            }}
-          />
+          <KatexHtml html={currentQuestion.question?.statement || ""} className="prose prose-sm max-w-none" />
 
           {/* Alternativas */}
           <div className="space-y-2">
@@ -207,12 +203,7 @@ export function SimulationExecution({
                   <span className="font-semibold text-sm shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                     {option.key}
                   </span>
-                  <div
-                    className="prose prose-sm max-w-none flex-1"
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(option.value || ""),
-                    }}
-                  />
+                  <KatexText className="prose prose-sm max-w-none flex-1">{option.value || ""}</KatexText>
                   {answered && option.key === currentQuestion.question?.correct_answer && (
                     <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
                   )}
@@ -228,12 +219,7 @@ export function SimulationExecution({
           {answered && currentQuestion.question?.explanation && (
             <div className="p-4 bg-muted rounded-lg space-y-2">
               <p className="font-medium text-sm">Explicação:</p>
-              <div
-                className="prose prose-sm max-w-none text-muted-foreground"
-                dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(currentQuestion.question.explanation),
-                }}
-              />
+              <KatexHtml html={currentQuestion.question.explanation} className="prose prose-sm max-w-none text-muted-foreground" />
             </div>
           )}
         </CardContent>

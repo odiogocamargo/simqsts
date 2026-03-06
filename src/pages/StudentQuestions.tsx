@@ -15,6 +15,7 @@ import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjec
 import { Badge } from "@/components/ui/badge";
 import { Paywall, TrialBanner } from "@/components/Paywall";
 import DOMPurify from "dompurify";
+import { KatexHtml, KatexText } from "@/components/KatexRenderer";
 
 const StudentQuestions = () => {
   const { user, subscription } = useAuth();
@@ -454,7 +455,7 @@ const StudentQuestions = () => {
                 </div>
               </div>
               
-              <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.statement) }} />
+              <KatexHtml html={currentQuestion.statement} className="prose prose-sm max-w-none dark:prose-invert" />
               
               {currentQuestionImages.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -501,7 +502,7 @@ const StudentQuestions = () => {
                         {option}
                       </div>
                       <Label htmlFor={`option-${option}`} className="flex-1 cursor-pointer text-base leading-relaxed">
-                        <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(optionValue) }} />
+                        <KatexText>{optionValue}</KatexText>
                       </Label>
                       <RadioGroupItem value={option} id={`option-${option}`} className="sr-only" />
                     </div>
@@ -518,7 +519,7 @@ const StudentQuestions = () => {
                   {currentQuestion.explanation && (
                     <div className="p-4 bg-muted rounded-lg">
                       <h4 className="font-medium mb-2">Explicação:</h4>
-                      <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.explanation) }} />
+                      <KatexHtml html={currentQuestion.explanation} className="prose prose-sm max-w-none dark:prose-invert" />
                     </div>
                   )}
                   <Button onClick={handleNextQuestion} disabled={currentQuestionIndex === questions.length - 1} className="w-full">Próxima Questão</Button>

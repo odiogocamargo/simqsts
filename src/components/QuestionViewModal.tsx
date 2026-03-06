@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Edit, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { KatexHtml, KatexText } from "@/components/KatexRenderer";
 
 interface Question {
   id: string;
@@ -120,7 +121,7 @@ export function QuestionViewModal({ question, open, onOpenChange, onEdit }: Ques
 
           <div>
             <h4 className="text-sm font-semibold text-muted-foreground mb-3">Enunciado</h4>
-            <p className="text-foreground leading-relaxed">{question.text}</p>
+            <KatexHtml html={question.text} className="text-foreground leading-relaxed prose prose-sm max-w-none" />
           </div>
 
           {images.length > 0 && (
@@ -169,7 +170,7 @@ export function QuestionViewModal({ question, open, onOpenChange, onEdit }: Ques
                         >
                           {letter.toUpperCase()}
                         </div>
-                        <p className="text-sm text-foreground flex-1">{text}</p>
+                        <KatexText className="text-sm text-foreground flex-1">{text}</KatexText>
                         {isCorrect && (
                           <Badge className="bg-success/10 text-success border-success/20 shrink-0">
                             Correta
@@ -190,9 +191,7 @@ export function QuestionViewModal({ question, open, onOpenChange, onEdit }: Ques
                 <h4 className="text-sm font-semibold text-muted-foreground mb-3">
                   Resolução/Explicação
                 </h4>
-                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                  {question.explanation}
-                </p>
+                <KatexHtml html={question.explanation} className="text-sm text-foreground leading-relaxed prose prose-sm max-w-none" />
               </div>
             </>
           )}
