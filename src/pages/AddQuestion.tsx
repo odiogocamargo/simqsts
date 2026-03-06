@@ -86,7 +86,7 @@ const AddQuestion = () => {
       const { error } = await supabase.from("question_images").insert({
         question_id: questionId,
         image_url: publicUrl,
-        image_type: image.image_type || "question",
+        image_type: image.image_type || "statement",
         display_order: image.display_order ?? imageIndex,
       });
 

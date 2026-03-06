@@ -320,7 +320,7 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
                 .insert({
                   question_id: insertedQuestion.id,
                   image_url: imageUrl,
-                  image_type: "question",
+                  image_type: "statement",
                   display_order: image.display_order || 0
                 });
               
