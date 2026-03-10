@@ -492,7 +492,9 @@ const Questions = () => {
                       <TableRow key={question.id}>
                         <TableCell className="font-medium">{question.id}</TableCell>
                         <TableCell className="min-w-[300px] max-w-[400px]">
-                          <p className="line-clamp-2 text-sm break-words">{question.text}</p>
+                          <KatexText as="div" className="line-clamp-2 text-sm break-words">
+                            {question.text}
+                          </KatexText>
                         </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
