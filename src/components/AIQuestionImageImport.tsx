@@ -52,6 +52,22 @@ const normalizeEscapedText = (value?: string | null) => {
     .replace(/\u00a0/g, " ");
 };
 
+const isLikelyStructuredLine = (line: string) => /^\s*(?:\(?[A-Ea-e]\)|\d+[\).]|[-•])\s+/.test(line);
+
+const mergeSoftWrappedLines = (lines: string[]) => lines
+  .reduce((acc, line) => {
+    if (!acc) return line;
+    if (acc.endsWith("-")) return `${acc.slice(0, -1)}${line}`;
+    return `${acc} ${line}`;
+  }, "")
+  .replace(/\s{2,}/g, " ")
+  .replace(/\s+([,.;:!?])/g, "$1")
+  .replace(/\(\s+/g, "(")
+  .replace(/\s+\)/g, ")")
+  .replace(/\$\s+/g, "$")
+  .replace(/\s+\$/g, "$")
+  .trim();
+
 const normalizeRichText = (value?: string | null) => {
   const normalized = normalizeEscapedText(value).trim();
   if (!normalized) return "";
@@ -62,7 +78,21 @@ const normalizeRichText = (value?: string | null) => {
 
   return normalized
     .split(/\n{2,}/)
-    .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br />")}</p>`)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const lines = block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      if (lines.length === 0) return "";
+      if (lines.some(isLikelyStructuredLine)) {
+        return `<p>${lines.join("<br />")}</p>`;
+      }
+
+      return `<p>${mergeSoftWrappedLines(lines)}</p>`;
+    })
     .join("");
 };
 
