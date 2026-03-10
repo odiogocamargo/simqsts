@@ -39,13 +39,25 @@ export const renderWithKatex = (text: string): string => {
   const normalized = normalizeTextArtifacts(text);
   if (!normalized) return '';
 
-  return normalized.replace(/\$([^$]+)\$/g, (_, formula) => {
+  // First handle display math $$...$$
+  let result = normalized.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { throwOnError: false, displayMode: true });
+    } catch {
+      return `$$${formula}$$`;
+    }
+  });
+
+  // Then handle inline math $...$
+  result = result.replace(/\$([^$]+)\$/g, (_, formula) => {
     try {
       return katex.renderToString(formula.trim(), { throwOnError: false, displayMode: false });
     } catch {
       return `$${formula}$`;
     }
   });
+
+  return result;
 };
 
 interface KatexTextProps {
