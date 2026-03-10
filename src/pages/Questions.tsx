@@ -24,6 +24,7 @@ import { useState } from "react";
 import { QuestionViewModal } from "@/components/QuestionViewModal";
 import { QuestionEditModal } from "@/components/QuestionEditModal";
 import { QuestionImportModal } from "@/components/QuestionImportModal";
+import { KatexText } from "@/components/KatexRenderer";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
