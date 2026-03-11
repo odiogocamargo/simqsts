@@ -14,7 +14,14 @@ export const normalizeTextArtifacts = (text: string): string => {
     .replace(/\\t/g, ' ')
     .replace(/\\\$/g, '$')
     .replace(/&nbsp;/gi, ' ')
-    .replace(/\u00a0/g, ' ');
+    .replace(/\u00a0/g, ' ')
+    // Fix common OCR/AI artifacts in LaTeX
+    .replace(/(?<![\\a-zA-Z])ight\)/g, '\\right)')
+    .replace(/(?<![\\a-zA-Z])eft\(/g, '\\left(')
+    .replace(/(?<![\\a-zA-Z])eft\[/g, '\\left[')
+    .replace(/(?<![\\a-zA-Z])ight\]/g, '\\right]')
+    .replace(/(?<![\\a-zA-Z])eft\\{/g, '\\left\\{')
+    .replace(/(?<![\\a-zA-Z])ight\\}/g, '\\right\\}');
 };
 
 /** Strips HTML tags, collapses whitespace – for plain-text display of alternatives */
