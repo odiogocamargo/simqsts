@@ -14,7 +14,14 @@ export const normalizeTextArtifacts = (text: string): string => {
     .replace(/\\t/g, ' ')
     .replace(/\\\$/g, '$')
     .replace(/&nbsp;/gi, ' ')
-    .replace(/\u00a0/g, ' ');
+    .replace(/\u00a0/g, ' ')
+    // Fix common OCR/AI artifacts in LaTeX
+    .replace(/(?<![\\a-zA-Z])ight\)/g, '\\right)')
+    .replace(/(?<![\\a-zA-Z])eft\(/g, '\\left(')
+    .replace(/(?<![\\a-zA-Z])eft\[/g, '\\left[')
+    .replace(/(?<![\\a-zA-Z])ight\]/g, '\\right]')
+    .replace(/(?<![\\a-zA-Z])eft\\{/g, '\\left\\{')
+    .replace(/(?<![\\a-zA-Z])ight\\}/g, '\\right\\}');
 };
 
 /** Strips HTML tags, collapses whitespace – for plain-text display of alternatives */
@@ -34,28 +41,44 @@ export const stripHtmlToPlain = (text: string): string => {
 /**
  * Processes a string, rendering any $...$ LaTeX expressions with KaTeX.
  * Works with both plain text and HTML content.
+ *
+ * Strategy: extract HTML tags as placeholders so the regex can safely match
+ * $…$ delimiters that appear in different text nodes (e.g. `<p>text $x$ more</p>`).
  */
 export const renderWithKatex = (text: string): string => {
   const normalized = normalizeTextArtifacts(text);
   if (!normalized) return '';
 
-  // First handle display math $$...$$
-  let result = normalized.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => {
+  // 1. Pull HTML tags out so they don't interfere with $ matching
+  const tags: string[] = [];
+  const stripped = normalized.replace(/<[^>]+>/g, (tag) => {
+    tags.push(tag);
+    return `\x00${tags.length - 1}\x00`;
+  });
+
+  // 2. Display math $$...$$ (may span multiple lines)
+  let result = stripped.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => {
     try {
-      return katex.renderToString(formula.trim(), { throwOnError: false, displayMode: true });
+      // Remove placeholder chars that leaked into formulas
+      const clean = formula.replace(/\x00\d+\x00/g, '').trim();
+      return katex.renderToString(clean, { throwOnError: false, displayMode: true });
     } catch {
       return `$$${formula}$$`;
     }
   });
 
-  // Then handle inline math $...$
-  result = result.replace(/\$([^$]+)\$/g, (_, formula) => {
+  // 3. Inline math $...$  (single line, non-greedy)
+  result = result.replace(/\$([^$\n]+?)\$/g, (_, formula) => {
     try {
-      return katex.renderToString(formula.trim(), { throwOnError: false, displayMode: false });
+      const clean = formula.replace(/\x00\d+\x00/g, '').trim();
+      return katex.renderToString(clean, { throwOnError: false, displayMode: false });
     } catch {
       return `$${formula}$`;
     }
   });
+
+  // 4. Restore HTML tags
+  result = result.replace(/\x00(\d+)\x00/g, (_, idx) => tags[Number(idx)] || '');
 
   return result;
 };

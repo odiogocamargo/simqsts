@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { AlternativeInput } from "@/components/AlternativeInput";
+import { KatexHtml } from "@/components/KatexRenderer";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 import { Sparkles, Loader2, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -206,6 +207,15 @@ export const QuestionForm = ({ question, index, totalQuestions, onChange, onRemo
                 placeholder="Digite o enunciado completo da questão..."
                 minHeight="180px"
               />
+              {question.statement && /\$[^$]+\$/.test(question.statement) && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Prévia renderizada (como o aluno verá):</p>
+                  <KatexHtml
+                    html={question.statement}
+                    className="rounded-lg border border-border bg-muted/30 px-4 py-3 prose prose-sm max-w-none"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
