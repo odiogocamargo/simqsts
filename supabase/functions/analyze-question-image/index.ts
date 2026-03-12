@@ -323,7 +323,13 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const extractedData = extractToolPayload(data, "questions");
+    let extractedData;
+    try {
+      extractedData = extractToolPayload(data, "questions");
+    } catch (extractError) {
+      console.error("Failed to extract questions from AI response:", extractError);
+      return toJsonResponse({ error: "A IA não conseguiu interpretar a imagem. Tente com uma imagem mais nítida." }, 500);
+    }
     const validSubjects = new Set((subjectsResult.data || []).map((item) => item.id));
     const validContentsMap = new Map((contentsResult.data || []).map((item) => [item.id, item.subject_id]));
     const validTopicsMap = new Map((topicsResult.data || []).map((item) => [item.id, item.content_id]));
