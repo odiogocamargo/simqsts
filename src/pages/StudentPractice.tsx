@@ -221,14 +221,25 @@ const StudentPractice = () => {
     };
   }).filter(e => e.total > 0);
 
-  // Evolução diária
-  const dailyEvolution = studySessions.slice(0, 7).reverse().map(session => ({
-    date: format(new Date(session.started_at), "dd/MM", { locale: ptBR }),
-    accuracy: session.questions_answered > 0 
-      ? Math.round((session.correct_answers / session.questions_answered) * 100)
-      : 0,
-    questions: session.questions_answered
-  }));
+  // Evolução diária baseada em user_answers
+  const dailyEvolution = (() => {
+    const dayMap = new Map<string, { total: number; correct: number }>();
+    userAnswers.forEach(a => {
+      const day = format(new Date(a.answered_at), "yyyy-MM-dd");
+      const entry = dayMap.get(day) || { total: 0, correct: 0 };
+      entry.total++;
+      if (a.is_correct) entry.correct++;
+      dayMap.set(day, entry);
+    });
+    return Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-14)
+      .map(([day, { total, correct }]) => ({
+        date: format(new Date(day + "T12:00:00"), "dd/MM", { locale: ptBR }),
+        accuracy: Math.round((correct / total) * 100),
+        questions: total,
+      }));
+  })();
 
   const totalSimulations = simulations.length;
   const completedSimulations = simulations.filter(s => s.status === 'completed').length;
