@@ -22,15 +22,20 @@ import { Paywall, TrialBanner } from "@/components/Paywall";
 
 const StudentPractice = () => {
   const { user, subscription } = useAuth();
-  const [period, setPeriod] = useState<string>("today");
+  const [period, setPeriod] = useState<string>("all");
   const [customDate, setCustomDate] = useState<Date>();
 
-  const getDateRange = () => {
+  const getDateRange = (): { startDate: string | null; endDate: string | null } => {
     const now = new Date();
     let startDate: Date;
     let endDate: Date = endOfDay(now);
 
     switch (period) {
+      case "all":
+        return { startDate: null, endDate: null };
+      case "month":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
       case "today":
         startDate = startOfDay(now);
         break;
@@ -43,12 +48,12 @@ const StudentPractice = () => {
         endDate = endOfWeek(now, { weekStartsOn: 0 });
         break;
       case "custom":
-        if (!customDate) return { startDate: startOfDay(now), endDate };
+        if (!customDate) return { startDate: startOfDay(now).toISOString(), endDate: endDate.toISOString() };
         startDate = startOfDay(customDate);
         endDate = endOfDay(customDate);
         break;
       default:
-        startDate = startOfDay(now);
+        return { startDate: null, endDate: null };
     }
 
     return { startDate: startDate.toISOString(), endDate: endDate.toISOString() };
