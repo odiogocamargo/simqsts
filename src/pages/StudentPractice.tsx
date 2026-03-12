@@ -65,12 +65,13 @@ const StudentPractice = () => {
     queryKey: ['user-performance', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      let query = supabase
         .from('user_performance')
         .select('*, subjects(name)')
-        .eq('user_id', user.id)
-        .gte('last_practice_at', startDate)
-        .lte('last_practice_at', endDate);
+        .eq('user_id', user.id);
+      if (startDate) query = query.gte('last_practice_at', startDate);
+      if (endDate) query = query.lte('last_practice_at', endDate);
+      const { data } = await query;
       return data || [];
     },
     enabled: !!user?.id,
@@ -80,14 +81,13 @@ const StudentPractice = () => {
     queryKey: ['study-sessions', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      let query = supabase
         .from('study_sessions')
         .select('*')
-        .eq('user_id', user.id)
-        .gte('started_at', startDate)
-        .lte('started_at', endDate)
-        .order('started_at', { ascending: false })
-        .limit(10);
+        .eq('user_id', user.id);
+      if (startDate) query = query.gte('started_at', startDate);
+      if (endDate) query = query.lte('started_at', endDate);
+      const { data } = await query.order('started_at', { ascending: false }).limit(10);
       return data || [];
     },
     enabled: !!user?.id,
@@ -97,12 +97,13 @@ const StudentPractice = () => {
     queryKey: ['user-answers', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      let query = supabase
         .from('user_answers')
         .select('*, questions(subject_id, content_id, exam_id, difficulty, topics:question_topics(topic_id))')
-        .eq('user_id', user.id)
-        .gte('answered_at', startDate)
-        .lte('answered_at', endDate);
+        .eq('user_id', user.id);
+      if (startDate) query = query.gte('answered_at', startDate);
+      if (endDate) query = query.lte('answered_at', endDate);
+      const { data } = await query;
       return data || [];
     },
     enabled: !!user?.id,
@@ -144,12 +145,17 @@ const StudentPractice = () => {
     queryKey: ['simulations-count', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      let query = supabase
         .from('simulations')
         .select('id, status, score_percentage, completed_at, question_count, total_correct')
-        .eq('user_id', user.id)
-        .gte('created_at', startDate)
-        .lte('created_at', endDate)
+        .eq('user_id', user.id);
+      if (startDate) query = query.gte('created_at', startDate);
+      if (endDate) query = query.lte('created_at', endDate);
+      const { data } = await query.order('completed_at', { ascending: true });
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
         .order('completed_at', { ascending: true });
       return data || [];
     },
