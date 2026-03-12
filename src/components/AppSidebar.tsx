@@ -70,12 +70,12 @@ export function AppSidebar() {
             "rounded-xl bg-primary flex items-center justify-center shrink-0",
             isCollapsed ? "h-8 w-8" : "h-10 w-10"
           )}>
-            <span className={cn("text-primary-foreground font-bold tracking-tight", isCollapsed ? "text-xs" : "text-base")}>BQ</span>
+            <span className={cn("text-primary-foreground font-bold tracking-tight", isCollapsed ? "text-xs" : "text-base")}>SQ</span>
           </div>
           {!isCollapsed && (
             <div className="animate-slide-in">
-              <h1 className="text-base font-bold text-foreground tracking-tight">Banco de Questões</h1>
-              <p className="text-xs text-muted-foreground font-medium">Sistema de Estudos</p>
+              <h1 className="text-base font-bold text-foreground tracking-tight">Sim Questões</h1>
+              <p className="text-xs text-muted-foreground font-medium">Estude com inteligência</p>
             </div>
           )}
         </div>
