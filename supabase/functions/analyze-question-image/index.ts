@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
-const AI_MODEL = "google/gemini-3-flash-preview";
+const AI_MODEL = "google/gemini-2.5-flash";
 
 const toJsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: jsonHeaders });
