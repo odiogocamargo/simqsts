@@ -156,11 +156,6 @@ const StudentPractice = () => {
     },
     enabled: !!user?.id,
   });
-        .order('completed_at', { ascending: true });
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
 
   const totalQuestions = userAnswers.length;
   const totalCorrect = userAnswers.filter(a => a.is_correct).length;
