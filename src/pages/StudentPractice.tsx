@@ -291,9 +291,11 @@ const StudentPractice = () => {
                 <Select value={period} onValueChange={setPeriod}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Todo o período</SelectItem>
+                    <SelectItem value="month">Este Mês</SelectItem>
+                    <SelectItem value="week">Esta Semana</SelectItem>
                     <SelectItem value="today">Hoje</SelectItem>
                     <SelectItem value="yesterday">Ontem</SelectItem>
-                    <SelectItem value="week">Esta Semana</SelectItem>
                     <SelectItem value="custom">Personalizado</SelectItem>
                   </SelectContent>
                 </Select>
