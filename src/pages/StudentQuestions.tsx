@@ -231,12 +231,14 @@ const StudentQuestions = () => {
           .single();
 
         if (session) {
+          const durationMinutes = Math.round((new Date().getTime() - new Date(session.started_at).getTime()) / 60000);
           const { error: sessionError } = await supabase
             .from('study_sessions')
             .update({
               questions_answered: session.questions_answered + 1,
               correct_answers: session.correct_answers + (isCorrect ? 1 : 0),
               ended_at: new Date().toISOString(),
+              duration_minutes: durationMinutes,
             })
             .eq('id', sessionId);
           
