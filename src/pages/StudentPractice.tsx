@@ -83,11 +83,11 @@ const StudentPractice = () => {
       if (!user?.id) return [];
       let query = supabase
         .from('study_sessions')
-        .select('*')
+        .select('*, subjects(name), exams(name)')
         .eq('user_id', user.id);
       if (startDate) query = query.gte('started_at', startDate);
       if (endDate) query = query.lte('started_at', endDate);
-      const { data } = await query.order('started_at', { ascending: false }).limit(10);
+      const { data } = await query.order('started_at', { ascending: false }).limit(20);
       return data || [];
     },
     enabled: !!user?.id,
