@@ -35,7 +35,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hover:bg-secondary/50 transition-colors" />
               <div className="h-8 w-px bg-border/50" />
-              <h2 className="text-xl font-bold text-foreground tracking-tight">Banco de Questões</h2>
+              <h2 className="text-xl font-bold text-foreground tracking-tight">Sim Questões</h2>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
