@@ -22,15 +22,20 @@ import { Paywall, TrialBanner } from "@/components/Paywall";
 
 const StudentPractice = () => {
   const { user, subscription } = useAuth();
-  const [period, setPeriod] = useState<string>("today");
+  const [period, setPeriod] = useState<string>("all");
   const [customDate, setCustomDate] = useState<Date>();
 
-  const getDateRange = () => {
+  const getDateRange = (): { startDate: string | null; endDate: string | null } => {
     const now = new Date();
     let startDate: Date;
     let endDate: Date = endOfDay(now);
 
     switch (period) {
+      case "all":
+        return { startDate: null, endDate: null };
+      case "month":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
       case "today":
         startDate = startOfDay(now);
         break;
@@ -43,12 +48,12 @@ const StudentPractice = () => {
         endDate = endOfWeek(now, { weekStartsOn: 0 });
         break;
       case "custom":
-        if (!customDate) return { startDate: startOfDay(now), endDate };
+        if (!customDate) return { startDate: startOfDay(now).toISOString(), endDate: endDate.toISOString() };
         startDate = startOfDay(customDate);
         endDate = endOfDay(customDate);
         break;
       default:
-        startDate = startOfDay(now);
+        return { startDate: null, endDate: null };
     }
 
     return { startDate: startDate.toISOString(), endDate: endDate.toISOString() };
@@ -60,12 +65,13 @@ const StudentPractice = () => {
     queryKey: ['user-performance', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      let query = supabase
         .from('user_performance')
         .select('*, subjects(name)')
-        .eq('user_id', user.id)
-        .gte('last_practice_at', startDate)
-        .lte('last_practice_at', endDate);
+        .eq('user_id', user.id);
+      if (startDate) query = query.gte('last_practice_at', startDate);
+      if (endDate) query = query.lte('last_practice_at', endDate);
+      const { data } = await query;
       return data || [];
     },
     enabled: !!user?.id,
@@ -75,14 +81,13 @@ const StudentPractice = () => {
     queryKey: ['study-sessions', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      let query = supabase
         .from('study_sessions')
         .select('*')
-        .eq('user_id', user.id)
-        .gte('started_at', startDate)
-        .lte('started_at', endDate)
-        .order('started_at', { ascending: false })
-        .limit(10);
+        .eq('user_id', user.id);
+      if (startDate) query = query.gte('started_at', startDate);
+      if (endDate) query = query.lte('started_at', endDate);
+      const { data } = await query.order('started_at', { ascending: false }).limit(10);
       return data || [];
     },
     enabled: !!user?.id,
@@ -92,12 +97,13 @@ const StudentPractice = () => {
     queryKey: ['user-answers', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      let query = supabase
         .from('user_answers')
         .select('*, questions(subject_id, content_id, exam_id, difficulty, topics:question_topics(topic_id))')
-        .eq('user_id', user.id)
-        .gte('answered_at', startDate)
-        .lte('answered_at', endDate);
+        .eq('user_id', user.id);
+      if (startDate) query = query.gte('answered_at', startDate);
+      if (endDate) query = query.lte('answered_at', endDate);
+      const { data } = await query;
       return data || [];
     },
     enabled: !!user?.id,
@@ -139,13 +145,13 @@ const StudentPractice = () => {
     queryKey: ['simulations-count', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      let query = supabase
         .from('simulations')
         .select('id, status, score_percentage, completed_at, question_count, total_correct')
-        .eq('user_id', user.id)
-        .gte('created_at', startDate)
-        .lte('created_at', endDate)
-        .order('completed_at', { ascending: true });
+        .eq('user_id', user.id);
+      if (startDate) query = query.gte('created_at', startDate);
+      if (endDate) query = query.lte('created_at', endDate);
+      const { data } = await query.order('completed_at', { ascending: true });
       return data || [];
     },
     enabled: !!user?.id,
@@ -285,9 +291,11 @@ const StudentPractice = () => {
                 <Select value={period} onValueChange={setPeriod}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Todo o período</SelectItem>
+                    <SelectItem value="month">Este Mês</SelectItem>
+                    <SelectItem value="week">Esta Semana</SelectItem>
                     <SelectItem value="today">Hoje</SelectItem>
                     <SelectItem value="yesterday">Ontem</SelectItem>
-                    <SelectItem value="week">Esta Semana</SelectItem>
                     <SelectItem value="custom">Personalizado</SelectItem>
                   </SelectContent>
                 </Select>
