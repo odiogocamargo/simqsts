@@ -30,7 +30,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
-        <SidebarInset className="flex-1">
+        <SidebarInset className="flex-1 overflow-hidden">
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-2 border-b border-border/50 glass-effect px-6 backdrop-blur-xl">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hover:bg-secondary/50 transition-colors" />

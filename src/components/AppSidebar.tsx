@@ -4,6 +4,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 import {
   Sidebar,
@@ -61,9 +62,15 @@ export function AppSidebar() {
     <Sidebar collapsible={isMobile ? "offcanvas" : "icon"} className="border-r border-border/50 bg-background">
       <SidebarContent className="flex flex-col h-full">
         {/* Logo/Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border/50">
-          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground font-bold text-base tracking-tight">BQ</span>
+        <div className={cn(
+          "flex items-center border-b border-border/50 shrink-0",
+          isCollapsed ? "justify-center p-2" : "gap-3 p-4"
+        )}>
+          <div className={cn(
+            "rounded-xl bg-primary flex items-center justify-center shrink-0",
+            isCollapsed ? "h-8 w-8" : "h-10 w-10"
+          )}>
+            <span className={cn("text-primary-foreground font-bold tracking-tight", isCollapsed ? "text-xs" : "text-base")}>BQ</span>
           </div>
           {!isCollapsed && (
             <div className="animate-slide-in">
