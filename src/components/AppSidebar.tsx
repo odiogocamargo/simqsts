@@ -74,8 +74,8 @@ export function AppSidebar() {
           </div>
           {!isCollapsed && (
             <div className="animate-slide-in">
-              <h1 className="text-base font-bold text-foreground tracking-tight">Banco de Questões</h1>
-              <p className="text-xs text-muted-foreground font-medium">Sistema de Estudos</p>
+              <h1 className="text-base font-bold text-foreground tracking-tight">Sim Questões</h1>
+              <p className="text-xs text-muted-foreground font-medium">Estude com inteligência</p>
             </div>
           )}
         </div>
