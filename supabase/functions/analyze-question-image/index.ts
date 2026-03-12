@@ -440,7 +440,13 @@ serve(async (req) => {
 
       if (taxonomyRepairResponse.ok) {
         const taxonomyRepairData = await taxonomyRepairResponse.json();
-        const taxonomyRepairPayload = extractToolPayload(taxonomyRepairData, "fixes");
+        let taxonomyRepairPayload;
+        try {
+          taxonomyRepairPayload = extractToolPayload(taxonomyRepairData, "fixes");
+        } catch (repairError) {
+          console.warn("Taxonomy repair AI response could not be parsed, skipping:", repairError);
+          taxonomyRepairPayload = { fixes: [] };
+        }
 
         for (const fix of taxonomyRepairPayload.fixes || []) {
           const questionIndex = Number(fix.question_index);
