@@ -70,7 +70,7 @@ export function AppSidebar() {
             "rounded-xl bg-primary flex items-center justify-center shrink-0",
             isCollapsed ? "h-8 w-8" : "h-10 w-10"
           )}>
-            <span className={cn("text-primary-foreground font-bold tracking-tight", isCollapsed ? "text-xs" : "text-base")}>BQ</span>
+            <span className={cn("text-primary-foreground font-bold tracking-tight", isCollapsed ? "text-xs" : "text-base")}>SQ</span>
           </div>
           {!isCollapsed && (
             <div className="animate-slide-in">
