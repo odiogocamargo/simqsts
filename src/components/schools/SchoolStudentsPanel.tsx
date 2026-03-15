@@ -388,6 +388,13 @@ Maria Santos,maria@email.com,`}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EditStudentModal
+        open={!!editingStudent}
+        onOpenChange={(open) => { if (!open) setEditingStudent(null); }}
+        student={editingStudent}
+        schoolId={school.id}
+      />
     </Layout>
   );
 }
