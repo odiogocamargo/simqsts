@@ -194,8 +194,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
       
-      if (error || data?.error) {
-        const msg = data?.error || 'Erro ao abrir portal do cliente';
+      if (error) {
+        // When the function returns non-2xx, the response body is in error.context
+        let msg = 'Erro ao abrir portal do cliente';
+        try {
+          const parsed = typeof error.context === 'string' ? JSON.parse(error.context) : error.context;
+          if (parsed?.error) msg = parsed.error;
+        } catch {}
+        if (data?.error) msg = data.error;
         console.error('Error opening customer portal:', msg);
         toast.error(msg);
         return;
