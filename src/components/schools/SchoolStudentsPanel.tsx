@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Download } from "lucide-react";
+import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Download, Pencil } from "lucide-react";
+import { EditStudentModal } from "./EditStudentModal";
 
 interface SchoolStudentsPanelProps {
   school: { id: string; name: string; logo_url?: string | null };
@@ -35,6 +36,7 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<{ user_id: string; full_name: string | null; cpf: string | null; whatsapp: string | null } | null>(null);
 
   // Single student form
   const [studentName, setStudentName] = useState("");
@@ -259,6 +261,18 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
                         {new Date(student.created_at).toLocaleDateString("pt-BR")}
                       </TableCell>
                       <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingStudent({
+                            user_id: student.user_id,
+                            full_name: student.profile?.full_name || null,
+                            cpf: student.profile?.cpf || null,
+                            whatsapp: student.profile?.whatsapp || null,
+                          })}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive">
@@ -374,6 +388,13 @@ Maria Santos,maria@email.com,`}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EditStudentModal
+        open={!!editingStudent}
+        onOpenChange={(open) => { if (!open) setEditingStudent(null); }}
+        student={editingStudent}
+        schoolId={school.id}
+      />
     </Layout>
   );
 }
