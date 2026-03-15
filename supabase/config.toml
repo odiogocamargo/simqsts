@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.create-school-student]
 verify_jwt = false
+
+[functions.export-questions-json]
+verify_jwt = false
