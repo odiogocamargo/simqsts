@@ -245,14 +245,22 @@ export const AIQuestionImageImport = ({ onImportQuestions }: AIQuestionImageImpo
             });
 
             if (error) {
-              const errorMessage = error.message || "Erro ao analisar imagem";
-              if (errorMessage.includes("402") || errorMessage.includes("Créditos")) {
+              // Try to extract the friendly error message from the edge function response
+              let friendlyMessage = "Erro ao analisar imagem";
+              try {
+                const ctx = error.context;
+                const parsed = typeof ctx === "string" ? JSON.parse(ctx) : ctx;
+                if (parsed?.error) friendlyMessage = parsed.error;
+              } catch {
+                friendlyMessage = error.message || friendlyMessage;
+              }
+              if (friendlyMessage.includes("402") || friendlyMessage.includes("Créditos")) {
                 throw new Error("Créditos de IA esgotados. Adicione créditos em Settings → Workspace → Usage.");
               }
-              if (errorMessage.includes("429") || errorMessage.includes("Limite")) {
+              if (friendlyMessage.includes("429") || friendlyMessage.includes("Limite")) {
                 throw new Error("Limite de requisições excedido. Tente novamente em alguns instantes.");
               }
-              throw new Error(errorMessage);
+              throw new Error(friendlyMessage);
             }
 
             if (!data?.success) {

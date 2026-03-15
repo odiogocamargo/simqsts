@@ -328,7 +328,7 @@ serve(async (req) => {
       extractedData = extractToolPayload(data, "questions");
     } catch (extractError) {
       console.error("Failed to extract questions from AI response:", extractError);
-      return toJsonResponse({ error: "A IA não conseguiu interpretar a imagem. Tente com uma imagem mais nítida." }, 500);
+      return toJsonResponse({ error: "A IA não conseguiu interpretar a imagem. Tente com uma imagem mais nítida." }, 400);
     }
     const validSubjects = new Set((subjectsResult.data || []).map((item) => item.id));
     const validContentsMap = new Map((contentsResult.data || []).map((item) => [item.id, item.subject_id]));
