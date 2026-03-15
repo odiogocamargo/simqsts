@@ -197,8 +197,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error || data?.error) {
         const msg = data?.error || 'Erro ao abrir portal do cliente';
         console.error('Error opening customer portal:', msg);
-        const { toast } = await import('@/hooks/use-toast');
-        toast.call(null, { title: 'Erro', description: msg, variant: 'destructive' });
+        toast.error(msg);
         return;
       }
 
