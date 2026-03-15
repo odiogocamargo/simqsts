@@ -260,6 +260,18 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
                         {new Date(student.created_at).toLocaleDateString("pt-BR")}
                       </TableCell>
                       <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingStudent({
+                            user_id: student.user_id,
+                            full_name: student.profile?.full_name || null,
+                            cpf: student.profile?.cpf || null,
+                            whatsapp: student.profile?.whatsapp || null,
+                          })}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive">
