@@ -129,8 +129,6 @@ export default function Auth() {
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Email ou senha incorretos');
-      } else if (error.message.includes('Email not confirmed')) {
-        toast.error('Por favor, confirme seu email antes de fazer login');
       } else {
         toast.error('Erro ao fazer login: ' + error.message);
       }
