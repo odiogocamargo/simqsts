@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode, useRef, useC
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface SubscriptionStatus {
   subscribed: boolean;
@@ -193,8 +194,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
       
-      if (error) {
-        console.error('Error opening customer portal:', error);
+      if (error || data?.error) {
+        const msg = data?.error || 'Erro ao abrir portal do cliente';
+        console.error('Error opening customer portal:', msg);
+        toast.error(msg);
         return;
       }
 
