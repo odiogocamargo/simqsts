@@ -129,8 +129,6 @@ export default function Auth() {
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Email ou senha incorretos');
-      } else if (error.message.includes('Email not confirmed')) {
-        toast.error('Por favor, confirme seu email antes de fazer login');
       } else {
         toast.error('Erro ao fazer login: ' + error.message);
       }
@@ -159,7 +157,7 @@ export default function Auth() {
         toast.error('Erro ao criar conta: ' + error.message);
       }
     } else {
-      toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
+      toast.success('Conta criada com sucesso! Você já pode fazer login.');
     }
     setLoading(false);
   };
