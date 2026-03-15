@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Download } from "lucide-react";
+import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Download, Pencil } from "lucide-react";
+import { EditStudentModal } from "./EditStudentModal";
 
 interface SchoolStudentsPanelProps {
   school: { id: string; name: string; logo_url?: string | null };
