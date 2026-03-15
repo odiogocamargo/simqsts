@@ -157,7 +157,7 @@ export default function Auth() {
         toast.error('Erro ao criar conta: ' + error.message);
       }
     } else {
-      toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
+      toast.success('Conta criada com sucesso! Você já pode fazer login.');
     }
     setLoading(false);
   };
