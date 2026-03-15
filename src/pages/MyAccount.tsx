@@ -189,32 +189,33 @@ const MyAccount = () => {
                 </CardContent>
               </Card>
 
-              {/* Actions Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Gerenciar assinatura</CardTitle>
-                  <CardDescription>
-                    Altere seu método de pagamento, veja faturas ou cancele sua assinatura
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    onClick={handlePortal} 
-                    disabled={isPortalLoading}
-                    className="gap-2"
-                  >
-                    {isPortalLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="h-4 w-4" />
-                    )}
-                    Abrir Portal de Assinatura
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Você será redirecionado para o portal seguro do Stripe
-                  </p>
-                </CardContent>
-              </Card>
+              {subscription.productId !== 'school_access' && subscription.productId !== 'admin_access' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Gerenciar assinatura</CardTitle>
+                    <CardDescription>
+                      Altere seu método de pagamento, veja faturas ou cancele sua assinatura
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      onClick={handlePortal} 
+                      disabled={isPortalLoading}
+                      className="gap-2"
+                    >
+                      {isPortalLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4" />
+                      )}
+                      Abrir Portal de Assinatura
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Você será redirecionado para o portal seguro do Stripe
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </>
           ) : (
             <>

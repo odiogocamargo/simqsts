@@ -250,15 +250,17 @@ const Dashboard = () => {
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={openCustomerPortal}
-                      disabled={subscriptionLoading}
-                      className="w-full gap-2"
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      Gerenciar Assinatura
-                    </Button>
+                    {subscription.productId !== 'school_access' && subscription.productId !== 'admin_access' && (
+                      <Button
+                        variant="outline"
+                        onClick={openCustomerPortal}
+                        disabled={subscriptionLoading}
+                        className="w-full gap-2"
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        Gerenciar Assinatura
+                      </Button>
+                    )}
                   </div>
                 ) : subscription.isInTrial ? (
                   <div className="space-y-4">
