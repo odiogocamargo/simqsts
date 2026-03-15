@@ -127,20 +127,24 @@ export function AppSidebar() {
                 {!isCollapsed && (
                   <div className="flex items-center gap-2">
                     <Crown className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium text-foreground">Assinante</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {subscription.productId === 'school_access' ? 'Acesso Escola' : 'Assinante'}
+                    </span>
                     <Badge variant="secondary" className="text-xs">Ativo</Badge>
                   </div>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openCustomerPortal}
-                  className="w-full gap-2"
-                  disabled={subscriptionLoading}
-                >
-                  <CreditCard className="h-4 w-4" />
-                  {!isCollapsed && "Gerenciar Assinatura"}
-                </Button>
+                {subscription.productId !== 'school_access' && subscription.productId !== 'admin_access' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openCustomerPortal}
+                    className="w-full gap-2"
+                    disabled={subscriptionLoading}
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {!isCollapsed && "Gerenciar Assinatura"}
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
