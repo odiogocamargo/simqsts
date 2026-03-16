@@ -269,7 +269,7 @@ const StudentPractice = () => {
     { title: "Questões Respondidas", value: totalQuestions.toString(), icon: BookOpen, variant: "default" as const },
     { title: "Simulados Realizados", value: `${completedSimulations}/${totalSimulations}`, icon: ClipboardList, variant: "default" as const, trend: avgSimulationScore > 0 ? `Média: ${avgSimulationScore}%` : undefined },
     { title: "Tempo Médio", value: `${avgTime}s`, icon: Clock, variant: "default" as const },
-    { title: "Sessões de Estudo", value: totalSessions.toString(), icon: Activity, variant: "default" as const }
+    { title: "Sessões de Estudo", value: totalSessions.toString(), icon: Activity, variant: "default" as const, trend: studyTimeLabel }
   ];
 
   // Check if user has access
