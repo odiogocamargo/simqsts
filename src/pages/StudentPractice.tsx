@@ -396,12 +396,12 @@ const StudentPractice = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis domain={[0, 100]} />
-                  <Tooltip 
-                    formatter={(value, name) => {
+                  <RechartsTooltip 
+                    formatter={(value: any, name: any) => {
                       if (name === "score") return [`${value}%`, "Nota"];
                       return [value, name];
                     }}
-                    labelFormatter={(label) => `Simulado em ${label}`}
+                    labelFormatter={(label: any) => `Simulado em ${label}`}
                   />
                   <Legend />
                   <Bar dataKey="score" fill="hsl(var(--primary))" name="Nota (%)" radius={[4, 4, 0, 0]} />
