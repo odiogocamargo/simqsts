@@ -555,7 +555,7 @@ const StudentPractice = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis domain={[0, 100]} />
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Legend />
                   <Bar dataKey="accuracy" fill="hsl(var(--primary))" name="Taxa de Acerto (%)" />
                 </BarChart>
