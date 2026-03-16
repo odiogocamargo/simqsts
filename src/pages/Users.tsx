@@ -498,6 +498,48 @@ export default function Users() {
     },
   });
 
+  // Liberar/revogar acesso de aluno
+  const [togglingAccessUserId, setTogglingAccessUserId] = useState<string | null>(null);
+
+  const toggleAccessMutation = useMutation({
+    mutationFn: async ({ userId, grant }: { userId: string; grant: boolean }) => {
+      if (grant) {
+        // Insert a "Cortesia" subscription
+        const { error } = await supabase.from("subscriptions").insert({
+          user_id: userId,
+          status: "active",
+          plan_name: "Cortesia",
+          kiwify_customer_email: `admin-granted-${userId}`,
+          started_at: new Date().toISOString(),
+        });
+        if (error) throw error;
+      } else {
+        // Revoke: update status to canceled
+        const { error } = await supabase
+          .from("subscriptions")
+          .update({ status: "canceled", canceled_at: new Date().toISOString() })
+          .eq("user_id", userId)
+          .eq("plan_name", "Cortesia")
+          .eq("status", "active");
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, { grant }) => {
+      queryClient.invalidateQueries({ queryKey: ["users-admin"] });
+      toast.success(grant ? "Acesso liberado com sucesso!" : "Acesso revogado com sucesso!");
+      setTogglingAccessUserId(null);
+    },
+    onError: (error) => {
+      toast.error("Erro: " + error.message);
+      setTogglingAccessUserId(null);
+    },
+  });
+
+  const handleToggleAccess = (userId: string, currentlyHasAccess: boolean) => {
+    setTogglingAccessUserId(userId);
+    toggleAccessMutation.mutate({ userId, grant: !currentlyHasAccess });
+  };
+
   const handleOpenPasswordDialog = (user: UserWithDetails) => {
     setSelectedUserForPassword(user);
     setNewUserPassword("");
