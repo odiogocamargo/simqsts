@@ -1111,12 +1111,26 @@ export default function Users() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            {getSubscriptionBadge(user)}
-                            {user.subscription?.expires_at && (
-                              <p className="text-xs text-muted-foreground">
-                                Até {new Date(user.subscription.expires_at).toLocaleDateString("pt-BR")}
-                              </p>
+                          <div className="space-y-2">
+                            <div className="space-y-1">
+                              {getSubscriptionBadge(user)}
+                              {user.subscription?.expires_at && (
+                                <p className="text-xs text-muted-foreground">
+                                  Até {new Date(user.subscription.expires_at).toLocaleDateString("pt-BR")}
+                                </p>
+                              )}
+                            </div>
+                            {user.roles.includes("aluno") && !user.subscription?.status && (
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!user.hasAdminGrantedAccess}
+                                  onCheckedChange={() => handleToggleAccess(user.id, !!user.hasAdminGrantedAccess)}
+                                  disabled={togglingAccessUserId === user.id}
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  {user.hasAdminGrantedAccess ? "Acesso liberado" : "Liberar acesso"}
+                                </span>
+                              </div>
                             )}
                           </div>
                         </TableCell>
