@@ -162,6 +162,12 @@ const StudentPractice = () => {
   const totalCorrect = userAnswers.filter(a => a.is_correct).length;
   const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
   const totalSessions = studySessions.length;
+  const totalStudyMinutes = studySessions.reduce((acc: number, s: any) => acc + (s.duration_minutes || 0), 0);
+  const totalStudyHours = Math.floor(totalStudyMinutes / 60);
+  const remainingMinutes = totalStudyMinutes % 60;
+  const studyTimeLabel = totalStudyHours > 0 
+    ? `${totalStudyHours}h ${remainingMinutes}min` 
+    : totalStudyMinutes > 0 ? `${totalStudyMinutes}min` : undefined;
   const avgTime = userAnswers.length > 0 
     ? Math.round(userAnswers.reduce((acc, a) => acc + (a.time_spent_seconds || 0), 0) / userAnswers.length)
     : 0;
@@ -263,7 +269,7 @@ const StudentPractice = () => {
     { title: "Questões Respondidas", value: totalQuestions.toString(), icon: BookOpen, variant: "default" as const },
     { title: "Simulados Realizados", value: `${completedSimulations}/${totalSimulations}`, icon: ClipboardList, variant: "default" as const, trend: avgSimulationScore > 0 ? `Média: ${avgSimulationScore}%` : undefined },
     { title: "Tempo Médio", value: `${avgTime}s`, icon: Clock, variant: "default" as const },
-    { title: "Sessões de Estudo", value: totalSessions.toString(), icon: Activity, variant: "default" as const }
+    { title: "Sessões de Estudo", value: totalSessions.toString(), icon: Activity, variant: "default" as const, trend: studyTimeLabel }
   ];
 
   // Check if user has access
