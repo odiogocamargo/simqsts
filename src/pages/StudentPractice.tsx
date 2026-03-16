@@ -371,7 +371,7 @@ const StudentPractice = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis domain={[0, 100]} />
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Legend />
                   <Line type="monotone" dataKey="accuracy" stroke="hsl(var(--primary))" name="Taxa de Acerto (%)" strokeWidth={2} />
                 </LineChart>
