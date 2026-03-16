@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy, CalendarDays, TrendingUp } from "lucide-react";
+import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy, CalendarDays, TrendingUp, ShieldCheck } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useState, useMemo } from "react";
 import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, subMonths } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -33,6 +34,7 @@ interface UserWithDetails {
     expires_at: string | null;
     started_at: string | null;
   } | null;
+  hasAdminGrantedAccess?: boolean;
   isInTrial?: boolean;
   trialDaysRemaining?: number;
 }
@@ -76,7 +78,7 @@ export default function Users() {
       // Buscar roles e assinaturas de cada usuário
       const usersWithDetails = await Promise.all(
         profiles.map(async (profile) => {
-          const [rolesResult, subscriptionResult] = await Promise.all([
+          const [rolesResult, subscriptionResult, cortesiaResult] = await Promise.all([
             supabase
               .from("user_roles")
               .select("role")
@@ -85,7 +87,16 @@ export default function Users() {
               .from("subscriptions")
               .select("status, plan_name, expires_at, started_at")
               .eq("user_id", profile.id)
+              .neq("plan_name", "Cortesia")
               .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+            supabase
+              .from("subscriptions")
+              .select("id")
+              .eq("user_id", profile.id)
+              .eq("plan_name", "Cortesia")
+              .eq("status", "active")
               .limit(1)
               .maybeSingle()
           ]);
@@ -101,6 +112,7 @@ export default function Users() {
             ...profile,
             roles: rolesResult.data?.map((r) => r.role) || [],
             subscription: subscriptionResult.data,
+            hasAdminGrantedAccess: !!cortesiaResult.data,
             isInTrial,
             trialDaysRemaining,
           } as UserWithDetails;
@@ -497,6 +509,48 @@ export default function Users() {
     },
   });
 
+  // Liberar/revogar acesso de aluno
+  const [togglingAccessUserId, setTogglingAccessUserId] = useState<string | null>(null);
+
+  const toggleAccessMutation = useMutation({
+    mutationFn: async ({ userId, grant }: { userId: string; grant: boolean }) => {
+      if (grant) {
+        // Insert a "Cortesia" subscription
+        const { error } = await supabase.from("subscriptions").insert({
+          user_id: userId,
+          status: "active",
+          plan_name: "Cortesia",
+          kiwify_customer_email: `admin-granted-${userId}`,
+          started_at: new Date().toISOString(),
+        });
+        if (error) throw error;
+      } else {
+        // Revoke: update status to canceled
+        const { error } = await supabase
+          .from("subscriptions")
+          .update({ status: "canceled", canceled_at: new Date().toISOString() })
+          .eq("user_id", userId)
+          .eq("plan_name", "Cortesia")
+          .eq("status", "active");
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, { grant }) => {
+      queryClient.invalidateQueries({ queryKey: ["users-admin"] });
+      toast.success(grant ? "Acesso liberado com sucesso!" : "Acesso revogado com sucesso!");
+      setTogglingAccessUserId(null);
+    },
+    onError: (error) => {
+      toast.error("Erro: " + error.message);
+      setTogglingAccessUserId(null);
+    },
+  });
+
+  const handleToggleAccess = (userId: string, currentlyHasAccess: boolean) => {
+    setTogglingAccessUserId(userId);
+    toggleAccessMutation.mutate({ userId, grant: !currentlyHasAccess });
+  };
+
   const handleOpenPasswordDialog = (user: UserWithDetails) => {
     setSelectedUserForPassword(user);
     setNewUserPassword("");
@@ -543,6 +597,14 @@ export default function Users() {
   };
 
   const getSubscriptionBadge = (user: UserWithDetails) => {
+    if (user.hasAdminGrantedAccess) {
+      return (
+        <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">
+          <ShieldCheck className="h-3 w-3 mr-1" />
+          Cortesia
+        </Badge>
+      );
+    }
     if (user.subscription?.status === "active") {
       return (
         <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
@@ -1049,12 +1111,26 @@ export default function Users() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            {getSubscriptionBadge(user)}
-                            {user.subscription?.expires_at && (
-                              <p className="text-xs text-muted-foreground">
-                                Até {new Date(user.subscription.expires_at).toLocaleDateString("pt-BR")}
-                              </p>
+                          <div className="space-y-2">
+                            <div className="space-y-1">
+                              {getSubscriptionBadge(user)}
+                              {user.subscription?.expires_at && (
+                                <p className="text-xs text-muted-foreground">
+                                  Até {new Date(user.subscription.expires_at).toLocaleDateString("pt-BR")}
+                                </p>
+                              )}
+                            </div>
+                            {user.roles.includes("aluno") && user.subscription?.status !== "active" && (
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!user.hasAdminGrantedAccess}
+                                  onCheckedChange={() => handleToggleAccess(user.id, !!user.hasAdminGrantedAccess)}
+                                  disabled={togglingAccessUserId === user.id}
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  {user.hasAdminGrantedAccess ? "Acesso liberado" : "Liberar acesso"}
+                                </span>
+                              </div>
                             )}
                           </div>
                         </TableCell>
