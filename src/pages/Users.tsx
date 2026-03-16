@@ -78,7 +78,7 @@ export default function Users() {
       // Buscar roles e assinaturas de cada usuário
       const usersWithDetails = await Promise.all(
         profiles.map(async (profile) => {
-          const [rolesResult, subscriptionResult] = await Promise.all([
+          const [rolesResult, subscriptionResult, cortesiaResult] = await Promise.all([
             supabase
               .from("user_roles")
               .select("role")
@@ -87,7 +87,16 @@ export default function Users() {
               .from("subscriptions")
               .select("status, plan_name, expires_at, started_at")
               .eq("user_id", profile.id)
+              .neq("plan_name", "Cortesia")
               .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+            supabase
+              .from("subscriptions")
+              .select("id")
+              .eq("user_id", profile.id)
+              .eq("plan_name", "Cortesia")
+              .eq("status", "active")
               .limit(1)
               .maybeSingle()
           ]);
@@ -103,6 +112,7 @@ export default function Users() {
             ...profile,
             roles: rolesResult.data?.map((r) => r.role) || [],
             subscription: subscriptionResult.data,
+            hasAdminGrantedAccess: !!cortesiaResult.data,
             isInTrial,
             trialDaysRemaining,
           } as UserWithDetails;
