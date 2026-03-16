@@ -1120,7 +1120,7 @@ export default function Users() {
                                 </p>
                               )}
                             </div>
-                            {user.roles.includes("aluno") && !user.subscription?.status && (
+                            {user.roles.includes("aluno") && user.subscription?.status !== "active" && (
                               <div className="flex items-center gap-2">
                                 <Switch
                                   checked={!!user.hasAdminGrantedAccess}
