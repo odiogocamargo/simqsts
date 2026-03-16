@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
 import { Progress } from "@/components/ui/progress";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Paywall, TrialBanner } from "@/components/Paywall";
 
@@ -370,7 +371,7 @@ const StudentPractice = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis domain={[0, 100]} />
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Legend />
                   <Line type="monotone" dataKey="accuracy" stroke="hsl(var(--primary))" name="Taxa de Acerto (%)" strokeWidth={2} />
                 </LineChart>
@@ -395,12 +396,12 @@ const StudentPractice = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis domain={[0, 100]} />
-                  <Tooltip 
-                    formatter={(value, name) => {
+                  <RechartsTooltip 
+                    formatter={(value: any, name: any) => {
                       if (name === "score") return [`${value}%`, "Nota"];
                       return [value, name];
                     }}
-                    labelFormatter={(label) => `Simulado em ${label}`}
+                    labelFormatter={(label: any) => `Simulado em ${label}`}
                   />
                   <Legend />
                   <Bar dataKey="score" fill="hsl(var(--primary))" name="Nota (%)" radius={[4, 4, 0, 0]} />
@@ -469,77 +470,79 @@ const StudentPractice = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Mapa de Calor - Desempenho por Conteúdo</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Mapa de Calor
+              <div className="flex items-center gap-2 ml-auto text-xs font-normal text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-red-500/70 inline-block" /> &lt;50%</span>
+                <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-yellow-500/70 inline-block" /> 50-69%</span>
+                <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-green-500/70 inline-block" /> ≥70%</span>
+              </div>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <TooltipProvider delayDuration={0}>
             {performanceByContent.length > 0 ? (
-              <div className="space-y-3">
-                {performanceByContent.map((content) => (
-                  <div 
-                    key={content.name} 
-                    className={cn(
-                      "p-4 rounded-lg border",
-                      content.accuracy >= 70 && "bg-green-500/10 border-green-500/30",
-                      content.accuracy >= 50 && content.accuracy < 70 && "bg-yellow-500/10 border-yellow-500/30",
-                      content.accuracy < 50 && "bg-red-500/10 border-red-500/30"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium">{content.name}</p>
-                        <p className="text-sm text-muted-foreground">{content.subject}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">{content.correct}/{content.total}</span>
-                        <Badge variant={content.accuracy >= 70 ? "default" : content.accuracy >= 50 ? "secondary" : "destructive"}>
-                          {content.accuracy}%
-                        </Badge>
-                      </div>
-                    </div>
+              <>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Por Conteúdo</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {performanceByContent.map((content) => (
+                      <Tooltip key={content.name}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              "h-8 min-w-8 px-2 rounded-md flex items-center justify-center text-xs font-medium cursor-default transition-transform hover:scale-110",
+                              content.accuracy >= 70 && "bg-green-500/70 text-white",
+                              content.accuracy >= 50 && content.accuracy < 70 && "bg-yellow-500/70 text-white",
+                              content.accuracy < 50 && "bg-red-500/70 text-white"
+                            )}
+                          >
+                            {content.accuracy}%
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[200px]">
+                          <p className="font-semibold">{content.name}</p>
+                          <p className="text-xs text-muted-foreground">{content.subject}</p>
+                          <p className="text-xs">{content.correct}/{content.total} acertos</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
-            )}
-          </CardContent>
-        </Card>
+                </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Desempenho por Tópico Específico</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {performanceByTopic.length > 0 ? (
-              <div className="space-y-3">
-                {performanceByTopic.map((topic) => (
-                  <div 
-                    key={topic.id}
-                    className={cn(
-                      "p-4 rounded-lg border",
-                      topic.accuracy >= 70 && "bg-green-500/10 border-green-500/30",
-                      topic.accuracy >= 50 && topic.accuracy < 70 && "bg-yellow-500/10 border-yellow-500/30",
-                      topic.accuracy < 50 && "bg-red-500/10 border-red-500/30"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium">{topic.name}</p>
-                        <p className="text-sm text-muted-foreground">{topic.content}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">{topic.correct}/{topic.total}</span>
-                        <Badge variant={topic.accuracy >= 70 ? "default" : topic.accuracy >= 50 ? "secondary" : "destructive"}>
-                          {topic.accuracy}%
-                        </Badge>
-                      </div>
+                {performanceByTopic.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Por Tópico</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {performanceByTopic.map((topic) => (
+                        <Tooltip key={topic.id}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={cn(
+                                "h-8 min-w-8 px-2 rounded-md flex items-center justify-center text-xs font-medium cursor-default transition-transform hover:scale-110",
+                                topic.accuracy >= 70 && "bg-green-500/70 text-white",
+                                topic.accuracy >= 50 && topic.accuracy < 70 && "bg-yellow-500/70 text-white",
+                                topic.accuracy < 50 && "bg-red-500/70 text-white"
+                              )}
+                            >
+                              {topic.accuracy}%
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px]">
+                            <p className="font-semibold">{topic.name}</p>
+                            <p className="text-xs text-muted-foreground">{topic.content}</p>
+                            <p className="text-xs">{topic.correct}/{topic.total} acertos</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             ) : (
               <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
             )}
+            </TooltipProvider>
           </CardContent>
         </Card>
 
@@ -554,7 +557,7 @@ const StudentPractice = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis domain={[0, 100]} />
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Legend />
                   <Bar dataKey="accuracy" fill="hsl(var(--primary))" name="Taxa de Acerto (%)" />
                 </BarChart>
