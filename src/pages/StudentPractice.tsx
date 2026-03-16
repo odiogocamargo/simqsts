@@ -480,6 +480,7 @@ const StudentPractice = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <TooltipProvider delayDuration={0}>
             {performanceByContent.length > 0 ? (
               <>
                 <div>
@@ -541,6 +542,7 @@ const StudentPractice = () => {
             ) : (
               <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
             )}
+            </TooltipProvider>
           </CardContent>
         </Card>
 
