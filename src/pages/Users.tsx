@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy, CalendarDays, TrendingUp } from "lucide-react";
+import { Users as UsersIcon, Mail, Shield, Calendar, Trash2, Search, Crown, Clock, XCircle, CheckCircle, RefreshCw, Phone, MapPin, UserPlus, Eye, EyeOff, Key, BookOpen, Trophy, CalendarDays, TrendingUp, ShieldCheck } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useState, useMemo } from "react";
 import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, subMonths } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";

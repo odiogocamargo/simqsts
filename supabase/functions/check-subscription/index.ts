@@ -102,11 +102,12 @@ serve(async (req) => {
     logStep("Trial status calculated", { isInTrial, trialDaysRemaining });
 
     // FIRST: Check local database for subscription (updated by webhook in real-time)
+    // Check by user_id OR by email to support admin-granted access
     const { data: dbSubscription } = await supabaseClient
       .from("subscriptions")
       .select("*")
-      .eq("kiwify_customer_email", user.email)
       .eq("status", "active")
+      .or(`user_id.eq.${user.id},kiwify_customer_email.eq.${user.email}`)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
