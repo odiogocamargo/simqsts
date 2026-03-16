@@ -34,6 +34,7 @@ interface UserWithDetails {
     expires_at: string | null;
     started_at: string | null;
   } | null;
+  hasAdminGrantedAccess?: boolean;
   isInTrial?: boolean;
   trialDaysRemaining?: number;
 }
