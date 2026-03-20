@@ -243,6 +243,7 @@ const Questions = () => {
     setSelectedYear(undefined);
     setSelectedDifficulty(undefined);
     setSearchTerm("");
+    setCurrentPage(0);
   };
 
   const handleSaveQuestion = async (updatedQuestion: Question) => {
