@@ -459,7 +459,7 @@ const Questions = () => {
                       <SelectItem value="2020">2020</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+                  <Select value={selectedDifficulty} onValueChange={(value) => { setSelectedDifficulty(value); setCurrentPage(0); }}>
                     <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Dificuldade" />
                     </SelectTrigger>
