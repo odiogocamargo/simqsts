@@ -447,7 +447,7 @@ const Questions = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <Select value={selectedYear} onValueChange={(value) => { setSelectedYear(value); setCurrentPage(0); }}>
                     <SelectTrigger className="w-[130px]">
                       <SelectValue placeholder="Ano" />
                     </SelectTrigger>
