@@ -385,6 +385,7 @@ const Questions = () => {
                       setSelectedSubject(value);
                       setSelectedContent(undefined);
                       setSelectedTopic(undefined);
+                      setCurrentPage(0);
                     }}
                   >
                     <SelectTrigger className="w-[150px]">
