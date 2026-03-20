@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, X, PlusCircle, FileJson, Trash2 } from "lucide-react";
+import { Search, Eye, X, PlusCircle, FileJson, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Select,
@@ -64,6 +64,8 @@ interface Question {
   explanation?: string;
 }
 
+const PAGE_SIZE = 50;
+
 const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | undefined>();
@@ -78,6 +80,7 @@ const Questions = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -87,49 +90,61 @@ const Questions = () => {
   const { data: topics = [] } = useTopics(selectedContent);
   const { data: exams = [] } = useExams();
 
-  // Buscar questões do banco de dados
-  const { data: questions = [], refetch } = useQuery({
-    queryKey: ['questions', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
+  // Contar total de questões para paginação
+  const { data: totalCount = 0 } = useQuery({
+    queryKey: ['questions-count', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
     queryFn: async () => {
+      let query = supabase
+        .from('questions')
+        .select('id', { count: 'exact', head: true });
+
+      if (selectedSubject) query = query.eq('subject_id', selectedSubject);
+      if (selectedContent) query = query.eq('content_id', selectedContent);
+      if (selectedExam) query = query.eq('exam_id', selectedExam);
+      if (selectedYear) query = query.eq('year', parseInt(selectedYear));
+      if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
+
+      const { count, error } = await query;
+      if (error) return 0;
+      return count || 0;
+    },
+  });
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Buscar questões do banco de dados com paginação
+  const { data: questions = [], refetch, isLoading } = useQuery({
+    queryKey: ['questions', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, currentPage],
+    queryFn: async () => {
+      const from = currentPage * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       let query = supabase
         .from('questions')
         .select(`
           id,
           statement,
           year,
-          question_type,
-          option_a,
-          option_b,
-          option_c,
-          option_d,
-          option_e,
-          correct_answer,
-          explanation,
           difficulty,
           subject_id,
           content_id,
           exam_id,
+          question_type,
+          option_a, option_b, option_c, option_d, option_e,
+          correct_answer,
+          explanation,
           subjects(id, name),
           contents(id, name),
           exams(id, name)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-      if (selectedSubject) {
-        query = query.eq('subject_id', selectedSubject);
-      }
-      if (selectedContent) {
-        query = query.eq('content_id', selectedContent);
-      }
-      if (selectedExam) {
-        query = query.eq('exam_id', selectedExam);
-      }
-      if (selectedYear) {
-        query = query.eq('year', parseInt(selectedYear));
-      }
-      if (selectedDifficulty) {
-        query = query.eq('difficulty', selectedDifficulty);
-      }
+      if (selectedSubject) query = query.eq('subject_id', selectedSubject);
+      if (selectedContent) query = query.eq('content_id', selectedContent);
+      if (selectedExam) query = query.eq('exam_id', selectedExam);
+      if (selectedYear) query = query.eq('year', parseInt(selectedYear));
+      if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
 
       const { data, error } = await query;
       
@@ -138,19 +153,23 @@ const Questions = () => {
         return [];
       }
 
-      // Buscar tópicos para cada questão
+      // Buscar tópicos para as questões da página
       const questionIds = (data || []).map(q => q.id);
-      const { data: questionTopics } = await supabase
-        .from('question_topics')
-        .select('question_id, topic_id, topics(id, name)')
-        .in('question_id', questionIds);
+      let topicsMap = new Map();
+      
+      if (questionIds.length > 0) {
+        const { data: questionTopics } = await supabase
+          .from('question_topics')
+          .select('question_id, topic_id, topics(id, name)')
+          .in('question_id', questionIds);
 
-      const topicsMap = new Map(
-        (questionTopics || []).map((qt: any) => [
-          qt.question_id,
-          { id: qt.topic_id, name: qt.topics?.name }
-        ])
-      );
+        topicsMap = new Map(
+          (questionTopics || []).map((qt: any) => [
+            qt.question_id,
+            { id: qt.topic_id, name: qt.topics?.name }
+          ])
+        );
+      }
 
       return (data || []).map((q: any) => {
         const topicData = topicsMap.get(q.id);
@@ -224,6 +243,7 @@ const Questions = () => {
     setSelectedYear(undefined);
     setSelectedDifficulty(undefined);
     setSearchTerm("");
+    setCurrentPage(0);
   };
 
   const handleSaveQuestion = async (updatedQuestion: Question) => {
@@ -365,6 +385,7 @@ const Questions = () => {
                       setSelectedSubject(value);
                       setSelectedContent(undefined);
                       setSelectedTopic(undefined);
+                      setCurrentPage(0);
                     }}
                   >
                     <SelectTrigger className="w-[150px]">
@@ -383,6 +404,7 @@ const Questions = () => {
                     onValueChange={(value) => {
                       setSelectedContent(value);
                       setSelectedTopic(undefined);
+                      setCurrentPage(0);
                     }}
                     disabled={!selectedSubject}
                   >
@@ -399,7 +421,7 @@ const Questions = () => {
                   </Select>
                   <Select 
                     value={selectedTopic} 
-                    onValueChange={setSelectedTopic}
+                    onValueChange={(value) => { setSelectedTopic(value); setCurrentPage(0); }}
                     disabled={!selectedContent}
                   >
                     <SelectTrigger className="w-[150px]">
@@ -413,7 +435,7 @@ const Questions = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={selectedExam} onValueChange={setSelectedExam}>
+                  <Select value={selectedExam} onValueChange={(value) => { setSelectedExam(value); setCurrentPage(0); }}>
                     <SelectTrigger className="w-[150px]">
                       <SelectValue placeholder="Vestibular" />
                     </SelectTrigger>
@@ -425,7 +447,7 @@ const Questions = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <Select value={selectedYear} onValueChange={(value) => { setSelectedYear(value); setCurrentPage(0); }}>
                     <SelectTrigger className="w-[130px]">
                       <SelectValue placeholder="Ano" />
                     </SelectTrigger>
@@ -437,7 +459,7 @@ const Questions = () => {
                       <SelectItem value="2020">2020</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+                  <Select value={selectedDifficulty} onValueChange={(value) => { setSelectedDifficulty(value); setCurrentPage(0); }}>
                     <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Dificuldade" />
                     </SelectTrigger>
@@ -481,7 +503,16 @@ const Questions = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredQuestions.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          Carregando questões...
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredQuestions.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Nenhuma questão encontrada com os filtros selecionados.
@@ -545,6 +576,37 @@ const Questions = () => {
           </CardContent>
         </Card>
 
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Mostrando {currentPage * PAGE_SIZE + 1}–{Math.min((currentPage + 1) * PAGE_SIZE, totalCount)} de {totalCount} questões
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Anterior
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">
+                {currentPage + 1} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage >= totalPages - 1}
+              >
+                Próxima
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
         <QuestionViewModal 
           question={viewQuestion}
           open={isViewModalOpen}
