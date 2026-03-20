@@ -421,7 +421,7 @@ const Questions = () => {
                   </Select>
                   <Select 
                     value={selectedTopic} 
-                    onValueChange={setSelectedTopic}
+                    onValueChange={(value) => { setSelectedTopic(value); setCurrentPage(0); }}
                     disabled={!selectedContent}
                   >
                     <SelectTrigger className="w-[150px]">
