@@ -404,6 +404,7 @@ const Questions = () => {
                     onValueChange={(value) => {
                       setSelectedContent(value);
                       setSelectedTopic(undefined);
+                      setCurrentPage(0);
                     }}
                     disabled={!selectedSubject}
                   >
