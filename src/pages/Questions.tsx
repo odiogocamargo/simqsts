@@ -64,6 +64,8 @@ interface Question {
   explanation?: string;
 }
 
+const PAGE_SIZE = 50;
+
 const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | undefined>();
@@ -78,6 +80,7 @@ const Questions = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
