@@ -90,49 +90,61 @@ const Questions = () => {
   const { data: topics = [] } = useTopics(selectedContent);
   const { data: exams = [] } = useExams();
 
-  // Buscar questões do banco de dados
-  const { data: questions = [], refetch } = useQuery({
-    queryKey: ['questions', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
+  // Contar total de questões para paginação
+  const { data: totalCount = 0 } = useQuery({
+    queryKey: ['questions-count', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
     queryFn: async () => {
+      let query = supabase
+        .from('questions')
+        .select('id', { count: 'exact', head: true });
+
+      if (selectedSubject) query = query.eq('subject_id', selectedSubject);
+      if (selectedContent) query = query.eq('content_id', selectedContent);
+      if (selectedExam) query = query.eq('exam_id', selectedExam);
+      if (selectedYear) query = query.eq('year', parseInt(selectedYear));
+      if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
+
+      const { count, error } = await query;
+      if (error) return 0;
+      return count || 0;
+    },
+  });
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Buscar questões do banco de dados com paginação
+  const { data: questions = [], refetch, isLoading } = useQuery({
+    queryKey: ['questions', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, currentPage],
+    queryFn: async () => {
+      const from = currentPage * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       let query = supabase
         .from('questions')
         .select(`
           id,
           statement,
           year,
-          question_type,
-          option_a,
-          option_b,
-          option_c,
-          option_d,
-          option_e,
-          correct_answer,
-          explanation,
           difficulty,
           subject_id,
           content_id,
           exam_id,
+          question_type,
+          option_a, option_b, option_c, option_d, option_e,
+          correct_answer,
+          explanation,
           subjects(id, name),
           contents(id, name),
           exams(id, name)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-      if (selectedSubject) {
-        query = query.eq('subject_id', selectedSubject);
-      }
-      if (selectedContent) {
-        query = query.eq('content_id', selectedContent);
-      }
-      if (selectedExam) {
-        query = query.eq('exam_id', selectedExam);
-      }
-      if (selectedYear) {
-        query = query.eq('year', parseInt(selectedYear));
-      }
-      if (selectedDifficulty) {
-        query = query.eq('difficulty', selectedDifficulty);
-      }
+      if (selectedSubject) query = query.eq('subject_id', selectedSubject);
+      if (selectedContent) query = query.eq('content_id', selectedContent);
+      if (selectedExam) query = query.eq('exam_id', selectedExam);
+      if (selectedYear) query = query.eq('year', parseInt(selectedYear));
+      if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
 
       const { data, error } = await query;
       
@@ -141,19 +153,23 @@ const Questions = () => {
         return [];
       }
 
-      // Buscar tópicos para cada questão
+      // Buscar tópicos para as questões da página
       const questionIds = (data || []).map(q => q.id);
-      const { data: questionTopics } = await supabase
-        .from('question_topics')
-        .select('question_id, topic_id, topics(id, name)')
-        .in('question_id', questionIds);
+      let topicsMap = new Map();
+      
+      if (questionIds.length > 0) {
+        const { data: questionTopics } = await supabase
+          .from('question_topics')
+          .select('question_id, topic_id, topics(id, name)')
+          .in('question_id', questionIds);
 
-      const topicsMap = new Map(
-        (questionTopics || []).map((qt: any) => [
-          qt.question_id,
-          { id: qt.topic_id, name: qt.topics?.name }
-        ])
-      );
+        topicsMap = new Map(
+          (questionTopics || []).map((qt: any) => [
+            qt.question_id,
+            { id: qt.topic_id, name: qt.topics?.name }
+          ])
+        );
+      }
 
       return (data || []).map((q: any) => {
         const topicData = topicsMap.get(q.id);
