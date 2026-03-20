@@ -503,7 +503,16 @@ const Questions = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredQuestions.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          Carregando questões...
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredQuestions.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Nenhuma questão encontrada com os filtros selecionados.
