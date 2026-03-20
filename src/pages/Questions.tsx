@@ -435,7 +435,7 @@ const Questions = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={selectedExam} onValueChange={setSelectedExam}>
+                  <Select value={selectedExam} onValueChange={(value) => { setSelectedExam(value); setCurrentPage(0); }}>
                     <SelectTrigger className="w-[150px]">
                       <SelectValue placeholder="Vestibular" />
                     </SelectTrigger>
