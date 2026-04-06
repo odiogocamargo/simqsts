@@ -325,6 +325,14 @@ export function SchoolClassesTab({ schoolId, schoolName }: SchoolClassesTabProps
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <StudentJsonImportDialog
+          open={isJsonImportOpen}
+          onOpenChange={setIsJsonImportOpen}
+          schoolId={schoolId}
+          classId={selectedClass.id}
+          className={selectedClass.name}
+        />
       </div>
     );
   }
