@@ -12,10 +12,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Pencil, Users, ShieldCheck, FileJson } from "lucide-react";
+import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Pencil, Users, ShieldCheck, FileJson, GraduationCap } from "lucide-react";
 import { EditStudentModal } from "./EditStudentModal";
 import { SchoolCoordinatorsTab } from "./SchoolCoordinatorsTab";
 import { StudentJsonImportDialog } from "./StudentJsonImportDialog";
+import { SchoolClassesTab } from "./SchoolClassesTab";
 
 interface SchoolStudentsPanelProps {
   school: { id: string; name: string; logo_url?: string | null };
@@ -167,6 +168,7 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
         <Tabs defaultValue="students">
           <TabsList>
             <TabsTrigger value="students" className="gap-2"><Users className="h-4 w-4" /> Alunos</TabsTrigger>
+            <TabsTrigger value="classes" className="gap-2"><GraduationCap className="h-4 w-4" /> Turmas</TabsTrigger>
             <TabsTrigger value="coordinators" className="gap-2"><ShieldCheck className="h-4 w-4" /> Coordenadores</TabsTrigger>
           </TabsList>
 
@@ -235,6 +237,10 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="classes" className="mt-4">
+            <SchoolClassesTab schoolId={school.id} schoolName={school.name} />
           </TabsContent>
 
           <TabsContent value="coordinators" className="mt-4">
