@@ -41,6 +41,12 @@ const studentNavItems = [
   { title: "Simulados", url: "/student/simulations", icon: ClipboardList },
 ];
 
+// Itens de navegação para coordenador
+const coordinatorNavItems = [
+  { title: "Dashboard", url: "/coordinator", icon: LayoutDashboard },
+  { title: "Alunos", url: "/coordinator/students", icon: Users },
+];
+
 export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const { role, isLoading } = useUserRole();
