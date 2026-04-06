@@ -277,6 +277,35 @@ export type Database = {
           },
         ]
       }
+      school_coordinators: {
+        Row: {
+          created_at: string
+          id: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_coordinators_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_students: {
         Row: {
           created_at: string
@@ -729,7 +758,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "professor" | "aluno"
+      app_role: "admin" | "professor" | "aluno" | "coordenador"
       question_type: "multipla_escolha" | "discursiva" | "verdadeiro_falso"
       subscription_status:
         | "active"
@@ -864,7 +893,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "professor", "aluno"],
+      app_role: ["admin", "professor", "aluno", "coordenador"],
       question_type: ["multipla_escolha", "discursiva", "verdadeiro_falso"],
       subscription_status: [
         "active",
