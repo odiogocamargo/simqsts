@@ -42,6 +42,7 @@ export const useUserRole = () => {
     isLoading,
     isAdmin: role === "admin",
     isProfessor: role === "professor",
+    isCoordenador: role === "coordenador",
     isAluno: role === "aluno",
   };
 };
