@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Loader2, ChevronRight, ChevronLeft, UserPlus, UserMinus } from "lucide-react";
+import { Plus, Trash2, Users, Loader2, ChevronRight, ChevronLeft, UserPlus, UserMinus, FileJson } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { StudentJsonImportDialog } from "@/components/schools/StudentJsonImportDialog";
 
 interface SchoolClassesTabProps {
   schoolId: string;
@@ -44,6 +45,7 @@ export function SchoolClassesTab({ schoolId, schoolName }: SchoolClassesTabProps
   const [classShift, setClassShift] = useState("");
   const [isAddStudentsOpen, setIsAddStudentsOpen] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
 
   // Fetch classes
   const { data: classes, isLoading: loadingClasses } = useQuery({
@@ -234,9 +236,14 @@ export function SchoolClassesTab({ schoolId, schoolName }: SchoolClassesTabProps
           </div>
         </div>
 
-        <Button onClick={() => { setIsAddStudentsOpen(true); setSelectedStudentIds([]); }} className="gap-2">
-          <UserPlus className="h-4 w-4" /> Adicionar Alunos
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => { setIsAddStudentsOpen(true); setSelectedStudentIds([]); }} className="gap-2">
+            <UserPlus className="h-4 w-4" /> Adicionar Alunos
+          </Button>
+          <Button variant="outline" onClick={() => setIsJsonImportOpen(true)} className="gap-2">
+            <FileJson className="h-4 w-4" /> Importar JSON
+          </Button>
+        </div>
 
         <Card>
           <CardContent className="p-0">
@@ -318,6 +325,14 @@ export function SchoolClassesTab({ schoolId, schoolName }: SchoolClassesTabProps
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <StudentJsonImportDialog
+          open={isJsonImportOpen}
+          onOpenChange={setIsJsonImportOpen}
+          schoolId={schoolId}
+          classId={selectedClass.id}
+          className={selectedClass.name}
+        />
       </div>
     );
   }

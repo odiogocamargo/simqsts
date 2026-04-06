@@ -14,6 +14,8 @@ interface StudentJsonImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   schoolId: string;
+  classId?: string;
+  className?: string;
 }
 
 const JSON_TEMPLATE = [
@@ -21,7 +23,7 @@ const JSON_TEMPLATE = [
   { full_name: "Maria Santos", email: "maria@email.com", password: "senha456" },
 ];
 
-export function StudentJsonImportDialog({ open, onOpenChange, schoolId }: StudentJsonImportDialogProps) {
+export function StudentJsonImportDialog({ open, onOpenChange, schoolId, classId, className: classLabel }: StudentJsonImportDialogProps) {
   const queryClient = useQueryClient();
   const [jsonText, setJsonText] = useState("");
   const [importing, setImporting] = useState(false);
@@ -73,12 +75,26 @@ export function StudentJsonImportDialog({ open, onOpenChange, schoolId }: Studen
 
       if (response.error) throw new Error(response.error.message);
 
-      setImportResults(response.data?.results || []);
+      const results = response.data?.results || [];
+      setImportResults(results);
       queryClient.invalidateQueries({ queryKey: ["school-students", schoolId] });
+
+      // If classId provided, auto-enroll created students into the class
+      if (classId) {
+        const createdUserIds = results
+          .filter((r: any) => r.success && r.user_id)
+          .map((r: any) => r.user_id);
+        if (createdUserIds.length > 0) {
+          const rows = createdUserIds.map((sid: string) => ({ class_id: classId, student_id: sid }));
+          await supabase.from("school_class_students" as any).insert(rows as any);
+          queryClient.invalidateQueries({ queryKey: ["class-students", classId] });
+          queryClient.invalidateQueries({ queryKey: ["school-classes", schoolId] });
+        }
+      }
 
       const created = response.data?.created || 0;
       const failed = response.data?.failed || 0;
-      if (failed === 0) toast.success(`${created} aluno(s) importado(s)!`);
+      if (failed === 0) toast.success(`${created} aluno(s) importado(s)${classId ? " e adicionado(s) à turma" : ""}!`);
       else toast.warning(`${created} criado(s), ${failed} com erro(s)`);
     } catch (error: any) {
       if (error instanceof SyntaxError) {
@@ -96,7 +112,11 @@ export function StudentJsonImportDialog({ open, onOpenChange, schoolId }: Studen
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><FileJson className="h-5 w-5" /> Importar Alunos via JSON</DialogTitle>
-          <DialogDescription>Cole o JSON ou faça upload de um arquivo .json com os alunos</DialogDescription>
+          <DialogDescription>
+            {classId && classLabel
+              ? `Os alunos criados serão automaticamente adicionados à turma ${classLabel}`
+              : "Cole o JSON ou faça upload de um arquivo .json com os alunos"}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

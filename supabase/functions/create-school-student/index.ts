@@ -86,7 +86,7 @@ serve(async (req) => {
       );
     }
 
-    const results: { email: string; success: boolean; error?: string }[] = [];
+    const results: { email: string; success: boolean; user_id?: string; error?: string }[] = [];
 
     for (const student of students) {
       const { email, password, full_name } = student;
@@ -123,11 +123,11 @@ serve(async (req) => {
 
         if (linkError) {
           console.error(`Error linking student ${email} to school:`, linkError);
-          results.push({ email, success: true, error: "Usuário criado, mas erro ao vincular à escola" });
+          results.push({ email, success: true, user_id: newUser.user.id, error: "Usuário criado, mas erro ao vincular à escola" });
           continue;
         }
 
-        results.push({ email, success: true });
+        results.push({ email, success: true, user_id: newUser.user.id });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Erro desconhecido";
         results.push({ email, success: false, error: msg });
