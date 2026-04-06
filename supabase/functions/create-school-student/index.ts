@@ -86,7 +86,7 @@ serve(async (req) => {
       );
     }
 
-    const results: { email: string; success: boolean; error?: string }[] = [];
+    const results: { email: string; success: boolean; user_id?: string; error?: string }[] = [];
 
     for (const student of students) {
       const { email, password, full_name } = student;
