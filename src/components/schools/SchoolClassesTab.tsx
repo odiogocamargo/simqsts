@@ -45,6 +45,7 @@ export function SchoolClassesTab({ schoolId, schoolName }: SchoolClassesTabProps
   const [classShift, setClassShift] = useState("");
   const [isAddStudentsOpen, setIsAddStudentsOpen] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
 
   // Fetch classes
   const { data: classes, isLoading: loadingClasses } = useQuery({
