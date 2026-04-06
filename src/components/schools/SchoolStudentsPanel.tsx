@@ -239,6 +239,10 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
             </Card>
           </TabsContent>
 
+          <TabsContent value="classes" className="mt-4">
+            <SchoolClassesTab schoolId={school.id} schoolName={school.name} />
+          </TabsContent>
+
           <TabsContent value="coordinators" className="mt-4">
             <SchoolCoordinatorsTab schoolId={school.id} schoolName={school.name} />
           </TabsContent>
