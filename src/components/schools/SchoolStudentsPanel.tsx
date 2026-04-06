@@ -38,6 +38,7 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<{ user_id: string; full_name: string | null; cpf: string | null; whatsapp: string | null } | null>(null);
   const [studentName, setStudentName] = useState("");
   const [studentEmail, setStudentEmail] = useState("");
