@@ -14,6 +14,8 @@ interface StudentJsonImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   schoolId: string;
+  classId?: string;
+  className?: string;
 }
 
 const JSON_TEMPLATE = [
