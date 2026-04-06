@@ -175,6 +175,7 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
             <div className="flex flex-col sm:flex-row gap-3">
               <Button onClick={() => setIsAddOpen(true)} className="gap-2"><UserPlus className="h-4 w-4" /> Adicionar Aluno</Button>
               <Button variant="outline" onClick={() => setIsImportOpen(true)} className="gap-2"><Upload className="h-4 w-4" /> Importar CSV</Button>
+              <Button variant="outline" onClick={() => setIsJsonImportOpen(true)} className="gap-2"><FileJson className="h-4 w-4" /> Importar JSON</Button>
             </div>
 
             <div className="relative max-w-sm">
