@@ -75,12 +75,26 @@ export function StudentJsonImportDialog({ open, onOpenChange, schoolId, classId,
 
       if (response.error) throw new Error(response.error.message);
 
-      setImportResults(response.data?.results || []);
+      const results = response.data?.results || [];
+      setImportResults(results);
       queryClient.invalidateQueries({ queryKey: ["school-students", schoolId] });
+
+      // If classId provided, auto-enroll created students into the class
+      if (classId) {
+        const createdUserIds = results
+          .filter((r: any) => r.success && r.user_id)
+          .map((r: any) => r.user_id);
+        if (createdUserIds.length > 0) {
+          const rows = createdUserIds.map((sid: string) => ({ class_id: classId, student_id: sid }));
+          await supabase.from("school_class_students" as any).insert(rows as any);
+          queryClient.invalidateQueries({ queryKey: ["class-students", classId] });
+          queryClient.invalidateQueries({ queryKey: ["school-classes", schoolId] });
+        }
+      }
 
       const created = response.data?.created || 0;
       const failed = response.data?.failed || 0;
-      if (failed === 0) toast.success(`${created} aluno(s) importado(s)!`);
+      if (failed === 0) toast.success(`${created} aluno(s) importado(s)${classId ? " e adicionado(s) à turma" : ""}!`);
       else toast.warning(`${created} criado(s), ${failed} com erro(s)`);
     } catch (error: any) {
       if (error instanceof SyntaxError) {
