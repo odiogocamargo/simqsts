@@ -269,6 +269,14 @@ export default function CoordinatorStudents() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {schoolId && (
+        <StudentJsonImportDialog
+          open={isJsonImportOpen}
+          onOpenChange={setIsJsonImportOpen}
+          schoolId={schoolId}
+        />
+      )}
     </Layout>
   );
 }
