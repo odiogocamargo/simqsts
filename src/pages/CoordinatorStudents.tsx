@@ -12,7 +12,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { UserPlus, Upload, Trash2, Search, Loader2 } from "lucide-react";
+import { UserPlus, Upload, Trash2, Search, Loader2, FileJson } from "lucide-react";
+import { StudentJsonImportDialog } from "@/components/schools/StudentJsonImportDialog";
 
 export default function CoordinatorStudents() {
   const { user } = useAuth();
