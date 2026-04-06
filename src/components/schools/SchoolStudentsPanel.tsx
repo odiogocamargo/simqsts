@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Pencil, Users, ShieldCheck } from "lucide-react";
+import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Pencil, Users, ShieldCheck, FileJson } from "lucide-react";
 import { EditStudentModal } from "./EditStudentModal";
 import { SchoolCoordinatorsTab } from "./SchoolCoordinatorsTab";
 import { StudentJsonImportDialog } from "./StudentJsonImportDialog";
