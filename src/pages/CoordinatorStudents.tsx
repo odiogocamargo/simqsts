@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,6 +20,7 @@ export default function CoordinatorStudents() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState<string>("all");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [studentName, setStudentName] = useState("");
@@ -29,7 +31,6 @@ export default function CoordinatorStudents() {
   const [importResults, setImportResults] = useState<any[] | null>(null);
   const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
 
-  // Get coordinator's school
   const { data: coordLink } = useQuery({
     queryKey: ["coordinator-school", user?.id],
     queryFn: async () => {
@@ -46,6 +47,36 @@ export default function CoordinatorStudents() {
   });
 
   const schoolId = coordLink?.school_id;
+
+  // Fetch classes for filter
+  const { data: classes } = useQuery({
+    queryKey: ["school-classes", schoolId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("school_classes")
+        .select("id, name, year, shift")
+        .eq("school_id", schoolId!)
+        .eq("active", true)
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; year: number; shift: string | null }[];
+    },
+    enabled: !!schoolId,
+  });
+
+  // Fetch class-student links when a class is selected
+  const { data: classStudentIds } = useQuery({
+    queryKey: ["class-student-ids", selectedClassId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("school_class_students")
+        .select("student_id")
+        .eq("class_id", selectedClassId);
+      if (error) throw error;
+      return new Set((data || []).map((d: any) => d.student_id));
+    },
+    enabled: selectedClassId !== "all" && selectedClassId !== "no_class",
+  });
 
   const { data: students, isLoading } = useQuery({
     queryKey: ["school-students", schoolId],
@@ -69,6 +100,22 @@ export default function CoordinatorStudents() {
       return data.map((d: any) => ({ ...d, profile: profileMap.get(d.user_id) || null }));
     },
     enabled: !!schoolId,
+  });
+
+  // Fetch ALL class-student links for "no_class" filter
+  const { data: allClassStudentIds } = useQuery({
+    queryKey: ["all-class-student-ids", schoolId],
+    queryFn: async () => {
+      if (!classes || classes.length === 0) return new Set<string>();
+      const classIds = classes.map(c => c.id);
+      const { data, error } = await supabase
+        .from("school_class_students")
+        .select("student_id")
+        .in("class_id", classIds);
+      if (error) throw error;
+      return new Set((data || []).map((d: any) => d.student_id));
+    },
+    enabled: selectedClassId === "no_class" && !!classes,
   });
 
   const createStudentMutation = useMutation({
@@ -131,10 +178,22 @@ export default function CoordinatorStudents() {
     onError: (error) => toast.error("Erro: " + error.message),
   });
 
-  const filtered = students?.filter((s: any) =>
-    s.profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.profile?.cpf?.includes(searchTerm)
-  ) || [];
+  // Apply filters
+  const filtered = (students || []).filter((s: any) => {
+    const matchesSearch =
+      !searchTerm ||
+      s.profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.profile?.cpf?.includes(searchTerm);
+
+    let matchesClass = true;
+    if (selectedClassId === "no_class") {
+      matchesClass = !allClassStudentIds?.has(s.user_id);
+    } else if (selectedClassId !== "all") {
+      matchesClass = classStudentIds?.has(s.user_id) ?? false;
+    }
+
+    return matchesSearch && matchesClass;
+  });
 
   if (!schoolId) {
     return (
@@ -166,9 +225,25 @@ export default function CoordinatorStudents() {
           </Button>
         </div>
 
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar aluno..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative max-w-sm flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar aluno..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          </div>
+          <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+            <SelectTrigger className="w-full sm:w-[220px]">
+              <SelectValue placeholder="Filtrar por turma" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as turmas</SelectItem>
+              <SelectItem value="no_class">Sem turma</SelectItem>
+              {(classes || []).map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name} ({c.year}{c.shift ? ` - ${c.shift}` : ""})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Card>
@@ -176,7 +251,7 @@ export default function CoordinatorStudents() {
             {isLoading ? (
               <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">{searchTerm ? "Nenhum aluno encontrado" : "Nenhum aluno vinculado"}</div>
+              <div className="text-center py-12 text-muted-foreground">{searchTerm || selectedClassId !== "all" ? "Nenhum aluno encontrado" : "Nenhum aluno vinculado"}</div>
             ) : (
               <Table>
                 <TableHeader>
