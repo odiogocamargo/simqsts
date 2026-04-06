@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Pencil, Users, ShieldCheck } from "lucide-react";
 import { EditStudentModal } from "./EditStudentModal";
 import { SchoolCoordinatorsTab } from "./SchoolCoordinatorsTab";
+import { StudentJsonImportDialog } from "./StudentJsonImportDialog";
 
 interface SchoolStudentsPanelProps {
   school: { id: string; name: string; logo_url?: string | null };
