@@ -37,7 +37,7 @@ export const RoleBasedRoute = ({ children, allowedRoles }: RoleBasedRouteProps) 
     return <>{children}</>;
   }
 
-  const redirectTo = role === "aluno" ? "/student" : "/dashboard";
+  const redirectTo = role === "aluno" ? "/student" : role === "coordenador" ? "/coordinator" : "/dashboard";
   return <Navigate to={redirectTo} replace />;
 };
 

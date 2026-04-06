@@ -55,6 +55,7 @@ export function AppSidebar() {
   const getNavItems = () => {
     if (isLoading) return [];
     if (role === "aluno") return studentNavItems;
+    if (role === "coordenador") return coordinatorNavItems;
     if (role === "professor") return professorNavItems;
     if (role === "admin") return adminNavItems;
     return [];
