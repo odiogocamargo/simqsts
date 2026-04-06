@@ -45,6 +45,7 @@ const studentNavItems = [
 const coordinatorNavItems = [
   { title: "Dashboard", url: "/coordinator", icon: LayoutDashboard },
   { title: "Alunos", url: "/coordinator/students", icon: Users },
+  { title: "Turmas", url: "/coordinator/classes", icon: GraduationCap },
 ];
 
 export function AppSidebar() {
