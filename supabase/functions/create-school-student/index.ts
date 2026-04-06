@@ -102,7 +102,9 @@ serve(async (req) => {
       }
 
       try {
-        // Create user
+        let userId: string;
+
+        // Try to create user
         const { data: newUser, error: createError } = await serviceClient.auth.admin.createUser({
           email,
           password,
@@ -111,23 +113,48 @@ serve(async (req) => {
         });
 
         if (createError) {
-          results.push({ email, success: false, error: createError.message });
+          // If user already exists, find them and link to school
+          if (createError.message.includes("already been registered")) {
+            const { data: { users }, error: listError } = await serviceClient.auth.admin.listUsers();
+            const existingUser = users?.find((u: any) => u.email === email);
+            if (!existingUser) {
+              results.push({ email, success: false, error: "Usuário existe mas não foi encontrado" });
+              continue;
+            }
+            userId = existingUser.id;
+          } else {
+            results.push({ email, success: false, error: createError.message });
+            continue;
+          }
+        } else {
+          userId = newUser.user.id;
+        }
+
+        // Check if already linked to this school
+        const { data: existingLink } = await serviceClient
+          .from("school_students")
+          .select("id")
+          .eq("school_id", school_id)
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (existingLink) {
+          results.push({ email, success: true, user_id: userId });
           continue;
         }
 
-        // The trigger already creates profile + aluno role
         // Link student to school
         const { error: linkError } = await serviceClient
           .from("school_students")
-          .insert({ school_id, user_id: newUser.user.id });
+          .insert({ school_id, user_id: userId });
 
         if (linkError) {
           console.error(`Error linking student ${email} to school:`, linkError);
-          results.push({ email, success: true, user_id: newUser.user.id, error: "Usuário criado, mas erro ao vincular à escola" });
+          results.push({ email, success: true, user_id: userId, error: "Erro ao vincular à escola" });
           continue;
         }
 
-        results.push({ email, success: true, user_id: newUser.user.id });
+        results.push({ email, success: true, user_id: userId });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Erro desconhecido";
         results.push({ email, success: false, error: msg });
