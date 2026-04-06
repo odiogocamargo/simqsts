@@ -112,7 +112,11 @@ export function StudentJsonImportDialog({ open, onOpenChange, schoolId, classId,
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><FileJson className="h-5 w-5" /> Importar Alunos via JSON</DialogTitle>
-          <DialogDescription>Cole o JSON ou faça upload de um arquivo .json com os alunos</DialogDescription>
+          <DialogDescription>
+            {classId && classLabel
+              ? `Os alunos criados serão automaticamente adicionados à turma ${classLabel}`
+              : "Cole o JSON ou faça upload de um arquivo .json com os alunos"}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
