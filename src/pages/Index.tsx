@@ -15,6 +15,8 @@ const Index = () => {
         navigate('/landing');
       } else if (role === 'aluno') {
         navigate('/student');
+      } else if (role === 'coordenador') {
+        navigate('/coordinator');
       } else if (role === 'admin' || role === 'professor') {
         navigate('/dashboard');
       }

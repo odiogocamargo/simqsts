@@ -51,7 +51,7 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    if (userRole?.role === "admin" || userRole?.role === "professor") {
+    if (userRole?.role === "admin" || userRole?.role === "professor" || userRole?.role === "coordenador") {
       logStep("User is admin/professor - granting full access", { role: userRole.role });
       return new Response(JSON.stringify({
         subscribed: true,

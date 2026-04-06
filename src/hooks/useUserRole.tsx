@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type UserRole = "admin" | "professor" | "aluno" | null;
+export type UserRole = "admin" | "professor" | "coordenador" | "aluno" | null;
 
 export const useUserRole = () => {
   const { user } = useAuth();
@@ -29,6 +29,7 @@ export const useUserRole = () => {
       // Hierarquia de permissões (mais forte primeiro)
       if (roles.includes("admin")) return "admin";
       if (roles.includes("professor")) return "professor";
+      if (roles.includes("coordenador")) return "coordenador";
       if (roles.includes("aluno")) return "aluno";
 
       return null;
@@ -41,6 +42,7 @@ export const useUserRole = () => {
     isLoading,
     isAdmin: role === "admin",
     isProfessor: role === "professor",
+    isCoordenador: role === "coordenador",
     isAluno: role === "aluno",
   };
 };
