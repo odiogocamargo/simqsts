@@ -302,6 +302,12 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
         student={editingStudent}
         schoolId={school.id}
       />
+
+      <StudentJsonImportDialog
+        open={isJsonImportOpen}
+        onOpenChange={setIsJsonImportOpen}
+        schoolId={school.id}
+      />
     </Layout>
   );
 }
