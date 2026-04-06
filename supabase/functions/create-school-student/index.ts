@@ -42,9 +42,21 @@ serve(async (req) => {
       _role: "admin",
     });
 
+    // Also check if user is a coordinator
+    let isCoordinator = false;
     if (!isAdmin) {
+      const { data: coordLink } = await anonClient
+        .from("school_coordinators")
+        .select("school_id")
+        .eq("user_id", requestingUser.id)
+        .limit(1)
+        .maybeSingle();
+      isCoordinator = !!coordLink;
+    }
+
+    if (!isAdmin && !isCoordinator) {
       return new Response(
-        JSON.stringify({ error: "Forbidden - admin role required" }),
+        JSON.stringify({ error: "Forbidden - admin or coordinator role required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
