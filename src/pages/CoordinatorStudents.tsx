@@ -12,7 +12,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { UserPlus, Upload, Trash2, Search, Loader2 } from "lucide-react";
+import { UserPlus, Upload, Trash2, Search, Loader2, FileJson } from "lucide-react";
+import { StudentJsonImportDialog } from "@/components/schools/StudentJsonImportDialog";
 
 export default function CoordinatorStudents() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export default function CoordinatorStudents() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<any[] | null>(null);
+  const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
 
   // Get coordinator's school
   const { data: coordLink } = useQuery({
@@ -159,6 +161,9 @@ export default function CoordinatorStudents() {
           <Button variant="outline" onClick={() => setIsImportOpen(true)} className="gap-2">
             <Upload className="h-4 w-4" /> Importar CSV
           </Button>
+          <Button variant="outline" onClick={() => setIsJsonImportOpen(true)} className="gap-2">
+            <FileJson className="h-4 w-4" /> Importar JSON
+          </Button>
         </div>
 
         <div className="relative max-w-sm">
@@ -264,6 +269,14 @@ export default function CoordinatorStudents() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {schoolId && (
+        <StudentJsonImportDialog
+          open={isJsonImportOpen}
+          onOpenChange={setIsJsonImportOpen}
+          schoolId={schoolId}
+        />
+      )}
     </Layout>
   );
 }

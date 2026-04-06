@@ -12,9 +12,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Pencil, Users, ShieldCheck } from "lucide-react";
+import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Pencil, Users, ShieldCheck, FileJson } from "lucide-react";
 import { EditStudentModal } from "./EditStudentModal";
 import { SchoolCoordinatorsTab } from "./SchoolCoordinatorsTab";
+import { StudentJsonImportDialog } from "./StudentJsonImportDialog";
 
 interface SchoolStudentsPanelProps {
   school: { id: string; name: string; logo_url?: string | null };
@@ -37,6 +38,7 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<{ user_id: string; full_name: string | null; cpf: string | null; whatsapp: string | null } | null>(null);
   const [studentName, setStudentName] = useState("");
   const [studentEmail, setStudentEmail] = useState("");
@@ -173,6 +175,7 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
             <div className="flex flex-col sm:flex-row gap-3">
               <Button onClick={() => setIsAddOpen(true)} className="gap-2"><UserPlus className="h-4 w-4" /> Adicionar Aluno</Button>
               <Button variant="outline" onClick={() => setIsImportOpen(true)} className="gap-2"><Upload className="h-4 w-4" /> Importar CSV</Button>
+              <Button variant="outline" onClick={() => setIsJsonImportOpen(true)} className="gap-2"><FileJson className="h-4 w-4" /> Importar JSON</Button>
             </div>
 
             <div className="relative max-w-sm">
@@ -297,6 +300,12 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
         open={!!editingStudent}
         onOpenChange={(open) => { if (!open) setEditingStudent(null); }}
         student={editingStudent}
+        schoolId={school.id}
+      />
+
+      <StudentJsonImportDialog
+        open={isJsonImportOpen}
+        onOpenChange={setIsJsonImportOpen}
         schoolId={school.id}
       />
     </Layout>
