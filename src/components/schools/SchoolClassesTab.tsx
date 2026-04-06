@@ -236,9 +236,14 @@ export function SchoolClassesTab({ schoolId, schoolName }: SchoolClassesTabProps
           </div>
         </div>
 
-        <Button onClick={() => { setIsAddStudentsOpen(true); setSelectedStudentIds([]); }} className="gap-2">
-          <UserPlus className="h-4 w-4" /> Adicionar Alunos
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => { setIsAddStudentsOpen(true); setSelectedStudentIds([]); }} className="gap-2">
+            <UserPlus className="h-4 w-4" /> Adicionar Alunos
+          </Button>
+          <Button variant="outline" onClick={() => setIsJsonImportOpen(true)} className="gap-2">
+            <FileJson className="h-4 w-4" /> Importar JSON
+          </Button>
+        </div>
 
         <Card>
           <CardContent className="p-0">
