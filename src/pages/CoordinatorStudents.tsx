@@ -27,6 +27,7 @@ export default function CoordinatorStudents() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<any[] | null>(null);
+  const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
 
   // Get coordinator's school
   const { data: coordLink } = useQuery({
