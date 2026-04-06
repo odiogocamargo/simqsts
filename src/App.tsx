@@ -25,6 +25,7 @@ import Schools from "./pages/Schools";
 import CoordinatorDashboard from "./pages/CoordinatorDashboard";
 import CoordinatorStudents from "./pages/CoordinatorStudents";
 import CoordinatorClasses from "./pages/CoordinatorClasses";
+import CoordinatorStudentDetail from "./pages/CoordinatorStudentDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
