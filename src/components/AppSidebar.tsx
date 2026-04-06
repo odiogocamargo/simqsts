@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, CreditCard, Crown, Loader2, Receipt, ClipboardList, School, GraduationCap } from "lucide-react";
+import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, CreditCard, Crown, Loader2, Receipt, ClipboardList, School, GraduationCap, FileBarChart } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,6 +46,7 @@ const coordinatorNavItems = [
   { title: "Dashboard", url: "/coordinator", icon: LayoutDashboard },
   { title: "Alunos", url: "/coordinator/students", icon: Users },
   { title: "Turmas", url: "/coordinator/classes", icon: GraduationCap },
+  { title: "Relatórios", url: "/coordinator/reports", icon: FileBarChart },
 ];
 
 export function AppSidebar() {

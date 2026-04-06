@@ -26,6 +26,7 @@ import CoordinatorDashboard from "./pages/CoordinatorDashboard";
 import CoordinatorStudents from "./pages/CoordinatorStudents";
 import CoordinatorClasses from "./pages/CoordinatorClasses";
 import CoordinatorStudentDetail from "./pages/CoordinatorStudentDetail";
+import CoordinatorReports from "./pages/CoordinatorReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/coordinator/students" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["coordenador"]}><CoordinatorStudents /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/coordinator/classes" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["coordenador"]}><CoordinatorClasses /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/coordinator/student/:studentId" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["coordenador"]}><CoordinatorStudentDetail /></RoleBasedRoute></ProtectedRoute>} />
+            <Route path="/coordinator/reports" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["coordenador"]}><CoordinatorReports /></RoleBasedRoute></ProtectedRoute>} />
             {/* Rotas de Aluno */}
             <Route path="/student" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentPractice /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/student/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentQuestions /></RoleBasedRoute></ProtectedRoute>} />
