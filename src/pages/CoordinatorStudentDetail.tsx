@@ -239,7 +239,7 @@ export default function CoordinatorStudentDetail() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={dailyData}>
+              <ComposedChart data={dailyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
@@ -248,7 +248,7 @@ export default function CoordinatorStudentDetail() {
                 <Legend />
                 <Bar yAxisId="left" dataKey="questoes" name="Questões" fill="hsl(var(--primary))" />
                 <Line yAxisId="right" type="monotone" dataKey="aproveitamento" name="Aproveitamento %" stroke="hsl(142, 76%, 36%)" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
