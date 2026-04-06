@@ -23,7 +23,7 @@ const JSON_TEMPLATE = [
   { full_name: "Maria Santos", email: "maria@email.com", password: "senha456" },
 ];
 
-export function StudentJsonImportDialog({ open, onOpenChange, schoolId }: StudentJsonImportDialogProps) {
+export function StudentJsonImportDialog({ open, onOpenChange, schoolId, classId, className: classLabel }: StudentJsonImportDialogProps) {
   const queryClient = useQueryClient();
   const [jsonText, setJsonText] = useState("");
   const [importing, setImporting] = useState(false);
