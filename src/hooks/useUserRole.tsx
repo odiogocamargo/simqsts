@@ -29,6 +29,7 @@ export const useUserRole = () => {
       // Hierarquia de permissões (mais forte primeiro)
       if (roles.includes("admin")) return "admin";
       if (roles.includes("professor")) return "professor";
+      if (roles.includes("coordenador")) return "coordenador";
       if (roles.includes("aluno")) return "aluno";
 
       return null;
