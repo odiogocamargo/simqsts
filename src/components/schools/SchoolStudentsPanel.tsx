@@ -168,6 +168,7 @@ export function SchoolStudentsPanel({ school, onBack }: SchoolStudentsPanelProps
         <Tabs defaultValue="students">
           <TabsList>
             <TabsTrigger value="students" className="gap-2"><Users className="h-4 w-4" /> Alunos</TabsTrigger>
+            <TabsTrigger value="classes" className="gap-2"><GraduationCap className="h-4 w-4" /> Turmas</TabsTrigger>
             <TabsTrigger value="coordinators" className="gap-2"><ShieldCheck className="h-4 w-4" /> Coordenadores</TabsTrigger>
           </TabsList>
 
