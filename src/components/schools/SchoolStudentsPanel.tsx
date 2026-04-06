@@ -16,6 +16,7 @@ import { ArrowLeft, UserPlus, Upload, Trash2, Search, Loader2, Building2, Pencil
 import { EditStudentModal } from "./EditStudentModal";
 import { SchoolCoordinatorsTab } from "./SchoolCoordinatorsTab";
 import { StudentJsonImportDialog } from "./StudentJsonImportDialog";
+import { SchoolClassesTab } from "./SchoolClassesTab";
 
 interface SchoolStudentsPanelProps {
   school: { id: string; name: string; logo_url?: string | null };
