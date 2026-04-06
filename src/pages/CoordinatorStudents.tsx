@@ -161,6 +161,9 @@ export default function CoordinatorStudents() {
           <Button variant="outline" onClick={() => setIsImportOpen(true)} className="gap-2">
             <Upload className="h-4 w-4" /> Importar CSV
           </Button>
+          <Button variant="outline" onClick={() => setIsJsonImportOpen(true)} className="gap-2">
+            <FileJson className="h-4 w-4" /> Importar JSON
+          </Button>
         </div>
 
         <div className="relative max-w-sm">
