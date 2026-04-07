@@ -112,6 +112,9 @@ export default function CoordinatorStudentDetail() {
     enabled: !!studentId && !!schoolId && !!studentLink,
   });
 
+  const answersForHeatmap = (answers || []).map(a => ({ question_id: a.question_id, is_correct: a.is_correct }));
+  const { data: heatmapData } = useContentTopicHeatmap(answersForHeatmap);
+
   const isLoading = profileLoading || answersLoading;
 
   if (isLoading || !studentLink) {
