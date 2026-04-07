@@ -16,6 +16,8 @@ import { StudentRanking } from "@/components/coordinator/StudentRanking";
 import { SubjectPerformanceChart } from "@/components/coordinator/SubjectPerformanceChart";
 import { StudentPerformanceTable } from "@/components/coordinator/StudentPerformanceTable";
 import { ClassFilter } from "@/components/coordinator/ClassFilter";
+import { PerformanceHeatmap } from "@/components/coordinator/PerformanceHeatmap";
+import { useContentTopicHeatmap } from "@/hooks/useContentTopicPerformance";
 
 export default function CoordinatorDashboard() {
   const navigate = useNavigate();
@@ -87,6 +89,14 @@ export default function CoordinatorDashboard() {
           answers={filteredAnswers}
           onStudentClick={handleStudentClick}
         />
+
+        {heatmapData && (
+          <PerformanceHeatmap
+            contentData={heatmapData.contentData}
+            topicData={heatmapData.topicData}
+            title="Mapa de Calor — Desempenho por Conteúdo/Tópico"
+          />
+        )}
 
         <SubjectPerformanceChart
           performance={filteredPerformance}
