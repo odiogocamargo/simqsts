@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Layout } from "@/components/Layout";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,21 @@ import { ReportClassPerformance } from "@/components/coordinator/reports/ReportC
 import { ReportSubjectPerformance } from "@/components/coordinator/reports/ReportSubjectPerformance";
 import { ReportAtRiskStudents } from "@/components/coordinator/reports/ReportAtRiskStudents";
 import { ReportTemporalEvolution } from "@/components/coordinator/reports/ReportTemporalEvolution";
+import { ExportPdfButton } from "@/components/coordinator/reports/ExportPdfButton";
+
+const TAB_TITLES: Record<string, string> = {
+  classes: "Relatório - Desempenho por Turma",
+  subjects: "Relatório - Desempenho por Matéria",
+  risk: "Relatório - Alunos em Risco",
+  evolution: "Relatório - Evolução Temporal",
+};
+
+const TAB_FILES: Record<string, string> = {
+  classes: "relatorio-turmas",
+  subjects: "relatorio-materias",
+  risk: "relatorio-alunos-risco",
+  evolution: "relatorio-evolucao",
+};
 
 export default function CoordinatorReports() {
   const { schoolId, schoolName, isLoading: schoolLoading } = useCoordinatorSchool();
@@ -24,9 +39,22 @@ export default function CoordinatorReports() {
   const { data: classes } = useCoordinatorClasses(schoolId);
 
   const [selectedClassId, setSelectedClassId] = useState("all");
+  const [activeTab, setActiveTab] = useState("classes");
   const { data: classStudentSet } = useClassStudents(
     selectedClassId !== "all" ? selectedClassId : undefined
   );
+
+  const classesRef = useRef<HTMLDivElement>(null);
+  const subjectsRef = useRef<HTMLDivElement>(null);
+  const riskRef = useRef<HTMLDivElement>(null);
+  const evolutionRef = useRef<HTMLDivElement>(null);
+
+  const tabRefs: Record<string, React.RefObject<HTMLDivElement>> = {
+    classes: classesRef,
+    subjects: subjectsRef,
+    risk: riskRef,
+    evolution: evolutionRef,
+  };
 
   const isLoading = schoolLoading || studentsLoading || answersLoading || perfLoading;
 
@@ -56,16 +84,24 @@ export default function CoordinatorReports() {
             <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
             <p className="text-muted-foreground">Inteligência pedagógica — {schoolName}</p>
           </div>
-          {classes && classes.length > 0 && (
-            <ClassFilter
-              classes={classes}
-              selectedClassId={selectedClassId}
-              onClassChange={setSelectedClassId}
+          <div className="flex items-center gap-2">
+            <ExportPdfButton
+              contentRef={tabRefs[activeTab]}
+              fileName={TAB_FILES[activeTab]}
+              title={TAB_TITLES[activeTab]}
+              schoolName={schoolName}
             />
-          )}
+            {classes && classes.length > 0 && (
+              <ClassFilter
+                classes={classes}
+                selectedClassId={selectedClassId}
+                onClassChange={setSelectedClassId}
+              />
+            )}
+          </div>
         </div>
 
-        <Tabs defaultValue="classes" className="w-full">
+        <Tabs defaultValue="classes" className="w-full" onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="classes">Por Turma</TabsTrigger>
             <TabsTrigger value="subjects">Por Matéria</TabsTrigger>
@@ -74,36 +110,44 @@ export default function CoordinatorReports() {
           </TabsList>
 
           <TabsContent value="classes">
-            <ReportClassPerformance
-              students={students || []}
-              answers={answers || []}
-              classes={classes || []}
-              performance={perfData?.performance || []}
-              subjects={perfData?.subjects || []}
-            />
+            <div ref={classesRef}>
+              <ReportClassPerformance
+                students={students || []}
+                answers={answers || []}
+                classes={classes || []}
+                performance={perfData?.performance || []}
+                subjects={perfData?.subjects || []}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="subjects">
-            <ReportSubjectPerformance
-              students={filteredStudents}
-              answers={filteredAnswers}
-              performance={filteredPerformance}
-              subjects={perfData?.subjects || []}
-            />
+            <div ref={subjectsRef}>
+              <ReportSubjectPerformance
+                students={filteredStudents}
+                answers={filteredAnswers}
+                performance={filteredPerformance}
+                subjects={perfData?.subjects || []}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="risk">
-            <ReportAtRiskStudents
-              students={filteredStudents}
-              answers={filteredAnswers}
-            />
+            <div ref={riskRef}>
+              <ReportAtRiskStudents
+                students={filteredStudents}
+                answers={filteredAnswers}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="evolution">
-            <ReportTemporalEvolution
-              students={filteredStudents}
-              answers={filteredAnswers}
-            />
+            <div ref={evolutionRef}>
+              <ReportTemporalEvolution
+                students={filteredStudents}
+                answers={filteredAnswers}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
