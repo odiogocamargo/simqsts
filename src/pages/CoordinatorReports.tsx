@@ -16,6 +16,7 @@ import { ReportSubjectPerformance } from "@/components/coordinator/reports/Repor
 import { ReportAtRiskStudents } from "@/components/coordinator/reports/ReportAtRiskStudents";
 import { ReportTemporalEvolution } from "@/components/coordinator/reports/ReportTemporalEvolution";
 import { ExportPdfButton } from "@/components/coordinator/reports/ExportPdfButton";
+import { PeriodFilter, filterByPeriod, type PeriodOption, type PeriodRange } from "@/components/coordinator/PeriodFilter";
 
 const TAB_TITLES: Record<string, string> = {
   classes: "Relatório - Desempenho por Turma",
@@ -40,6 +41,9 @@ export default function CoordinatorReports() {
 
   const [selectedClassId, setSelectedClassId] = useState("all");
   const [activeTab, setActiveTab] = useState("classes");
+  const [period, setPeriod] = useState<PeriodOption>("30d");
+  const [customRange, setCustomRange] = useState<PeriodRange>({ from: undefined, to: undefined });
+
   const { data: classStudentSet } = useClassStudents(
     selectedClassId !== "all" ? selectedClassId : undefined
   );
@@ -73,7 +77,10 @@ export default function CoordinatorReports() {
     : (students || []).filter(s => classStudentSet?.has(s.id));
 
   const filteredStudentIds = new Set(filteredStudents.map(s => s.id));
-  const filteredAnswers = (answers || []).filter(a => filteredStudentIds.has(a.user_id));
+  const classFilteredAnswers = (answers || []).filter(a => filteredStudentIds.has(a.user_id));
+  
+  // Filter by period
+  const filteredAnswers = filterByPeriod(classFilteredAnswers, a => a.answered_at, period, customRange);
   const filteredPerformance = (perfData?.performance || []).filter(p => filteredStudentIds.has(p.user_id));
 
   return (
@@ -84,12 +91,18 @@ export default function CoordinatorReports() {
             <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
             <p className="text-muted-foreground">Inteligência pedagógica — {schoolName}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ExportPdfButton
               contentRef={tabRefs[activeTab]}
               fileName={TAB_FILES[activeTab]}
               title={TAB_TITLES[activeTab]}
               schoolName={schoolName}
+            />
+            <PeriodFilter
+              period={period}
+              customRange={customRange}
+              onPeriodChange={setPeriod}
+              onCustomRangeChange={setCustomRange}
             />
             {classes && classes.length > 0 && (
               <ClassFilter
@@ -113,9 +126,9 @@ export default function CoordinatorReports() {
             <div ref={classesRef}>
               <ReportClassPerformance
                 students={students || []}
-                answers={answers || []}
+                answers={filteredAnswers}
                 classes={classes || []}
-                performance={perfData?.performance || []}
+                performance={filteredPerformance}
                 subjects={perfData?.subjects || []}
               />
             </div>

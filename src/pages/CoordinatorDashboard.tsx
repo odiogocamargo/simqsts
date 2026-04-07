@@ -18,6 +18,7 @@ import { StudentPerformanceTable } from "@/components/coordinator/StudentPerform
 import { ClassFilter } from "@/components/coordinator/ClassFilter";
 import { PerformanceHeatmap } from "@/components/coordinator/PerformanceHeatmap";
 import { useContentTopicHeatmap } from "@/hooks/useContentTopicPerformance";
+import { PeriodFilter, filterByPeriod, type PeriodOption, type PeriodRange } from "@/components/coordinator/PeriodFilter";
 
 export default function CoordinatorDashboard() {
   const navigate = useNavigate();
@@ -28,19 +29,25 @@ export default function CoordinatorDashboard() {
   const { data: classes } = useCoordinatorClasses(schoolId);
 
   const [selectedClassId, setSelectedClassId] = useState("all");
+  const [period, setPeriod] = useState<PeriodOption>("30d");
+  const [customRange, setCustomRange] = useState<PeriodRange>({ from: undefined, to: undefined });
+
   const { data: classStudentSet } = useClassStudents(
     selectedClassId !== "all" ? selectedClassId : undefined
   );
 
   const isLoading = schoolLoading || studentsLoading || answersLoading || perfLoading;
 
-  // Filter by class (computed before hooks to keep hook order stable)
+  // Filter by class
   const filteredStudents = selectedClassId === "all"
     ? (students || [])
     : (students || []).filter(s => classStudentSet?.has(s.id));
 
   const filteredStudentIds = new Set(filteredStudents.map(s => s.id));
-  const filteredAnswers = (answers || []).filter(a => filteredStudentIds.has(a.user_id));
+  const classFilteredAnswers = (answers || []).filter(a => filteredStudentIds.has(a.user_id));
+  
+  // Filter by period
+  const filteredAnswers = filterByPeriod(classFilteredAnswers, a => a.answered_at, period, customRange);
   const filteredPerformance = (perfData?.performance || []).filter(p => filteredStudentIds.has(p.user_id));
 
   const { data: heatmapData } = useContentTopicHeatmap(filteredAnswers);
@@ -69,13 +76,21 @@ export default function CoordinatorDashboard() {
             <h1 className="text-2xl font-bold text-foreground">{schoolName}</h1>
             <p className="text-muted-foreground">Painel do Coordenador</p>
           </div>
-          {classes && classes.length > 0 && (
-            <ClassFilter
-              classes={classes}
-              selectedClassId={selectedClassId}
-              onClassChange={setSelectedClassId}
+          <div className="flex flex-wrap items-center gap-2">
+            <PeriodFilter
+              period={period}
+              customRange={customRange}
+              onPeriodChange={setPeriod}
+              onCustomRangeChange={setCustomRange}
             />
-          )}
+            {classes && classes.length > 0 && (
+              <ClassFilter
+                classes={classes}
+                selectedClassId={selectedClassId}
+                onClassChange={setSelectedClassId}
+              />
+            )}
+          </div>
         </div>
 
         <DashboardMetrics
