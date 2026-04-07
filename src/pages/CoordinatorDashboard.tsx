@@ -34,17 +34,7 @@ export default function CoordinatorDashboard() {
 
   const isLoading = schoolLoading || studentsLoading || answersLoading || perfLoading;
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </Layout>
-    );
-  }
-
-  // Filter by class
+  // Filter by class (computed before hooks to keep hook order stable)
   const filteredStudents = selectedClassId === "all"
     ? (students || [])
     : (students || []).filter(s => classStudentSet?.has(s.id));
@@ -54,6 +44,16 @@ export default function CoordinatorDashboard() {
   const filteredPerformance = (perfData?.performance || []).filter(p => filteredStudentIds.has(p.user_id));
 
   const { data: heatmapData } = useContentTopicHeatmap(filteredAnswers);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
 
   const subjectCount = new Set(filteredPerformance.filter(p => p.total_questions > 0).map(p => p.subject_id)).size;
 
