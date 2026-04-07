@@ -277,6 +277,14 @@ export default function CoordinatorStudentDetail() {
             </CardContent>
           </Card>
         )}
+
+        {heatmapData && (
+          <PerformanceHeatmap
+            contentData={heatmapData.contentData}
+            topicData={heatmapData.topicData}
+            title="Mapa de Calor — Conteúdo/Tópico"
+          />
+        )}
       </div>
     </Layout>
   );
