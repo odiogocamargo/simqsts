@@ -53,6 +53,8 @@ export default function CoordinatorDashboard() {
   const filteredAnswers = (answers || []).filter(a => filteredStudentIds.has(a.user_id));
   const filteredPerformance = (perfData?.performance || []).filter(p => filteredStudentIds.has(p.user_id));
 
+  const { data: heatmapData } = useContentTopicHeatmap(filteredAnswers);
+
   const subjectCount = new Set(filteredPerformance.filter(p => p.total_questions > 0).map(p => p.subject_id)).size;
 
   const handleStudentClick = (studentId: string) => {
