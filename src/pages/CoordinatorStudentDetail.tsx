@@ -11,6 +11,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Progress } from "@/components/ui/progress";
+import { PerformanceHeatmap } from "@/components/coordinator/PerformanceHeatmap";
+import { useContentTopicHeatmap } from "@/hooks/useContentTopicPerformance";
 
 export default function CoordinatorStudentDetail() {
   const { studentId } = useParams<{ studentId: string }>();
