@@ -11,6 +11,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Progress } from "@/components/ui/progress";
+import { PerformanceHeatmap } from "@/components/coordinator/PerformanceHeatmap";
+import { useContentTopicHeatmap } from "@/hooks/useContentTopicPerformance";
 
 export default function CoordinatorStudentDetail() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -109,6 +111,9 @@ export default function CoordinatorStudentDetail() {
     },
     enabled: !!studentId && !!schoolId && !!studentLink,
   });
+
+  const answersForHeatmap = (answers || []).map(a => ({ question_id: a.question_id, is_correct: a.is_correct }));
+  const { data: heatmapData } = useContentTopicHeatmap(answersForHeatmap);
 
   const isLoading = profileLoading || answersLoading;
 
@@ -271,6 +276,14 @@ export default function CoordinatorStudentDetail() {
               ))}
             </CardContent>
           </Card>
+        )}
+
+        {heatmapData && (
+          <PerformanceHeatmap
+            contentData={heatmapData.contentData}
+            topicData={heatmapData.topicData}
+            title="Mapa de Calor — Conteúdo/Tópico"
+          />
         )}
       </div>
     </Layout>
