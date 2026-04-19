@@ -91,21 +91,35 @@ const StudentQuestions = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  const { data: questions = [], isLoading: isLoadingQuestions } = useQuery({
-    queryKey: ['practice-questions', selectedExam, selectedSubject, selectedContent, selectedTopic, selectedYear, selectedDifficulty],
+  // IDs das questões já respondidas pelo usuário
+  const { data: answeredQuestionIds = [] } = useQuery({
+    queryKey: ['answered-question-ids', user?.id],
     queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('user_answers')
+        .select('question_id')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return Array.from(new Set((data || []).map(a => a.question_id)));
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: questions = [], isLoading: isLoadingQuestions } = useQuery({
+    queryKey: ['practice-questions', selectedExam, selectedSubject, selectedContent, selectedTopic, selectedYear, selectedDifficulty, onlyUnanswered, answeredQuestionIds.length],
+    queryFn: async () => {
+      const applyUnanswered = <T extends { id: string }>(rows: T[]) =>
+        onlyUnanswered ? rows.filter(r => !answeredQuestionIds.includes(r.id)) : rows;
+
       if (selectedTopic) {
-        // Se tópico está selecionado, buscar questões através da tabela question_topics
         const { data: questionTopics, error: qtError } = await supabase
           .from('question_topics')
           .select('question_id')
           .eq('topic_id', selectedTopic);
-        
         if (qtError) throw qtError;
         const questionIds = questionTopics?.map(qt => qt.question_id) || [];
-        
         if (questionIds.length === 0) return [];
-        
         let query = supabase.from('questions').select('*').in('id', questionIds);
         if (selectedExam) query = query.eq('exam_id', selectedExam);
         if (selectedSubject) query = query.eq('subject_id', selectedSubject);
@@ -114,7 +128,7 @@ const StudentQuestions = () => {
         if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
         const { data, error } = await query;
         if (error) throw error;
-        return data || [];
+        return applyUnanswered(data || []);
       } else {
         let query = supabase.from('questions').select('*');
         if (selectedExam) query = query.eq('exam_id', selectedExam);
@@ -124,7 +138,7 @@ const StudentQuestions = () => {
         if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
         const { data, error } = await query;
         if (error) throw error;
-        return data || [];
+        return applyUnanswered(data || []);
       }
     },
     enabled: !!selectedExam && !!selectedSubject,
