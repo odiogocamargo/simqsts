@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, CreditCard, Crown, Loader2, Receipt, ClipboardList, School, GraduationCap, FileBarChart } from "lucide-react";
+import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, CreditCard, Crown, Loader2, Receipt, ClipboardList, School, GraduationCap, FileBarChart, AlertTriangle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,6 +39,7 @@ const studentNavItems = [
   { title: "Meu Desempenho", url: "/student", icon: TrendingUp },
   { title: "Questões", url: "/student/questions", icon: BookOpen },
   { title: "Simulados", url: "/student/simulations", icon: ClipboardList },
+  { title: "Análise de Erros", url: "/student/error-analysis", icon: AlertTriangle },
 ];
 
 // Itens de navegação para coordenador
