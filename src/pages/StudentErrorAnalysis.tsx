@@ -504,7 +504,7 @@ const StudentErrorAnalysis = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Target className="h-5 w-5 text-primary" />
+                    <Target className="h-5 w-5 text-destructive" />
                     Padrão de Alternativas Erradas
                   </CardTitle>
                   <CardDescription>
@@ -552,7 +552,7 @@ const StudentErrorAnalysis = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Clock className="h-5 w-5 text-primary" />
+                    <Clock className="h-5 w-5 text-destructive" />
                     Padrão de Tempo nos Erros
                   </CardTitle>
                   <CardDescription>
@@ -612,7 +612,7 @@ const StudentErrorAnalysis = () => {
                             <span className="font-semibold text-foreground">{d.errorRate}%</span>
                           </span>
                         </div>
-                        <Progress value={d.errorRate} className="h-2" />
+                        <Progress value={d.errorRate} className="h-2 [&>div]:bg-destructive" />
                       </div>
                     ))}
                   </div>
@@ -624,7 +624,7 @@ const StudentErrorAnalysis = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <AlertTriangle className="h-5 w-5 text-primary" />
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
                   Onde Você Mais Erra
                 </CardTitle>
                 <CardDescription>
@@ -689,7 +689,7 @@ const StudentErrorAnalysis = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Repeat className="h-5 w-5 text-primary" />
+                  <Repeat className="h-5 w-5 text-destructive" />
                   Erros Recorrentes
                 </CardTitle>
                 <CardDescription>
@@ -759,7 +759,7 @@ function RankingRow({ title, subtitle, wrong, total, errorRate }: RankingRowProp
           <p className="text-xs text-muted-foreground">{errorRate}% erro</p>
         </div>
       </div>
-      <Progress value={errorRate} className="h-1.5" />
+      <Progress value={errorRate} className="h-1.5 [&>div]:bg-destructive" />
     </div>
   );
 }
