@@ -140,7 +140,7 @@ const StudentTriAnalysis = () => {
     return (
       <Layout>
         <TrialBanner />
-        <Paywall feature="Análise TRI" />
+        <Paywall title="Análise TRI" description="Estimativa de nota ENEM com Teoria de Resposta ao Item disponível para assinantes." />
       </Layout>
     );
   }
