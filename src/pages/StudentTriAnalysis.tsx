@@ -2,17 +2,20 @@ import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Paywall, TrialBanner } from "@/components/Paywall";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubjects } from "@/hooks/useSubjects";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo, useState } from "react";
-import { Sigma, Target, TrendingUp, Activity, GraduationCap, Info } from "lucide-react";
+import { Sigma, Target, TrendingUp, Activity, GraduationCap, Info, Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
-  estimateTheta,
+  estimateThetaEAP,
   thetaToEnemScore,
+  seToEnemScore,
   calculateCoherence,
   ENEM_CUTOFF_REFERENCES,
   TriResponse,
@@ -41,24 +44,23 @@ const StudentTriAnalysis = () => {
   const { user, subscription } = useAuth();
   const { data: subjects = [] } = useSubjects();
   const [scope, setScope] = useState<"enem" | "all">("enem");
+  const [diagnosis, setDiagnosis] = useState<string>("");
 
   const { data: answers = [], isLoading } = useQuery({
     queryKey: ["tri-answers", user?.id, scope],
     queryFn: async () => {
       if (!user?.id) return [];
-      let query = supabase
+      const { data, error } = await supabase
         .from("user_answers")
         .select("id, is_correct, answered_at, question_id, questions(id, exam_id, subject_id, difficulty)")
         .eq("user_id", user.id)
         .order("answered_at", { ascending: true });
-      const { data, error } = await query;
       if (error) throw error;
-      const filtered = (data || []).filter((a: any) => {
+      return (data || []).filter((a: any) => {
         if (!a.questions) return false;
         if (scope === "enem") return String(a.questions.exam_id).toLowerCase() === "enem";
         return true;
       });
-      return filtered;
     },
     enabled: !!user?.id,
   });
@@ -69,24 +71,19 @@ const StudentTriAnalysis = () => {
     return map;
   }, [subjects]);
 
-  // Estimativa global
   const globalResponses: TriResponse[] = useMemo(
-    () =>
-      answers.map((a: any) => ({
-        difficulty: a.questions?.difficulty,
-        isCorrect: a.is_correct,
-      })),
+    () => answers.map((a: any) => ({ difficulty: a.questions?.difficulty, isCorrect: a.is_correct })),
     [answers],
   );
 
-  const globalTheta = useMemo(() => estimateTheta(globalResponses), [globalResponses]);
-  const globalScore = useMemo(() => thetaToEnemScore(globalTheta), [globalTheta]);
+  const globalEstimate = useMemo(() => estimateThetaEAP(globalResponses), [globalResponses]);
+  const globalScore = useMemo(() => thetaToEnemScore(globalEstimate?.theta ?? null), [globalEstimate]);
+  const globalSE = useMemo(() => (globalEstimate ? seToEnemScore(globalEstimate.se) : 0), [globalEstimate]);
   const coherence = useMemo(
-    () => (globalTheta !== null ? calculateCoherence(globalTheta, globalResponses) : 0),
-    [globalTheta, globalResponses],
+    () => (globalEstimate ? calculateCoherence(globalEstimate.theta, globalResponses) : 0),
+    [globalEstimate, globalResponses],
   );
 
-  // Por área
   const byArea = useMemo(() => {
     return ALL_AREAS.map((area) => {
       const areaSubjects = AREA_TO_SUBJECTS[area];
@@ -95,28 +92,25 @@ const StudentTriAnalysis = () => {
           const subjectName = subjectIdToName.get(a.questions?.subject_id);
           return subjectName && areaSubjects.includes(subjectName);
         })
-        .map((a: any) => ({
-          difficulty: a.questions?.difficulty,
-          isCorrect: a.is_correct,
-        }));
-      const theta = estimateTheta(areaResponses);
+        .map((a: any) => ({ difficulty: a.questions?.difficulty, isCorrect: a.is_correct }));
+      const est = estimateThetaEAP(areaResponses);
       return {
         area,
-        score: thetaToEnemScore(theta),
+        score: thetaToEnemScore(est?.theta ?? null),
+        se: est ? seToEnemScore(est.se) : 0,
         total: areaResponses.length,
         correct: areaResponses.filter((r) => r.isCorrect).length,
       };
     });
   }, [answers, subjectIdToName]);
 
-  // Histórico - calcula nota estimada acumulada a cada bloco de 10 respostas
   const history = useMemo(() => {
     const points: { index: number; date: string; score: number }[] = [];
     const step = Math.max(5, Math.floor(globalResponses.length / 20));
     for (let i = step; i <= globalResponses.length; i += step) {
       const subset = globalResponses.slice(0, i);
-      const theta = estimateTheta(subset);
-      const score = thetaToEnemScore(theta);
+      const est = estimateThetaEAP(subset);
+      const score = thetaToEnemScore(est?.theta ?? null);
       if (score !== null) {
         const ans = answers[i - 1];
         points.push({
@@ -134,6 +128,31 @@ const StudentTriAnalysis = () => {
     return ENEM_CUTOFF_REFERENCES.filter((c) => globalScore >= c.score).map((c) => c.course);
   }, [globalScore]);
 
+  const diagnoseMutation = useMutation({
+    mutationFn: async () => {
+      if (!globalEstimate || globalScore === null) throw new Error("Sem dados suficientes");
+      const { data, error } = await supabase.functions.invoke("tri-diagnosis", {
+        body: {
+          globalScore,
+          se: globalEstimate.se,
+          totalAnswered: globalResponses.length,
+          totalCorrect: globalResponses.filter((r) => r.isCorrect).length,
+          coherence,
+          byArea,
+        },
+      });
+      if (error) throw error;
+      return data?.diagnosis as string;
+    },
+    onSuccess: (text) => {
+      setDiagnosis(text || "");
+      toast.success("Diagnóstico gerado");
+    },
+    onError: (e: any) => {
+      toast.error(e?.message || "Falha ao gerar diagnóstico");
+    },
+  });
+
   const isPaid = subscription?.subscribed;
 
   if (!isPaid) {
@@ -149,7 +168,6 @@ const StudentTriAnalysis = () => {
     <Layout>
       <TrialBanner />
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -159,8 +177,8 @@ const StudentTriAnalysis = () => {
               <h1 className="text-3xl font-bold tracking-tight">Análise TRI</h1>
             </div>
             <p className="text-muted-foreground max-w-2xl">
-              Estimativa da sua nota no ENEM usando o modelo TRI (Teoria de Resposta ao Item) — o mesmo
-              princípio que o INEP utiliza para corrigir a prova: <strong>não basta acertar, importa o que se acerta</strong>.
+              Estimativa bayesiana (EAP) da sua nota ENEM via Teoria de Resposta ao Item — com{" "}
+              <strong>intervalo de confiança</strong> e diagnóstico inteligente.
             </p>
           </div>
           <Tabs value={scope} onValueChange={(v) => setScope(v as "enem" | "all")}>
@@ -187,15 +205,17 @@ const StudentTriAnalysis = () => {
             <Card className="border-destructive/30 bg-gradient-to-br from-destructive/5 to-background">
               <CardHeader>
                 <CardDescription className="flex items-center gap-2">
-                  <Target className="h-4 w-4" /> Sua estimativa de nota ENEM (TRI)
+                  <Target className="h-4 w-4" /> Sua estimativa de nota ENEM (TRI · EAP)
                 </CardDescription>
-                <div className="flex items-baseline gap-3 pt-1">
+                <div className="flex items-baseline gap-3 pt-1 flex-wrap">
                   <span className="text-6xl font-bold tracking-tight text-destructive">{globalScore}</span>
+                  <span className="text-xl text-muted-foreground">± {globalSE}</span>
                   <span className="text-xl text-muted-foreground">/ 1000</span>
                 </div>
                 <CardDescription className="pt-2">
-                  Baseado em <strong>{globalResponses.length}</strong> questões respondidas •{" "}
-                  {globalResponses.filter((r) => r.isCorrect).length} acertos
+                  Intervalo provável: <strong className="text-foreground">{Math.max(0, (globalScore || 0) - globalSE)}</strong> a{" "}
+                  <strong className="text-foreground">{Math.min(1000, (globalScore || 0) + globalSE)}</strong> • Baseado em{" "}
+                  <strong>{globalResponses.length}</strong> questões • {globalResponses.filter((r) => r.isCorrect).length} acertos
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -218,6 +238,34 @@ const StudentTriAnalysis = () => {
               </CardContent>
             </Card>
 
+            {/* Diagnóstico IA */}
+            <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-background">
+              <CardHeader className="flex flex-row items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Sparkles className="h-5 w-5 text-primary" /> Diagnóstico inteligente
+                  </CardTitle>
+                  <CardDescription>
+                    Análise textual do seu perfil TRI gerada por IA, com recomendações personalizadas.
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => diagnoseMutation.mutate()}
+                  disabled={diagnoseMutation.isPending}
+                  size="sm"
+                >
+                  {diagnoseMutation.isPending ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando…</>
+                  ) : diagnosis ? "Gerar novo diagnóstico" : "Gerar diagnóstico"}
+                </Button>
+              </CardHeader>
+              {diagnosis && (
+                <CardContent>
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{diagnosis}</div>
+                </CardContent>
+              )}
+            </Card>
+
             {/* 4 áreas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {byArea.map((a) => (
@@ -228,7 +276,10 @@ const StudentTriAnalysis = () => {
                   <CardContent>
                     {a.score !== null ? (
                       <>
-                        <div className="text-3xl font-bold">{a.score}</div>
+                        <div className="flex items-baseline gap-2">
+                          <div className="text-3xl font-bold">{a.score}</div>
+                          <div className="text-sm text-muted-foreground">± {a.se}</div>
+                        </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           {a.correct}/{a.total} acertos
                         </p>
@@ -315,14 +366,14 @@ const StudentTriAnalysis = () => {
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground space-y-2">
                 <p>
-                  <strong className="text-foreground">TRI (Teoria de Resposta ao Item)</strong> é o método usado pelo INEP para
-                  calcular a nota do ENEM. Diferente do simples percentual de acertos, ele pondera cada acerto pela
-                  <strong> dificuldade</strong>, <strong>discriminação</strong> e <strong>probabilidade de chute</strong> de cada questão.
+                  Esta versão usa <strong className="text-foreground">EAP (Expected A Posteriori)</strong> com prior N(0,1) — uma
+                  estimação bayesiana mais robusta que a máxima verossimilhança, especialmente quando você tem poucas respostas
+                  ou padrões extremos. O <strong>± erro padrão</strong> indica a margem de incerteza: quanto mais questões
+                  responder, menor ele fica.
                 </p>
                 <p>
-                  Esta estimativa usa o <strong>modelo logístico de 3 parâmetros (3PL)</strong> com calibração simplificada
-                  baseada na dificuldade cadastrada (fácil/médio/difícil). Não substitui a nota oficial, mas indica sua
-                  proficiência relativa e o quanto seu padrão de respostas é coerente.
+                  Modelo logístico de 3 parâmetros (3PL) com calibração baseada na dificuldade cadastrada (fácil/médio/difícil).
+                  Não substitui a nota oficial, mas indica sua proficiência relativa real.
                 </p>
               </CardContent>
             </Card>
