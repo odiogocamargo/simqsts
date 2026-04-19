@@ -512,10 +512,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in analyze-question-image function:", error);
     return toJsonResponse(
-      {
-        error: error instanceof Error ? error.message : "Erro desconhecido ao analisar imagem",
-        details: error instanceof Error ? error.stack : undefined,
-      },
+      { error: "Erro ao processar imagem. Tente novamente." },
       500,
     );
   }
