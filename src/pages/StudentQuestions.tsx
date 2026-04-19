@@ -319,6 +319,7 @@ const StudentQuestions = () => {
     setSelectedTopic("");
     setSelectedYear("");
     setSelectedDifficulty("");
+    setOnlyUnanswered(false);
     setCurrentQuestionIndex(0);
     setSelectedAnswer("");
     setShowResult(false);
