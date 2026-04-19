@@ -173,7 +173,7 @@ const StudentErrorAnalysis = () => {
 
   // Ranking por tópico
   const errorsByTopic = useMemo(() => {
-    const topicNameMap = new Map(topics.map((t) => [t.id, t.name]));
+    const topicNameMap = new Map(allTopics.map((t: any) => [t.id, t.name]));
     const map = new Map<string, { name: string; wrong: number; total: number }>();
     filteredAnswers.forEach((a: any) => {
       const qts = a.questions?.question_topics || [];
@@ -190,7 +190,7 @@ const StudentErrorAnalysis = () => {
       .map((e) => ({ ...e, errorRate: Math.round((e.wrong / e.total) * 100) }))
       .sort((a, b) => b.wrong - a.wrong)
       .slice(0, 15);
-  }, [filteredAnswers, topics]);
+  }, [filteredAnswers, allTopics]);
 
   // Padrão: alternativa marcada quando errou
   const wrongAnswerDistribution = useMemo(() => {
