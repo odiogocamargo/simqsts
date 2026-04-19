@@ -20,6 +20,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Paywall, TrialBanner } from "@/components/Paywall";
+import { PerformanceOverview } from "@/components/student/PerformanceOverview";
+import { PerformanceByArea } from "@/components/student/PerformanceByArea";
+import { SubjectsTable } from "@/components/student/SubjectsTable";
 
 const StudentPractice = () => {
   const { user, subscription } = useAuth();
@@ -341,6 +344,18 @@ const StudentPractice = () => {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {metrics.map((metric, index) => <MetricCard key={index} {...metric} />)}
         </div>
+
+        <PerformanceOverview
+          total={totalQuestions}
+          correct={totalCorrect}
+          wrong={totalQuestions - totalCorrect}
+          accuracy={accuracy}
+          avgTimeSeconds={avgTime}
+        />
+
+        <PerformanceByArea performanceBySubject={performanceBySubject} />
+
+        <SubjectsTable subjects={subjects} userAnswers={userAnswers as any} />
 
         {criticalTopics.length > 0 && (
           <Card className="border-destructive/50 bg-destructive/5">
