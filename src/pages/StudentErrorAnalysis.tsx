@@ -64,6 +64,16 @@ const StudentErrorAnalysis = () => {
   );
   const { data: exams = [] } = useExams();
 
+  // Todos os tópicos (para resolver nomes no ranking, independentemente do filtro)
+  const { data: allTopics = [] } = useQuery({
+    queryKey: ["all-topics-name-map"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("topics").select("id, name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Buscar todas as respostas erradas + as corretas necessárias para comparar
   const { data: allAnswers = [], isLoading } = useQuery({
     queryKey: ["error-analysis-answers", user?.id],
