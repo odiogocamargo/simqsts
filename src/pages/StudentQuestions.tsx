@@ -405,6 +405,22 @@ const StudentQuestions = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2 md:col-span-2 lg:col-span-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="only-unanswered" className="cursor-pointer">Apenas questões não respondidas</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Filtra somente as questões que você ainda não respondeu
+                    {onlyUnanswered && ` • ${answeredQuestionIds.length} já respondidas`}
+                  </p>
+                </div>
+                <input
+                  id="only-unanswered"
+                  type="checkbox"
+                  checked={onlyUnanswered}
+                  onChange={(e) => { setOnlyUnanswered(e.target.checked); setCurrentQuestionIndex(0); setSelectedAnswer(""); setShowResult(false); }}
+                  className="h-5 w-5 cursor-pointer accent-primary"
+                />
+              </div>
               <div className="flex items-end">
                 <Button variant="outline" onClick={resetFilters} className="w-full">Limpar Filtros</Button>
               </div>
