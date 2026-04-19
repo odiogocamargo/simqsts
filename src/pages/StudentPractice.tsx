@@ -455,34 +455,6 @@ const StudentPractice = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Desempenho por Matéria</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {performanceBySubject.length > 0 ? (
-              <div className="space-y-4">
-                {performanceBySubject.map((subject) => (
-                  <div key={subject.name} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{subject.name}</span>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">{subject.correct}/{subject.total} acertos</span>
-                        <Badge variant={subject.accuracy >= 70 ? "default" : subject.accuracy >= 50 ? "secondary" : "destructive"}>
-                          {subject.accuracy}%
-                        </Badge>
-                      </div>
-                    </div>
-                    <Progress value={subject.accuracy} className="h-2" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">Nenhuma questão respondida no período</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Mapa de Calor
               <div className="flex items-center gap-2 ml-auto text-xs font-normal text-muted-foreground">
