@@ -115,8 +115,9 @@ serve(async (req) => {
         continue;
       }
 
-      if (password.length < 6) {
-        results.push({ email, success: false, error: "Senha deve ter pelo menos 6 caracteres" });
+      const pwCheck = validatePasswordStrength(password);
+      if (!pwCheck.valid) {
+        results.push({ email, success: false, error: pwCheck.error });
         continue;
       }
 
