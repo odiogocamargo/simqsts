@@ -28,6 +28,7 @@ const StudentQuestions = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
+  const [onlyUnanswered, setOnlyUnanswered] = useState<boolean>(false);
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
@@ -90,21 +91,35 @@ const StudentQuestions = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  const { data: questions = [], isLoading: isLoadingQuestions } = useQuery({
-    queryKey: ['practice-questions', selectedExam, selectedSubject, selectedContent, selectedTopic, selectedYear, selectedDifficulty],
+  // IDs das questões já respondidas pelo usuário
+  const { data: answeredQuestionIds = [] } = useQuery({
+    queryKey: ['answered-question-ids', user?.id],
     queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('user_answers')
+        .select('question_id')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return Array.from(new Set((data || []).map(a => a.question_id)));
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: questions = [], isLoading: isLoadingQuestions } = useQuery({
+    queryKey: ['practice-questions', selectedExam, selectedSubject, selectedContent, selectedTopic, selectedYear, selectedDifficulty, onlyUnanswered, answeredQuestionIds.length],
+    queryFn: async () => {
+      const applyUnanswered = <T extends { id: string }>(rows: T[]) =>
+        onlyUnanswered ? rows.filter(r => !answeredQuestionIds.includes(r.id)) : rows;
+
       if (selectedTopic) {
-        // Se tópico está selecionado, buscar questões através da tabela question_topics
         const { data: questionTopics, error: qtError } = await supabase
           .from('question_topics')
           .select('question_id')
           .eq('topic_id', selectedTopic);
-        
         if (qtError) throw qtError;
         const questionIds = questionTopics?.map(qt => qt.question_id) || [];
-        
         if (questionIds.length === 0) return [];
-        
         let query = supabase.from('questions').select('*').in('id', questionIds);
         if (selectedExam) query = query.eq('exam_id', selectedExam);
         if (selectedSubject) query = query.eq('subject_id', selectedSubject);
@@ -113,7 +128,7 @@ const StudentQuestions = () => {
         if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
         const { data, error } = await query;
         if (error) throw error;
-        return data || [];
+        return applyUnanswered(data || []);
       } else {
         let query = supabase.from('questions').select('*');
         if (selectedExam) query = query.eq('exam_id', selectedExam);
@@ -123,7 +138,7 @@ const StudentQuestions = () => {
         if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
         const { data, error } = await query;
         if (error) throw error;
-        return data || [];
+        return applyUnanswered(data || []);
       }
     },
     enabled: !!selectedExam && !!selectedSubject,
@@ -266,6 +281,7 @@ const StudentQuestions = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-performance'] });
       queryClient.invalidateQueries({ queryKey: ['study-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['answered-question-ids'] });
     },
   });
   
@@ -304,6 +320,7 @@ const StudentQuestions = () => {
     setSelectedTopic("");
     setSelectedYear("");
     setSelectedDifficulty("");
+    setOnlyUnanswered(false);
     setCurrentQuestionIndex(0);
     setSelectedAnswer("");
     setShowResult(false);
@@ -387,6 +404,22 @@ const StudentQuestions = () => {
                     <SelectItem value="Difícil">Difícil</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2 md:col-span-2 lg:col-span-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="only-unanswered" className="cursor-pointer">Apenas questões não respondidas</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Filtra somente as questões que você ainda não respondeu
+                    {onlyUnanswered && ` • ${answeredQuestionIds.length} já respondidas`}
+                  </p>
+                </div>
+                <input
+                  id="only-unanswered"
+                  type="checkbox"
+                  checked={onlyUnanswered}
+                  onChange={(e) => { setOnlyUnanswered(e.target.checked); setCurrentQuestionIndex(0); setSelectedAnswer(""); setShowResult(false); }}
+                  className="h-5 w-5 cursor-pointer accent-primary"
+                />
               </div>
               <div className="flex items-end">
                 <Button variant="outline" onClick={resetFilters} className="w-full">Limpar Filtros</Button>
