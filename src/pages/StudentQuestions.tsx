@@ -28,6 +28,7 @@ const StudentQuestions = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
+  const [onlyUnanswered, setOnlyUnanswered] = useState<boolean>(false);
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
