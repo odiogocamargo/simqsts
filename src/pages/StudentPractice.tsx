@@ -303,43 +303,35 @@ const StudentPractice = () => {
 
         <TrialBanner />
 
-        <Card>
-          <CardHeader><CardTitle>Período de Análise</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Selecione o período</Label>
-                <Select value={period} onValueChange={setPeriod}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todo o período</SelectItem>
-                    <SelectItem value="month">Este Mês</SelectItem>
-                    <SelectItem value="week">Esta Semana</SelectItem>
-                    <SelectItem value="today">Hoje</SelectItem>
-                    <SelectItem value="yesterday">Ontem</SelectItem>
-                    <SelectItem value="custom">Personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {period === 'custom' && (
-                <div className="space-y-2">
-                  <Label>Selecione a data</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left", !customDate && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {customDate ? format(customDate, "PPP", { locale: ptBR }) : "Escolha uma data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar mode="single" selected={customDate} onSelect={setCustomDate} locale={ptBR} initialFocus />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground mr-1">Período:</span>
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[180px] h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo o período</SelectItem>
+              <SelectItem value="month">Este Mês</SelectItem>
+              <SelectItem value="week">Esta Semana</SelectItem>
+              <SelectItem value="today">Hoje</SelectItem>
+              <SelectItem value="yesterday">Ontem</SelectItem>
+              <SelectItem value="custom">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+          {period === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-9 justify-start text-left font-normal", !customDate && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {customDate ? format(customDate, "dd/MM/yyyy", { locale: ptBR }) : "Escolha uma data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={customDate} onSelect={setCustomDate} locale={ptBR} initialFocus />
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {metrics.map((metric, index) => <MetricCard key={index} {...metric} />)}
