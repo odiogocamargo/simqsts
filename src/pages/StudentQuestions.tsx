@@ -281,6 +281,7 @@ const StudentQuestions = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-performance'] });
       queryClient.invalidateQueries({ queryKey: ['study-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['answered-question-ids'] });
     },
   });
   
