@@ -84,9 +84,10 @@ serve(async (req) => {
       );
     }
 
-    if (!newPassword || newPassword.length < 6) {
+    const pwCheck = validatePasswordStrength(newPassword);
+    if (!pwCheck.valid) {
       return new Response(
-        JSON.stringify({ error: "Password must be at least 6 characters" }),
+        JSON.stringify({ error: pwCheck.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
