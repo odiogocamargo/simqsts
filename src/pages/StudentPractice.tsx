@@ -427,33 +427,6 @@ const StudentPractice = () => {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Histórico dos Últimos Blocos Resolvidos</CardTitle></CardHeader>
-          <CardContent>
-            {studySessions.length === 0 ? (
-              <p className="text-muted-foreground">Nenhuma sessão registrada no período selecionado.</p>
-            ) : (
-              <div className="space-y-3">
-                {studySessions.map((session: any) => (
-                  <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex-1">
-                      <p className="font-medium">{format(new Date(session.started_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {session.subjects?.name && <span>{session.subjects.name}</span>}
-                        {session.exams?.name && <span> • {session.exams.name}</span>}
-                        {' • '}{session.questions_answered} questões • {session.correct_answers} acertos • {session.duration_minutes || 0} min
-                      </p>
-                    </div>
-                    <Badge variant={session.questions_answered > 0 && (session.correct_answers / session.questions_answered) >= 0.7 ? "default" : "secondary"}>
-                      {session.questions_answered > 0 ? ((session.correct_answers / session.questions_answered) * 100).toFixed(0) : 0}%
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Mapa de Calor
