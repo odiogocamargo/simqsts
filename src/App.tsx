@@ -14,6 +14,7 @@ import AddQuestion from "./pages/AddQuestion";
 import StudentPractice from "./pages/StudentPractice";
 import StudentSimulations from "./pages/StudentSimulations";
 import StudentQuestions from "./pages/StudentQuestions";
+import StudentErrorAnalysis from "./pages/StudentErrorAnalysis";
 import SubjectReport from "./pages/SubjectReport";
 import Users from "./pages/Users";
 import TaxonomyMigration from "./pages/TaxonomyMigration";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/student" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentPractice /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/student/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentQuestions /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/student/simulations" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentSimulations /></RoleBasedRoute></ProtectedRoute>} />
+            <Route path="/student/error-analysis" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentErrorAnalysis /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/student/account" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><MyAccount /></RoleBasedRoute></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
