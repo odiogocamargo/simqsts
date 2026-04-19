@@ -64,6 +64,16 @@ const StudentErrorAnalysis = () => {
   );
   const { data: exams = [] } = useExams();
 
+  // Todos os tópicos (para resolver nomes no ranking, independentemente do filtro)
+  const { data: allTopics = [] } = useQuery({
+    queryKey: ["all-topics-name-map"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("topics").select("id, name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Buscar todas as respostas erradas + as corretas necessárias para comparar
   const { data: allAnswers = [], isLoading } = useQuery({
     queryKey: ["error-analysis-answers", user?.id],
@@ -163,7 +173,7 @@ const StudentErrorAnalysis = () => {
 
   // Ranking por tópico
   const errorsByTopic = useMemo(() => {
-    const topicNameMap = new Map(topics.map((t) => [t.id, t.name]));
+    const topicNameMap = new Map(allTopics.map((t: any) => [t.id, t.name]));
     const map = new Map<string, { name: string; wrong: number; total: number }>();
     filteredAnswers.forEach((a: any) => {
       const qts = a.questions?.question_topics || [];
@@ -180,7 +190,7 @@ const StudentErrorAnalysis = () => {
       .map((e) => ({ ...e, errorRate: Math.round((e.wrong / e.total) * 100) }))
       .sort((a, b) => b.wrong - a.wrong)
       .slice(0, 15);
-  }, [filteredAnswers, topics]);
+  }, [filteredAnswers, allTopics]);
 
   // Padrão: alternativa marcada quando errou
   const wrongAnswerDistribution = useMemo(() => {
@@ -337,7 +347,7 @@ const StudentErrorAnalysis = () => {
           <Button
             onClick={handleRetryWrong}
             disabled={uniqueWrongQuestionIds.length === 0}
-            className="gap-2"
+            className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
           >
             <RefreshCw className="h-4 w-4" />
             Refazer {uniqueWrongQuestionIds.length} {uniqueWrongQuestionIds.length === 1 ? "questão errada" : "questões erradas"}
@@ -494,7 +504,7 @@ const StudentErrorAnalysis = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Target className="h-5 w-5 text-primary" />
+                    <Target className="h-5 w-5 text-destructive" />
                     Padrão de Alternativas Erradas
                   </CardTitle>
                   <CardDescription>
@@ -542,7 +552,7 @@ const StudentErrorAnalysis = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Clock className="h-5 w-5 text-primary" />
+                    <Clock className="h-5 w-5 text-destructive" />
                     Padrão de Tempo nos Erros
                   </CardTitle>
                   <CardDescription>
@@ -602,7 +612,7 @@ const StudentErrorAnalysis = () => {
                             <span className="font-semibold text-foreground">{d.errorRate}%</span>
                           </span>
                         </div>
-                        <Progress value={d.errorRate} className="h-2" />
+                        <Progress value={d.errorRate} className="h-2 [&>div]:bg-destructive" />
                       </div>
                     ))}
                   </div>
@@ -614,7 +624,7 @@ const StudentErrorAnalysis = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <AlertTriangle className="h-5 w-5 text-primary" />
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
                   Onde Você Mais Erra
                 </CardTitle>
                 <CardDescription>
@@ -679,7 +689,7 @@ const StudentErrorAnalysis = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Repeat className="h-5 w-5 text-primary" />
+                  <Repeat className="h-5 w-5 text-destructive" />
                   Erros Recorrentes
                 </CardTitle>
                 <CardDescription>
@@ -749,7 +759,7 @@ function RankingRow({ title, subtitle, wrong, total, errorRate }: RankingRowProp
           <p className="text-xs text-muted-foreground">{errorRate}% erro</p>
         </div>
       </div>
-      <Progress value={errorRate} className="h-1.5" />
+      <Progress value={errorRate} className="h-1.5 [&>div]:bg-destructive" />
     </div>
   );
 }
