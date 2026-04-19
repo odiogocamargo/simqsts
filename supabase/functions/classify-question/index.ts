@@ -201,10 +201,7 @@ Use tool calling para retornar os dados estruturados.`
   } catch (error) {
     console.error('Error in classify-question function:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Erro desconhecido ao classificar questão',
-        details: error instanceof Error ? error.stack : undefined
-      }),
+      JSON.stringify({ error: 'Erro ao classificar questão. Tente novamente.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

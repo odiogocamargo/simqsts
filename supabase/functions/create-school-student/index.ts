@@ -6,6 +6,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
+  if (!password || password.length < 8) {
+    return { valid: false, error: "A senha deve ter pelo menos 8 caracteres" };
+  }
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  const complexity = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+  if (complexity < 3) {
+    return { valid: false, error: "A senha deve conter ao menos 3 de: maiúscula, minúscula, número, caractere especial" };
+  }
+  const common = ["password", "senha123", "12345678", "qwerty123", "abc12345"];
+  if (common.includes(password.toLowerCase())) {
+    return { valid: false, error: "Senha muito comum, escolha outra" };
+  }
+  return { valid: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -96,8 +115,9 @@ serve(async (req) => {
         continue;
       }
 
-      if (password.length < 6) {
-        results.push({ email, success: false, error: "Senha deve ter pelo menos 6 caracteres" });
+      const pwCheck = validatePasswordStrength(password);
+      if (!pwCheck.valid) {
+        results.push({ email, success: false, error: pwCheck.error });
         continue;
       }
 
