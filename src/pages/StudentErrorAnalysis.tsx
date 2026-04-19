@@ -347,7 +347,7 @@ const StudentErrorAnalysis = () => {
           <Button
             onClick={handleRetryWrong}
             disabled={uniqueWrongQuestionIds.length === 0}
-            className="gap-2"
+            className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
           >
             <RefreshCw className="h-4 w-4" />
             Refazer {uniqueWrongQuestionIds.length} {uniqueWrongQuestionIds.length === 1 ? "questão errada" : "questões erradas"}
