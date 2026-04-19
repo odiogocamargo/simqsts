@@ -59,9 +59,10 @@ serve(async (req) => {
       );
     }
 
-    if (password.length < 6) {
+    const pwCheck = validatePasswordStrength(password);
+    if (!pwCheck.valid) {
       return new Response(
-        JSON.stringify({ error: "A senha deve ter pelo menos 6 caracteres" }),
+        JSON.stringify({ error: pwCheck.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
