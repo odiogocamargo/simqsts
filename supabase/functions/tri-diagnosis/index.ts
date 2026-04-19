@@ -1,5 +1,8 @@
 // Edge function: gera diagnóstico em linguagem natural a partir de estatísticas TRI do aluno.
-import { corsHeaders } from "@supabase/supabase-js/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 interface AreaStat {
   area: string;
