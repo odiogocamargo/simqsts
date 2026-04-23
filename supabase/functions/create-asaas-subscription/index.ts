@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
     const customerId = customerData.id;
 
-    // 2. Criar assinatura mensal R$ 49,99 cartão de crédito
+    // 2. Criar assinatura mensal R$ 19,99 cartão de crédito
     const today = new Date();
     today.setDate(today.getDate() + 1); // primeira cobrança amanhã
     const nextDueDate = today.toISOString().split("T")[0];
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         customer: customerId,
         billingType: "CREDIT_CARD",
         cycle: "MONTHLY",
-        value: 49.99,
+        value: 19.99,
         nextDueDate,
         description: "Assinatura SIM Questões - Premium",
         externalReference: user.id,
