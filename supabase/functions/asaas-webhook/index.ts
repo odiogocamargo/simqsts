@@ -63,7 +63,6 @@ Deno.serve(async (req) => {
         case "PAYMENT_CONFIRMED":
         case "PAYMENT_RECEIVED":
           updates.status = "active";
-          // Estende validade por 31 dias
           updates.expires_at = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
           if (payment.dueDate) updates.next_due_date = payment.dueDate;
           break;
@@ -74,11 +73,38 @@ Deno.serve(async (req) => {
           updates.status = "refunded";
           break;
         case "PAYMENT_DELETED":
-          // não muda status
           break;
       }
 
       await supabase.from("subscriptions").update(updates).eq("id", dbSub.id);
+
+      // Upsert no histórico de pagamentos
+      const paymentRecord = {
+        user_id: dbSub.user_id,
+        subscription_id: dbSub.id,
+        asaas_payment_id: payment.id,
+        asaas_subscription_id: subscriptionId ?? null,
+        asaas_customer_id: customerId ?? null,
+        amount: payment.value ?? 0,
+        net_value: payment.netValue ?? null,
+        status: payment.status ?? eventName,
+        billing_type: payment.billingType ?? null,
+        description: payment.description ?? null,
+        due_date: payment.dueDate ?? null,
+        payment_date: payment.paymentDate ?? payment.clientPaymentDate ?? null,
+        invoice_url: payment.invoiceUrl ?? null,
+        invoice_number: payment.invoiceNumber ?? null,
+        transaction_receipt_url: payment.transactionReceiptUrl ?? null,
+        bank_slip_url: payment.bankSlipUrl ?? null,
+        raw_event: event,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: phError } = await supabase
+        .from("payment_history")
+        .upsert(paymentRecord, { onConflict: "asaas_payment_id" });
+
+      if (phError) console.error("Erro ao salvar payment_history:", phError);
     }
 
     // Eventos de assinatura

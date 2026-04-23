@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AsaasCheckoutForm } from "@/components/AsaasCheckoutForm";
+import { PaymentHistory } from "@/components/PaymentHistory";
 
 const MyAccount = () => {
   const { user, subscription, subscriptionLoading, openCustomerPortal } = useAuth();
@@ -201,6 +202,8 @@ const MyAccount = () => {
                   </CardContent>
                 </Card>
               )}
+
+              <PaymentHistory />
             </>
           ) : (
             <>
