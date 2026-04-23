@@ -399,7 +399,7 @@ const Landing = () => {
                 </div>
                 
                 <div className="mb-2">
-                  <span className="text-6xl font-extrabold text-foreground tracking-tight">R$ 49</span>
+                  <span className="text-6xl font-extrabold text-foreground tracking-tight">R$ 19</span>
                   <span className="text-2xl font-bold text-foreground">,99</span>
                   <span className="text-muted-foreground ml-1">/mês</span>
                 </div>

@@ -85,7 +85,7 @@ export const AsaasCheckoutForm = ({ onSuccess }: AsaasCheckoutFormProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5 text-primary" />
-          Assinar Premium — R$ 49,99/mês
+          Assinar Premium — R$ 19,99/mês
         </CardTitle>
         <CardDescription className="flex items-center gap-1.5 text-xs">
           <Lock className="h-3 w-3" />
@@ -167,7 +167,7 @@ export const AsaasCheckoutForm = ({ onSuccess }: AsaasCheckoutFormProps) => {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Cobrança recorrente mensal de R$ 49,99. Cancele quando quiser.
+            Cobrança recorrente mensal de R$ 19,99. Cancele quando quiser.
           </p>
         </form>
       </CardContent>

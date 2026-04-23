@@ -55,7 +55,7 @@ export const Paywall = ({
 
           <Button onClick={() => navigate("/assinar")} size="lg" className="w-full gap-2">
             <Crown className="h-5 w-5" />
-            Assinar por R$ 49,99/mês
+            Assinar por R$ 19,99/mês
           </Button>
 
           <p className="text-xs text-muted-foreground">Cancele quando quiser. Sem compromisso.</p>

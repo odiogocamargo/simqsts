@@ -44,7 +44,7 @@ const Subscribe = () => {
             Assine e desbloqueie todo o conteúdo
           </h1>
           <p className="text-muted-foreground">
-            Pagamento mensal de R$ 49,99. Cancele a qualquer momento.
+            Pagamento mensal de R$ 19,99. Cancele a qualquer momento.
           </p>
         </div>
 
@@ -59,7 +59,7 @@ const Subscribe = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">SIM Questões Premium</p>
-                    <p className="text-sm text-muted-foreground">R$ 49,99 / mês</p>
+                    <p className="text-sm text-muted-foreground">R$ 19,99 / mês</p>
                   </div>
                 </div>
 
