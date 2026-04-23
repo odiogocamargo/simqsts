@@ -34,33 +34,51 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { data: sub } = await admin
+    const { data: subs } = await admin
       .from("subscriptions")
-      .select("id, asaas_subscription_id")
+      .select("id, asaas_subscription_id, status")
       .eq("user_id", userData.user.id)
-      .maybeSingle();
+      .order("created_at", { ascending: false });
 
-    if (!sub?.asaas_subscription_id) {
-      return new Response(JSON.stringify({ error: "Assinatura não encontrada" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const sub = subs?.[0];
+
+    if (!sub) {
+      return new Response(
+        JSON.stringify({ success: true, message: "Nenhuma assinatura encontrada para cancelar" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const resp = await fetch(`${ASAAS_BASE_URL}/subscriptions/${sub.asaas_subscription_id}`, {
-      method: "DELETE",
-      headers: { "access_token": ASAAS_API_KEY },
-    });
+    // If there's an Asaas subscription, try to cancel it remotely
+    if (sub.asaas_subscription_id) {
+      const resp = await fetch(`${ASAAS_BASE_URL}/subscriptions/${sub.asaas_subscription_id}`, {
+        method: "DELETE",
+        headers: { "access_token": ASAAS_API_KEY },
+      });
 
-    if (!resp.ok) {
-      const err = await resp.json();
-      console.error("Asaas cancel error:", err);
-      return new Response(JSON.stringify({ error: "Erro ao cancelar no Asaas" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        console.error("Asaas cancel error:", resp.status, errText);
+        // If Asaas says it doesn't exist (404), proceed to mark locally as canceled
+        if (resp.status !== 404) {
+          return new Response(
+            JSON.stringify({ error: "Erro ao cancelar no Asaas" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
     }
 
+    // Always mark local record as canceled
     await admin.from("subscriptions").update({
       status: "canceled",
       canceled_at: new Date().toISOString(),
     }).eq("id", sub.id);
 
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(
+      JSON.stringify({ success: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("cancel error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
