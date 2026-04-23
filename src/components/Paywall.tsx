@@ -1,10 +1,8 @@
-import { useState } from "react";
 import { Crown, Lock, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { AsaasCheckoutForm } from "@/components/AsaasCheckoutForm";
 
 interface PaywallProps {
   title?: string;
