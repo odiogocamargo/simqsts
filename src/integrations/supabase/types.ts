@@ -79,6 +79,83 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_history: {
+        Row: {
+          amount: number
+          asaas_customer_id: string | null
+          asaas_payment_id: string | null
+          asaas_subscription_id: string | null
+          bank_slip_url: string | null
+          billing_type: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string | null
+          invoice_url: string | null
+          net_value: number | null
+          payment_date: string | null
+          raw_event: Json | null
+          status: string
+          subscription_id: string | null
+          transaction_receipt_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          asaas_subscription_id?: string | null
+          bank_slip_url?: string | null
+          billing_type?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          net_value?: number | null
+          payment_date?: string | null
+          raw_event?: Json | null
+          status?: string
+          subscription_id?: string | null
+          transaction_receipt_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          asaas_subscription_id?: string | null
+          bank_slip_url?: string | null
+          billing_type?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          net_value?: number | null
+          payment_date?: string | null
+          raw_event?: Json | null
+          status?: string
+          subscription_id?: string | null
+          transaction_receipt_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
