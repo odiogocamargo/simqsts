@@ -41,3 +41,15 @@ verify_jwt = false
 
 [functions.tri-diagnosis]
 verify_jwt = false
+
+[functions.create-asaas-subscription]
+verify_jwt = false
+
+[functions.asaas-webhook]
+verify_jwt = false
+
+[functions.cancel-asaas-subscription]
+verify_jwt = false
+
+[functions.check-asaas-subscription]
+verify_jwt = false
