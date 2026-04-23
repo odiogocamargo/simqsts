@@ -23,6 +23,7 @@ import Subscriptions from "./pages/Subscriptions";
 import Auth from "./pages/Auth";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import MyAccount from "./pages/MyAccount";
+import Subscribe from "./pages/Subscribe";
 import Schools from "./pages/Schools";
 import CoordinatorDashboard from "./pages/CoordinatorDashboard";
 import CoordinatorStudents from "./pages/CoordinatorStudents";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+            <Route path="/assinar" element={<ProtectedRoute><Subscribe /></ProtectedRoute>} />
             {/* Rotas de Admin */}
             <Route path="/dashboard" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Dashboard /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Questions /></RoleBasedRoute></ProtectedRoute>} />
