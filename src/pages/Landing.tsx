@@ -13,7 +13,11 @@ import {
   Users,
   BarChart,
   Shield,
-  MessageCircle
+  MessageCircle,
+  Brain,
+  FileText,
+  AlertCircle,
+  LineChart
 } from "lucide-react";
 
 const Landing = () => {
