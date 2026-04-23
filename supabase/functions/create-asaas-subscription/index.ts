@@ -111,9 +111,8 @@ Deno.serve(async (req) => {
     const customerId = customerData.id;
 
     // 2. Criar assinatura mensal R$ 19,99 cartão de crédito
-    const today = new Date();
-    today.setDate(today.getDate() + 1); // primeira cobrança amanhã
-    const nextDueDate = today.toISOString().split("T")[0];
+    // Vencimento HOJE para que o Asaas processe a cobrança no cartão imediatamente
+    const nextDueDate = new Date().toISOString().split("T")[0];
 
     const subResp = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
       method: "POST",
