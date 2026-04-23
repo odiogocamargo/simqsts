@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Search, Users, CreditCard, AlertCircle, CheckCircle, XCircle, Clock, RefreshCw, Edit, Plus } from "lucide-react";
+import { Search, Users, CreditCard, AlertCircle, CheckCircle, XCircle, Clock, RefreshCw, Edit, Plus, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -19,15 +19,20 @@ type SubscriptionStatus = "active" | "canceled" | "late" | "refunded" | "pending
 
 interface Subscription {
   id: string;
-  kiwify_customer_email: string;
+  user_id: string | null;
+  kiwify_customer_email: string | null;
   kiwify_customer_cpf: string | null;
   status: SubscriptionStatus;
   plan_name: string | null;
+  payment_method: string | null;
+  asaas_customer_id: string | null;
+  asaas_subscription_id: string | null;
+  asaas_last_payment_id: string | null;
+  next_due_date: string | null;
   started_at: string | null;
   expires_at: string | null;
   canceled_at: string | null;
   created_at: string;
-  user_id: string | null;
 }
 
 const statusConfig: Record<SubscriptionStatus, { label: string; color: string; icon: typeof CheckCircle }> = {
@@ -38,12 +43,46 @@ const statusConfig: Record<SubscriptionStatus, { label: string; color: string; i
   pending: { label: "Pendente", color: "bg-blue-500/10 text-blue-600 border-blue-500/20", icon: Clock },
 };
 
+interface EditForm {
+  status: SubscriptionStatus;
+  plan_name: string;
+  payment_method: string;
+  asaas_customer_id: string;
+  asaas_subscription_id: string;
+  asaas_last_payment_id: string;
+  next_due_date: string;
+  expires_at: string;
+  started_at: string;
+  kiwify_customer_email: string;
+  kiwify_customer_cpf: string;
+}
+
+const emptyForm: EditForm = {
+  status: "active",
+  plan_name: "",
+  payment_method: "",
+  asaas_customer_id: "",
+  asaas_subscription_id: "",
+  asaas_last_payment_id: "",
+  next_due_date: "",
+  expires_at: "",
+  started_at: "",
+  kiwify_customer_email: "",
+  kiwify_customer_cpf: "",
+};
+
+const toDateInput = (iso: string | null) =>
+  iso ? new Date(iso).toISOString().slice(0, 10) : "";
+
+const fromDateInput = (val: string) =>
+  val ? new Date(val + "T00:00:00").toISOString() : null;
+
 export default function Subscriptions() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
-  const [newStatus, setNewStatus] = useState<SubscriptionStatus>("active");
+  const [editForm, setEditForm] = useState<EditForm>(emptyForm);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newSubscription, setNewSubscription] = useState({
     email: "",
@@ -52,142 +91,148 @@ export default function Subscriptions() {
     status: "active" as SubscriptionStatus,
   });
 
-  // Fetch subscriptions
-  const { data: subscriptions, isLoading } = useQuery({
+  const { data: subscriptions, isLoading, refetch } = useQuery({
     queryKey: ["subscriptions"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
         .select("*")
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       return data as Subscription[];
     },
   });
 
-  // Update subscription mutation
   const updateSubscription = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: SubscriptionStatus }) => {
-      const { error } = await supabase
-        .from("subscriptions")
-        .update({ 
-          status,
-          canceled_at: status === "canceled" ? new Date().toISOString() : null,
-        })
-        .eq("id", id);
-
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Subscription> }) => {
+      const { error } = await supabase.from("subscriptions").update(patch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
-      toast.success("Assinatura atualizada com sucesso");
+      toast.success("Assinatura atualizada");
       setEditingSubscription(null);
     },
-    onError: (error) => {
-      toast.error("Erro ao atualizar assinatura: " + error.message);
-    },
+    onError: (e) => toast.error("Erro: " + e.message),
   });
 
-  // Add subscription mutation
   const addSubscription = useMutation({
     mutationFn: async (data: typeof newSubscription) => {
-      const { error } = await supabase
-        .from("subscriptions")
-        .insert({
-          kiwify_customer_email: data.email,
-          kiwify_customer_cpf: data.cpf || null,
-          plan_name: data.plan_name,
-          status: data.status,
-          started_at: new Date().toISOString(),
-        });
-
+      const { error } = await supabase.from("subscriptions").insert({
+        kiwify_customer_email: data.email,
+        kiwify_customer_cpf: data.cpf || null,
+        plan_name: data.plan_name,
+        status: data.status,
+        started_at: new Date().toISOString(),
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
-      toast.success("Assinatura adicionada com sucesso");
+      toast.success("Assinatura adicionada");
       setIsAddDialogOpen(false);
       setNewSubscription({ email: "", cpf: "", plan_name: "Premium", status: "active" });
     },
-    onError: (error) => {
-      toast.error("Erro ao adicionar assinatura: " + error.message);
-    },
+    onError: (e) => toast.error("Erro: " + e.message),
   });
 
-  // Filter subscriptions
+  const openEdit = (sub: Subscription) => {
+    setEditingSubscription(sub);
+    setEditForm({
+      status: sub.status,
+      plan_name: sub.plan_name ?? "",
+      payment_method: sub.payment_method ?? "",
+      asaas_customer_id: sub.asaas_customer_id ?? "",
+      asaas_subscription_id: sub.asaas_subscription_id ?? "",
+      asaas_last_payment_id: sub.asaas_last_payment_id ?? "",
+      next_due_date: toDateInput(sub.next_due_date),
+      expires_at: toDateInput(sub.expires_at),
+      started_at: toDateInput(sub.started_at),
+      kiwify_customer_email: sub.kiwify_customer_email ?? "",
+      kiwify_customer_cpf: sub.kiwify_customer_cpf ?? "",
+    });
+  };
+
+  const submitEdit = () => {
+    if (!editingSubscription) return;
+    updateSubscription.mutate({
+      id: editingSubscription.id,
+      patch: {
+        status: editForm.status,
+        plan_name: editForm.plan_name || null,
+        payment_method: editForm.payment_method || null,
+        asaas_customer_id: editForm.asaas_customer_id || null,
+        asaas_subscription_id: editForm.asaas_subscription_id || null,
+        asaas_last_payment_id: editForm.asaas_last_payment_id || null,
+        next_due_date: fromDateInput(editForm.next_due_date),
+        expires_at: fromDateInput(editForm.expires_at),
+        started_at: fromDateInput(editForm.started_at),
+        kiwify_customer_email: editForm.kiwify_customer_email || null,
+        kiwify_customer_cpf: editForm.kiwify_customer_cpf || null,
+        canceled_at: editForm.status === "canceled" ? new Date().toISOString() : null,
+      },
+    });
+  };
+
   const filteredSubscriptions = subscriptions?.filter((sub) => {
-    const matchesSearch = 
-      sub.kiwify_customer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (sub.kiwify_customer_cpf?.includes(searchTerm) ?? false);
+    const term = searchTerm.toLowerCase();
+    const matchesSearch =
+      (sub.kiwify_customer_email?.toLowerCase().includes(term) ?? false) ||
+      (sub.kiwify_customer_cpf?.includes(searchTerm) ?? false) ||
+      (sub.asaas_customer_id?.toLowerCase().includes(term) ?? false) ||
+      (sub.asaas_subscription_id?.toLowerCase().includes(term) ?? false);
     const matchesStatus = statusFilter === "all" || sub.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return (searchTerm === "" || matchesSearch) && matchesStatus;
   });
 
-  // Stats
   const stats = {
     total: subscriptions?.length ?? 0,
     active: subscriptions?.filter((s) => s.status === "active").length ?? 0,
     canceled: subscriptions?.filter((s) => s.status === "canceled").length ?? 0,
     pending: subscriptions?.filter((s) => s.status === "pending").length ?? 0,
+    late: subscriptions?.filter((s) => s.status === "late").length ?? 0,
   };
 
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Assinaturas</h1>
-            <p className="text-muted-foreground">Gerencie as assinaturas dos alunos</p>
+            <p className="text-muted-foreground">Revise e corrija assinaturas (Asaas)</p>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nova Assinatura
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Atualizar
+            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nova
+            </Button>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Ativos</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Cancelados</CardTitle>
-              <XCircle className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.canceled}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-              <Clock className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.pending}</div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-5">
+          {[
+            { label: "Total", value: stats.total, icon: Users, color: "" },
+            { label: "Ativos", value: stats.active, icon: CheckCircle, color: "text-green-600" },
+            { label: "Pendentes", value: stats.pending, icon: Clock, color: "text-blue-600" },
+            { label: "Atrasados", value: stats.late, icon: AlertCircle, color: "text-yellow-600" },
+            { label: "Cancelados", value: stats.canceled, icon: XCircle, color: "text-red-600" },
+          ].map((s) => (
+            <Card key={s.label}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{s.label}</CardTitle>
+                <s.icon className={`h-4 w-4 ${s.color || "text-muted-foreground"}`} />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        {/* Filters */}
         <Card>
           <CardHeader>
             <CardTitle>Filtros</CardTitle>
@@ -197,7 +242,7 @@ export default function Subscriptions() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por email ou CPF..."
+                  placeholder="Buscar por email, CPF, ID Asaas (cliente/assinatura)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -208,11 +253,11 @@ export default function Subscriptions() {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="active">Ativos</SelectItem>
-                  <SelectItem value="canceled">Cancelados</SelectItem>
-                  <SelectItem value="late">Atrasados</SelectItem>
                   <SelectItem value="pending">Pendentes</SelectItem>
+                  <SelectItem value="late">Atrasados</SelectItem>
+                  <SelectItem value="canceled">Cancelados</SelectItem>
                   <SelectItem value="refunded">Reembolsados</SelectItem>
                 </SelectContent>
               </Select>
@@ -220,7 +265,6 @@ export default function Subscriptions() {
           </CardContent>
         </Card>
 
-        {/* Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -228,7 +272,7 @@ export default function Subscriptions() {
               Lista de Assinaturas
             </CardTitle>
             <CardDescription>
-              {filteredSubscriptions?.length ?? 0} assinatura(s) encontrada(s)
+              {filteredSubscriptions?.length ?? 0} encontrada(s)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -237,15 +281,16 @@ export default function Subscriptions() {
                 <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>CPF</TableHead>
-                      <TableHead>Plano</TableHead>
+                      <TableHead>Email / User</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Início</TableHead>
+                      <TableHead>Pgto.</TableHead>
+                      <TableHead>Asaas Sub ID</TableHead>
+                      <TableHead>Asaas Cust ID</TableHead>
+                      <TableHead>Próx. venc.</TableHead>
                       <TableHead>Expira</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -253,7 +298,7 @@ export default function Subscriptions() {
                   <TableBody>
                     {filteredSubscriptions?.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                           Nenhuma assinatura encontrada
                         </TableCell>
                       </TableRow>
@@ -262,36 +307,57 @@ export default function Subscriptions() {
                         const StatusIcon = statusConfig[sub.status].icon;
                         return (
                           <TableRow key={sub.id}>
-                            <TableCell className="font-medium">{sub.kiwify_customer_email}</TableCell>
-                            <TableCell>{sub.kiwify_customer_cpf || "-"}</TableCell>
-                            <TableCell>{sub.plan_name || "Premium"}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="text-sm">{sub.kiwify_customer_email || "-"}</div>
+                              <div className="text-xs text-muted-foreground font-mono">
+                                {sub.user_id ? sub.user_id.slice(0, 8) : "sem user"}
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <Badge variant="outline" className={statusConfig[sub.status].color}>
                                 <StatusIcon className="h-3 w-3 mr-1" />
                                 {statusConfig[sub.status].label}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              {sub.started_at
-                                ? format(new Date(sub.started_at), "dd/MM/yyyy", { locale: ptBR })
+                            <TableCell className="text-xs">{sub.payment_method || "-"}</TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {sub.asaas_subscription_id || <span className="text-muted-foreground">-</span>}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {sub.asaas_customer_id || <span className="text-muted-foreground">-</span>}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {sub.next_due_date
+                                ? format(new Date(sub.next_due_date), "dd/MM/yyyy", { locale: ptBR })
                                 : "-"}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-xs">
                               {sub.expires_at
                                 ? format(new Date(sub.expires_at), "dd/MM/yyyy", { locale: ptBR })
                                 : "-"}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingSubscription(sub);
-                                  setNewStatus(sub.status);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center justify-end gap-1">
+                                {sub.asaas_subscription_id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    asChild
+                                    title="Abrir no Asaas"
+                                  >
+                                    <a
+                                      href={`https://www.asaas.com/subscriptions/show/${sub.asaas_subscription_id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="sm" onClick={() => openEdit(sub)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -306,43 +372,115 @@ export default function Subscriptions() {
 
         {/* Edit Dialog */}
         <Dialog open={!!editingSubscription} onOpenChange={() => setEditingSubscription(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Assinatura</DialogTitle>
               <DialogDescription>
-                Altere o status da assinatura de {editingSubscription?.kiwify_customer_email}
+                Corrija dados manualmente. Use com cuidado — alterações são imediatas no banco.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4 py-4">
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={newStatus} onValueChange={(v) => setNewStatus(v as SubscriptionStatus)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select
+                  value={editForm.status}
+                  onValueChange={(v) => setEditForm({ ...editForm, status: v as SubscriptionStatus })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="canceled">Cancelado</SelectItem>
-                    <SelectItem value="late">Atrasado</SelectItem>
                     <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="late">Atrasado</SelectItem>
+                    <SelectItem value="canceled">Cancelado</SelectItem>
                     <SelectItem value="refunded">Reembolsado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Plano</Label>
+                <Input
+                  value={editForm.plan_name}
+                  onChange={(e) => setEditForm({ ...editForm, plan_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Método de pagamento</Label>
+                <Input
+                  placeholder="CREDIT_CARD"
+                  value={editForm.payment_method}
+                  onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  value={editForm.kiwify_customer_email}
+                  onChange={(e) => setEditForm({ ...editForm, kiwify_customer_email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Asaas Customer ID</Label>
+                <Input
+                  className="font-mono text-xs"
+                  placeholder="cus_000000000000"
+                  value={editForm.asaas_customer_id}
+                  onChange={(e) => setEditForm({ ...editForm, asaas_customer_id: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Asaas Subscription ID</Label>
+                <Input
+                  className="font-mono text-xs"
+                  placeholder="sub_000000000000"
+                  value={editForm.asaas_subscription_id}
+                  onChange={(e) => setEditForm({ ...editForm, asaas_subscription_id: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Último Payment ID</Label>
+                <Input
+                  className="font-mono text-xs"
+                  placeholder="pay_000000000000"
+                  value={editForm.asaas_last_payment_id}
+                  onChange={(e) => setEditForm({ ...editForm, asaas_last_payment_id: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Início</Label>
+                <Input
+                  type="date"
+                  value={editForm.started_at}
+                  onChange={(e) => setEditForm({ ...editForm, started_at: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Próximo vencimento</Label>
+                <Input
+                  type="date"
+                  value={editForm.next_due_date}
+                  onChange={(e) => setEditForm({ ...editForm, next_due_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Expira em</Label>
+                <Input
+                  type="date"
+                  value={editForm.expires_at}
+                  onChange={(e) => setEditForm({ ...editForm, expires_at: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>CPF</Label>
+                <Input
+                  value={editForm.kiwify_customer_cpf}
+                  onChange={(e) => setEditForm({ ...editForm, kiwify_customer_cpf: e.target.value })}
+                />
+              </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingSubscription(null)}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => {
-                  if (editingSubscription) {
-                    updateSubscription.mutate({ id: editingSubscription.id, status: newStatus });
-                  }
-                }}
-                disabled={updateSubscription.isPending}
-              >
-                {updateSubscription.isPending ? "Salvando..." : "Salvar"}
+              <Button variant="outline" onClick={() => setEditingSubscription(null)}>Cancelar</Button>
+              <Button onClick={submitEdit} disabled={updateSubscription.isPending}>
+                {updateSubscription.isPending ? "Salvando..." : "Salvar alterações"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -353,24 +491,20 @@ export default function Subscriptions() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nova Assinatura</DialogTitle>
-              <DialogDescription>
-                Adicione uma assinatura manualmente para um aluno
-              </DialogDescription>
+              <DialogDescription>Adicione uma assinatura manualmente</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>Email do aluno *</Label>
+                <Label>Email *</Label>
                 <Input
                   type="email"
-                  placeholder="aluno@email.com"
                   value={newSubscription.email}
                   onChange={(e) => setNewSubscription({ ...newSubscription, email: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>CPF (opcional)</Label>
+                <Label>CPF</Label>
                 <Input
-                  placeholder="000.000.000-00"
                   value={newSubscription.cpf}
                   onChange={(e) => setNewSubscription({ ...newSubscription, cpf: e.target.value })}
                 />
@@ -378,7 +512,6 @@ export default function Subscriptions() {
               <div className="space-y-2">
                 <Label>Plano</Label>
                 <Input
-                  placeholder="Premium"
                   value={newSubscription.plan_name}
                   onChange={(e) => setNewSubscription({ ...newSubscription, plan_name: e.target.value })}
                 />
@@ -389,9 +522,7 @@ export default function Subscriptions() {
                   value={newSubscription.status}
                   onValueChange={(v) => setNewSubscription({ ...newSubscription, status: v as SubscriptionStatus })}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Ativo</SelectItem>
                     <SelectItem value="pending">Pendente</SelectItem>
@@ -400,9 +531,7 @@ export default function Subscriptions() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancelar
-              </Button>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
               <Button
                 onClick={() => addSubscription.mutate(newSubscription)}
                 disabled={addSubscription.isPending || !newSubscription.email}
