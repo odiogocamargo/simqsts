@@ -13,7 +13,11 @@ import {
   Users,
   BarChart,
   Shield,
-  MessageCircle
+  MessageCircle,
+  Brain,
+  FileText,
+  AlertCircle,
+  LineChart
 } from "lucide-react";
 
 const Landing = () => {
@@ -222,6 +226,146 @@ const Landing = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Novas Features - Inteligência Pedagógica */}
+      <section className="py-24 px-6">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+              <Brain className="h-3.5 w-3.5" />
+              Novidades da plataforma
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Inteligência pedagógica de verdade
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Ferramentas avançadas para você simular o ENEM, entender seus erros e projetar sua nota com base em ciência.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Análise TRI */}
+            <div className="p-8 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent hover:border-primary/40 transition-all">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Brain className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-2">
+                    <Sparkles className="h-3 w-3" />
+                    Novo
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Análise TRI com IA
+                  </h3>
+                </div>
+              </div>
+              <p className="text-muted-foreground mb-4 leading-relaxed">
+                Estime sua nota do ENEM com base no modelo TRI bayesiano (EAP). Veja sua proficiência com margem de erro e receba diagnóstico inteligente em linguagem natural.
+              </p>
+              <ul className="space-y-2">
+                {[
+                  "Estimativa de nota com intervalo de confiança (±SE)",
+                  "Diagnóstico personalizado gerado por IA",
+                  "Análise por área de conhecimento"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Simulados */}
+            <div className="p-8 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <FileText className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Simulados Personalizados
+                  </h3>
+                </div>
+              </div>
+              <p className="text-muted-foreground mb-4 leading-relaxed">
+                Monte simulados sob medida escolhendo banca, disciplina, conteúdo e nível de dificuldade. Tempo cronometrado e feedback completo ao final.
+              </p>
+              <ul className="space-y-2">
+                {[
+                  "Filtros por banca, ano, matéria e dificuldade",
+                  "Cronômetro e controle de tempo por questão",
+                  "Relatório detalhado de desempenho"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Análise de Erros */}
+            <div className="p-8 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <AlertCircle className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Análise de Erros
+                  </h3>
+                </div>
+              </div>
+              <p className="text-muted-foreground mb-4 leading-relaxed">
+                Revise tudo o que você errou organizado por tópico e disciplina. Aprenda com seus erros de forma sistemática para não repeti-los.
+              </p>
+              <ul className="space-y-2">
+                {[
+                  "Histórico completo de questões erradas",
+                  "Agrupamento por tópico crítico",
+                  "Resoluções e explicações detalhadas"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Evolução & Indicadores */}
+            <div className="p-8 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <LineChart className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Evolução em Tempo Real
+                  </h3>
+                </div>
+              </div>
+              <p className="text-muted-foreground mb-4 leading-relaxed">
+                Acompanhe sua jornada com gráficos diários, mapas de calor por disciplina e indicadores de consistência ao longo do tempo.
+              </p>
+              <ul className="space-y-2">
+                {[
+                  "Gráficos de evolução diária",
+                  "Mapa de calor por área de conhecimento",
+                  "Métricas de consistência e ritmo"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
