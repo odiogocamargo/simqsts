@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const checkPromise = (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('check-subscription', {
+        const { data, error } = await supabase.functions.invoke('check-asaas-subscription', {
           headers: {
             Authorization: `Bearer ${sessionToUse!.access_token}`,
           },
