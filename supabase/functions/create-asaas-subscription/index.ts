@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         customer: customerId,
         billingType: "CREDIT_CARD",
         cycle: "MONTHLY",
-        value: 49.99,
+        value: 19.99,
         nextDueDate,
         description: "Assinatura SIM Questões - Premium",
         externalReference: user.id,
