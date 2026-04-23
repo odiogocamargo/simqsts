@@ -636,13 +636,18 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          asaas_customer_id: string | null
+          asaas_last_payment_id: string | null
+          asaas_subscription_id: string | null
           canceled_at: string | null
           created_at: string
           expires_at: string | null
           id: string
           kiwify_customer_cpf: string | null
-          kiwify_customer_email: string
+          kiwify_customer_email: string | null
           kiwify_subscription_id: string | null
+          next_due_date: string | null
+          payment_method: string | null
           plan_name: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["subscription_status"]
@@ -650,13 +655,18 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          asaas_customer_id?: string | null
+          asaas_last_payment_id?: string | null
+          asaas_subscription_id?: string | null
           canceled_at?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
           kiwify_customer_cpf?: string | null
-          kiwify_customer_email: string
+          kiwify_customer_email?: string | null
           kiwify_subscription_id?: string | null
+          next_due_date?: string | null
+          payment_method?: string | null
           plan_name?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
@@ -664,13 +674,18 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          asaas_customer_id?: string | null
+          asaas_last_payment_id?: string | null
+          asaas_subscription_id?: string | null
           canceled_at?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
           kiwify_customer_cpf?: string | null
-          kiwify_customer_email?: string
+          kiwify_customer_email?: string | null
           kiwify_subscription_id?: string | null
+          next_due_date?: string | null
+          payment_method?: string | null
           plan_name?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]

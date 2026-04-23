@@ -5,38 +5,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Crown, 
-  CreditCard, 
-  Calendar, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
-  ExternalLink,
+import {
+  Crown,
+  CreditCard,
+  Calendar,
+  CheckCircle2,
+  XCircle,
+  Loader2,
   User,
   Mail,
-  Shield
+  Shield,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUserRole } from "@/hooks/useUserRole";
+import { AsaasCheckoutForm } from "@/components/AsaasCheckoutForm";
 
 const MyAccount = () => {
-  const { user, subscription, subscriptionLoading, createCheckout, openCustomerPortal } = useAuth();
+  const { user, subscription, subscriptionLoading, openCustomerPortal } = useAuth();
   const { role } = useUserRole();
-  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [isPortalLoading, setIsPortalLoading] = useState(false);
 
-  const handleCheckout = async () => {
-    setIsCheckoutLoading(true);
-    try {
-      await createCheckout();
-    } finally {
-      setIsCheckoutLoading(false);
-    }
-  };
-
-  const handlePortal = async () => {
+  const handleCancel = async () => {
+    if (!confirm("Tem certeza que deseja cancelar sua assinatura?")) return;
     setIsPortalLoading(true);
     try {
       await openCustomerPortal();
@@ -192,34 +183,27 @@ const MyAccount = () => {
               {subscription.productId !== 'school_access' && subscription.productId !== 'admin_access' && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Gerenciar assinatura</CardTitle>
+                    <CardTitle className="text-lg">Cancelar assinatura</CardTitle>
                     <CardDescription>
-                      Altere seu método de pagamento, veja faturas ou cancele sua assinatura
+                      Você pode cancelar a qualquer momento. O acesso permanece até o fim do período pago.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button 
-                      onClick={handlePortal} 
+                    <Button
+                      onClick={handleCancel}
                       disabled={isPortalLoading}
+                      variant="destructive"
                       className="gap-2"
                     >
-                      {isPortalLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4" />
-                      )}
-                      Abrir Portal de Assinatura
+                      {isPortalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                      Cancelar assinatura
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Você será redirecionado para o portal seguro do Stripe
-                    </p>
                   </CardContent>
                 </Card>
               )}
             </>
           ) : (
             <>
-              {/* Not Subscribed Card */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -234,60 +218,7 @@ const MyAccount = () => {
                 </CardHeader>
               </Card>
 
-              {/* Premium Plan Card */}
-              <Card className="border-primary/30 relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-gradient-to-l from-primary to-secondary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-bl-lg">
-                  Recomendado
-                </div>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <Crown className="h-8 w-8 text-primary" />
-                    <div>
-                      <CardTitle className="text-2xl">Plano Premium</CardTitle>
-                      <CardDescription>Acesso completo à plataforma</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold">R$ 29,90</span>
-                    <span className="text-muted-foreground">/mês</span>
-                  </div>
-                  
-                  <ul className="space-y-3">
-                    {[
-                      "Acesso ilimitado a todas as questões",
-                      "Relatórios detalhados de desempenho",
-                      "Histórico completo de respostas",
-                      "Simulados personalizados",
-                      "Suporte prioritário"
-                    ].map((benefit, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Button 
-                    onClick={handleCheckout} 
-                    disabled={isCheckoutLoading}
-                    className="w-full gap-2"
-                    size="lg"
-                  >
-                    {isCheckoutLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <CreditCard className="h-4 w-4" />
-                    )}
-                    Assinar Agora
-                  </Button>
-                  
-                  <p className="text-xs text-center text-muted-foreground">
-                    Pagamento seguro via Stripe. Cancele quando quiser.
-                  </p>
-                </CardContent>
-              </Card>
+              <AsaasCheckoutForm />
             </>
           )}
         </TabsContent>

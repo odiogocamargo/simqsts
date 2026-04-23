@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const checkPromise = (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('check-subscription', {
+        const { data, error } = await supabase.functions.invoke('check-asaas-subscription', {
           headers: {
             Authorization: `Bearer ${sessionToUse!.access_token}`,
           },
@@ -131,91 +131,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return checkPromise;
   }, []);
 
+  // Asaas: checkout é embutido (componente AsaasCheckoutForm). Mantemos o método para compatibilidade.
   const createCheckout = useCallback(async () => {
-    if (!session?.access_token) {
-      console.error('No session available for checkout');
-      return;
-    }
-    
-    setSubscriptionLoading(true);
-    try {
-      console.log('[useAuth] Creating checkout session...');
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      
-      if (error) {
-        console.error('Error creating checkout:', error);
-        setSubscriptionLoading(false);
-        return;
-      }
-
-      console.log('[useAuth] Checkout response:', data);
-
-      if (data?.url) {
-        console.log('[useAuth] Redirecting to checkout URL:', data.url);
-
-        // Em ambientes com iframe/sandbox (como preview), window.top pode lançar SecurityError.
-        // Prioriza redirecionamento na própria aba/janela atual, com fallback seguro.
-        try {
-          window.location.assign(data.url);
-          return;
-        } catch (redirectError) {
-          console.warn('[useAuth] window.location.assign failed, trying fallback', redirectError);
-        }
-
-        const opened = window.open(data.url, '_self');
-        if (!opened) {
-          throw new Error('Não foi possível redirecionar para o checkout do Stripe.');
-        }
-      } else {
-        console.error('[useAuth] No URL in checkout response');
-        setSubscriptionLoading(false);
-      }
-    } catch (error) {
-      console.error('Error creating checkout:', error);
-      setSubscriptionLoading(false);
-    }
-  }, [session]);
+    console.warn('[useAuth] Use o componente <AsaasCheckoutForm /> para checkout embutido.');
+  }, []);
 
   const openCustomerPortal = useCallback(async () => {
-    if (!session?.access_token) {
-      console.error('No session available for customer portal');
-      return;
-    }
-    
+    if (!session?.access_token) return;
     setSubscriptionLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      const { error } = await supabase.functions.invoke('cancel-asaas-subscription', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      
       if (error) {
-        // When the function returns non-2xx, the response body is in error.context
-        let msg = 'Erro ao abrir portal do cliente';
-        try {
-          const parsed = typeof error.context === 'string' ? JSON.parse(error.context) : error.context;
-          if (parsed?.error) msg = parsed.error;
-        } catch {}
-        if (data?.error) msg = data.error;
-        console.error('Error opening customer portal:', msg);
-        toast.error(msg);
+        toast.error('Erro ao cancelar assinatura');
         return;
       }
-
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Error opening customer portal:', error);
+      toast.success('Assinatura cancelada com sucesso');
+      await checkSubscription(session, true);
+    } catch (e) {
+      console.error('cancel error:', e);
+      toast.error('Erro ao cancelar assinatura');
     } finally {
       setSubscriptionLoading(false);
     }
-  }, [session]);
+  }, [session, checkSubscription]);
 
   useEffect(() => {
     let mounted = true;
