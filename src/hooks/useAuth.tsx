@@ -26,6 +26,7 @@ interface AuthContextType {
   checkSubscription: (currentSession?: Session | null, forceCheck?: boolean) => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
+  cancelSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -137,6 +138,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const openCustomerPortal = useCallback(async () => {
+    toast.info('O gerenciamento da assinatura está disponível em Minha Conta.');
+    navigate('/my-account');
+  }, [navigate]);
+
+  const cancelSubscription = useCallback(async () => {
     if (!session?.access_token) return;
     setSubscriptionLoading(true);
     try {
@@ -302,6 +308,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       checkSubscription,
       createCheckout,
       openCustomerPortal,
+      cancelSubscription,
     }}>
       {children}
     </AuthContext.Provider>
