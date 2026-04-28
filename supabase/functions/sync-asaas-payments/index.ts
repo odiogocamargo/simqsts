@@ -8,6 +8,11 @@ const corsHeaders = {
 
 const ASAAS_BASE_URL = "https://api.asaas.com/v3";
 
+function normalizePaymentStatus(payment: any): string {
+  if (payment?.deleted) return "DELETED";
+  return payment?.status ?? "PENDING";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -101,6 +106,7 @@ Deno.serve(async (req) => {
 
     let synced = 0;
     for (const p of payments) {
+      const paymentStatus = normalizePaymentStatus(p);
       const record = {
         user_id: userData.user.id,
         subscription_id: sub.id,
@@ -109,7 +115,7 @@ Deno.serve(async (req) => {
         asaas_customer_id: p.customer ?? customerId,
         amount: p.value ?? 0,
         net_value: p.netValue ?? null,
-        status: p.status ?? "PENDING",
+        status: paymentStatus,
         billing_type: p.billingType ?? null,
         description: p.description ?? null,
         due_date: p.dueDate ?? null,
