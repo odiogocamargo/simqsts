@@ -18,6 +18,11 @@ function mapAsaasSubStatus(s?: string): string | null {
   return null;
 }
 
+function normalizePaymentStatus(payment: any): string {
+  if (payment?.deleted) return "DELETED";
+  return payment?.status ?? "PENDING";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -112,6 +117,7 @@ Deno.serve(async (req) => {
         const payments: any[] = pJson?.data ?? [];
 
         for (const p of payments) {
+          const paymentStatus = normalizePaymentStatus(p);
           const record = {
             user_id: sub.user_id,
             subscription_id: sub.id,
@@ -120,7 +126,7 @@ Deno.serve(async (req) => {
             asaas_customer_id: p.customer ?? customerId,
             amount: p.value ?? 0,
             net_value: p.netValue ?? null,
-            status: p.status ?? "PENDING",
+            status: paymentStatus,
             billing_type: p.billingType ?? null,
             description: p.description ?? null,
             due_date: p.dueDate ?? null,
@@ -140,7 +146,7 @@ Deno.serve(async (req) => {
 
           // Se há um pagamento confirmado, garantir assinatura ativa
           if (
-            (p.status === "CONFIRMED" || p.status === "RECEIVED") &&
+            (paymentStatus === "CONFIRMED" || paymentStatus === "RECEIVED") &&
             sub.status !== "active"
           ) {
             await admin
