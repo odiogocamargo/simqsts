@@ -155,6 +155,7 @@ Deno.serve(async (req) => {
       started_at: new Date().toISOString(),
       next_due_date: nextDueDate,
       expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+      canceled_at: null,
     }, { onConflict: "user_id" });
 
     return new Response(JSON.stringify({ success: true, subscriptionId: subData.id }), {
