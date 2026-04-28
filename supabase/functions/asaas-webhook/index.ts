@@ -64,6 +64,7 @@ Deno.serve(async (req) => {
         case "PAYMENT_RECEIVED":
           updates.status = "active";
           updates.expires_at = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
+          updates.canceled_at = null;
           if (payment.dueDate) updates.next_due_date = payment.dueDate;
           break;
         case "PAYMENT_OVERDUE":
@@ -73,8 +74,8 @@ Deno.serve(async (req) => {
           updates.status = "refunded";
           break;
         case "PAYMENT_DELETED":
-          updates.status = "canceled";
-          updates.canceled_at = new Date().toISOString();
+          updates.status = "pending";
+          updates.canceled_at = null;
           break;
       }
 
@@ -114,9 +115,12 @@ Deno.serve(async (req) => {
       const subId = subscription.id;
       const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
-      if (eventName === "SUBSCRIPTION_DELETED" || subscription.status === "INACTIVE") {
+      if (eventName === "SUBSCRIPTION_DELETED" || ["CANCELLED", "CANCELED"].includes(String(subscription.status).toUpperCase())) {
         updates.status = "canceled";
         updates.canceled_at = new Date().toISOString();
+      } else if (["INACTIVE", "EXPIRED"].includes(String(subscription.status).toUpperCase())) {
+        updates.status = "pending";
+        updates.canceled_at = null;
       }
       if (subscription.nextDueDate) updates.next_due_date = subscription.nextDueDate;
 

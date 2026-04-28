@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: subs } = await admin
       .from("subscriptions")
-      .select("id, asaas_subscription_id, status")
+      .select("id, asaas_subscription_id, status, canceled_at")
       .eq("user_id", userData.user.id)
       .order("created_at", { ascending: false });
 
@@ -53,6 +53,13 @@ Deno.serve(async (req) => {
     if (!sub) {
       return new Response(
         JSON.stringify({ success: true, message: "Nenhuma assinatura encontrada para cancelar" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (sub.status === "canceled" && sub.canceled_at) {
+      return new Response(
+        JSON.stringify({ success: true, message: "Assinatura já estava cancelada" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
