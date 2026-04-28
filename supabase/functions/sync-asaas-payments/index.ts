@@ -50,16 +50,37 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false });
 
     const sub = subs?.[0];
-    if (!sub?.asaas_customer_id) {
-      return new Response(JSON.stringify({ synced: 0, message: "Sem cliente Asaas" }), {
+    if (!sub?.asaas_customer_id && !sub?.asaas_subscription_id) {
+      return new Response(JSON.stringify({ synced: 0, message: "Sem vínculo Asaas" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Buscar pagamentos no Asaas pelo customer
+    let customerId = sub.asaas_customer_id as string | null;
+    if (!customerId) {
+      const { data: lastPayment } = await admin
+        .from("payment_history")
+        .select("asaas_customer_id")
+        .eq("subscription_id", sub.id)
+        .not("asaas_customer_id", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      customerId = lastPayment?.asaas_customer_id ?? null;
+      if (customerId) {
+        await admin
+          .from("subscriptions")
+          .update({ asaas_customer_id: customerId, updated_at: new Date().toISOString() })
+          .eq("id", sub.id);
+      }
+    }
+
+    // Buscar pagamentos no Asaas pelo customer; se estiver ausente, usar a assinatura.
     const url = new URL(`${ASAAS_BASE_URL}/payments`);
-    url.searchParams.set("customer", sub.asaas_customer_id);
+    if (customerId) url.searchParams.set("customer", customerId);
+    else if (sub.asaas_subscription_id) url.searchParams.set("subscription", sub.asaas_subscription_id);
     url.searchParams.set("limit", "100");
 
     const resp = await fetch(url.toString(), {
@@ -85,7 +106,7 @@ Deno.serve(async (req) => {
         subscription_id: sub.id,
         asaas_payment_id: p.id,
         asaas_subscription_id: p.subscription ?? sub.asaas_subscription_id ?? null,
-        asaas_customer_id: p.customer ?? sub.asaas_customer_id,
+        asaas_customer_id: p.customer ?? customerId,
         amount: p.value ?? 0,
         net_value: p.netValue ?? null,
         status: p.status ?? "PENDING",
@@ -106,7 +127,16 @@ Deno.serve(async (req) => {
         .upsert(record, { onConflict: "asaas_payment_id" });
 
       if (error) console.error("upsert error:", error);
-      else synced++;
+      else {
+        synced++;
+        if (!customerId && p.customer) {
+          customerId = p.customer;
+          await admin
+            .from("subscriptions")
+            .update({ asaas_customer_id: customerId, updated_at: new Date().toISOString() })
+            .eq("id", sub.id);
+        }
+      }
     }
 
     return new Response(JSON.stringify({ synced, total: payments.length }), {
