@@ -13,7 +13,8 @@ function mapAsaasSubStatus(s?: string): string | null {
   if (!s) return null;
   const v = s.toUpperCase();
   if (v === "ACTIVE") return "active";
-  if (v === "INACTIVE" || v === "CANCELLED" || v === "CANCELED" || v === "EXPIRED") return "canceled";
+  if (v === "CANCELLED" || v === "CANCELED") return "canceled";
+  if (v === "INACTIVE" || v === "EXPIRED") return "pending";
   if (v === "OVERDUE") return "late";
   return null;
 }
@@ -88,6 +89,7 @@ Deno.serve(async (req) => {
             if (mapped && mapped !== sub.status) {
               updates.status = mapped;
               if (mapped === "canceled") updates.canceled_at = new Date().toISOString();
+              if (mapped !== "canceled") updates.canceled_at = null;
             }
             if (sJson?.nextDueDate) updates.next_due_date = sJson.nextDueDate;
             if (Object.keys(updates).length > 1) {
@@ -162,6 +164,7 @@ Deno.serve(async (req) => {
                 status: "active",
                 asaas_last_payment_id: p.id,
                 expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+                canceled_at: null,
                 updated_at: new Date().toISOString(),
               })
               .eq("id", sub.id);
