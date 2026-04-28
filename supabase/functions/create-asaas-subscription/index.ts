@@ -150,11 +150,11 @@ Deno.serve(async (req) => {
       asaas_customer_id: customerId,
       asaas_subscription_id: subData.id,
       plan_name: "SIM Questões Premium",
-      status: "active",
+      status: "pending",
       payment_method: "CREDIT_CARD",
       started_at: new Date().toISOString(),
       next_due_date: nextDueDate,
-      expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: null,
       canceled_at: null,
     }, { onConflict: "user_id" });
 

@@ -73,6 +73,8 @@ Deno.serve(async (req) => {
           updates.status = "refunded";
           break;
         case "PAYMENT_DELETED":
+          updates.status = "canceled";
+          updates.canceled_at = new Date().toISOString();
           break;
       }
 
@@ -87,7 +89,7 @@ Deno.serve(async (req) => {
         asaas_customer_id: customerId ?? null,
         amount: payment.value ?? 0,
         net_value: payment.netValue ?? null,
-        status: payment.status ?? eventName,
+        status: eventName === "PAYMENT_DELETED" || payment.deleted ? "DELETED" : payment.status ?? eventName,
         billing_type: payment.billingType ?? null,
         description: payment.description ?? null,
         due_date: payment.dueDate ?? null,
