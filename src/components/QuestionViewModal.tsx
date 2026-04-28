@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Edit, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { KatexHtml, KatexText } from "@/components/KatexRenderer";
+import { KatexHtml } from "@/components/KatexRenderer";
 
 interface Question {
   id: string;
@@ -170,7 +170,10 @@ export function QuestionViewModal({ question, open, onOpenChange, onEdit }: Ques
                         >
                           {letter.toUpperCase()}
                         </div>
-                        <KatexText className="text-sm text-foreground flex-1">{text}</KatexText>
+                        <KatexHtml
+                          html={text}
+                          className="text-sm text-foreground flex-1 prose prose-sm max-w-none [&_img]:mt-2 [&_img]:max-h-48 [&_img]:max-w-full [&_img]:rounded-md [&_img]:border [&_img]:border-border [&_img]:object-contain"
+                        />
                         {isCorrect && (
                           <Badge className="bg-success/10 text-success border-success/20 shrink-0">
                             Correta

@@ -14,8 +14,7 @@ import { cn } from "@/lib/utils";
 import { useSubjects, useContents, useTopics, useExams } from "@/hooks/useSubjects";
 import { Badge } from "@/components/ui/badge";
 import { Paywall, TrialBanner } from "@/components/Paywall";
-import DOMPurify from "dompurify";
-import { KatexHtml, KatexText } from "@/components/KatexRenderer";
+import { KatexHtml } from "@/components/KatexRenderer";
 
 const StudentQuestions = () => {
   const { user, subscription } = useAuth();
@@ -537,7 +536,10 @@ const StudentQuestions = () => {
                         {option}
                       </div>
                       <Label htmlFor={`option-${option}`} className="flex-1 cursor-pointer text-base leading-relaxed">
-                        <KatexText>{optionValue}</KatexText>
+                        <KatexHtml
+                          html={optionValue}
+                          className="prose prose-sm max-w-none dark:prose-invert [&_img]:mt-2 [&_img]:max-h-48 [&_img]:max-w-full [&_img]:rounded-md [&_img]:border [&_img]:border-border [&_img]:object-contain"
+                        />
                       </Label>
                       <RadioGroupItem value={option} id={`option-${option}`} className="sr-only" />
                     </div>
