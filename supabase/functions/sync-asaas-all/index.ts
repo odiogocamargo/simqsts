@@ -102,6 +102,13 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        await admin
+          .from("payment_history")
+          .update({ status: "DELETED", updated_at: new Date().toISOString() })
+          .eq("subscription_id", sub.id)
+          .eq("status", "PENDING")
+          .eq("raw_event->payment->>deleted", "true");
+
         // 2. Sincronizar pagamentos do customer
         const url = new URL(`${ASAAS_BASE_URL}/payments`);
         url.searchParams.set("customer", customerId);
