@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { ImageIcon } from 'lucide-react';
 import { normalizeTextArtifacts, renderWithKatex } from '@/components/KatexRenderer';
+import DOMPurify from 'dompurify';
 
 interface AlternativeInputProps {
   value: string;
@@ -29,20 +30,25 @@ const imageToHtml = (file: File): Promise<string> => new Promise((resolve, rejec
 const sanitizePlainText = (text: string): string => {
   if (!text) return '';
 
-  return normalizeTextArtifacts(text)
+  const images: string[] = [];
+
+  const cleaned = normalizeTextArtifacts(text)
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
     .replace(/&amp;/gi, '&')
     .replace(/<img\s+[^>]*src=["']([^"']+)["'][^>]*>/gi, (_, src) => {
       const safeSrc = String(src).trim();
       if (!/^(data:image\/(png|jpe?g|gif|webp);base64,|https?:\/\/)/i.test(safeSrc)) return '';
-      return `<img src="${safeSrc}" alt="Imagem da alternativa" />`;
+      images.push(`<img src="${safeSrc}" alt="Imagem da alternativa" />`);
+      return ` __ALT_IMAGE_${images.length - 1}__ `;
     })
     .replace(/<br\s*\/?>/gi, ' ')
     .replace(/<[^>]*>/g, '')
     .replace(/\n/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+
+  return cleaned.replace(/__ALT_IMAGE_(\d+)__/g, (_, index) => images[Number(index)] || '').trim();
 };
 
 export const AlternativeInput = ({ value, onChange, placeholder }: AlternativeInputProps) => {
@@ -107,7 +113,7 @@ export const AlternativeInput = ({ value, onChange, placeholder }: AlternativeIn
         <div
           ref={previewRef}
           className="rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-sm [&_img]:mt-2 [&_img]:max-h-40 [&_img]:max-w-full [&_img]:rounded-md [&_img]:border [&_img]:border-border [&_img]:object-contain"
-          dangerouslySetInnerHTML={{ __html: renderWithKatex(rawValue) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderWithKatex(rawValue)) }}
         />
       )}
     </div>
