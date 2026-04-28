@@ -25,6 +25,14 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Não autenticado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const body = await req.json().catch(() => ({}));
+    if (body?.confirmCancel !== true) {
+      return new Response(JSON.stringify({ error: "Confirmação de cancelamento obrigatória" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });

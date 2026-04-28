@@ -32,11 +32,12 @@ Deno.serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Buscar todas as assinaturas com vínculo no Asaas
+    // Buscar assinaturas com vínculo de assinatura no Asaas, mesmo que o customer esteja ausente.
+    // O customer pode ser recuperado pelo histórico de pagamentos abaixo.
     const { data: subs, error: subsErr } = await admin
       .from("subscriptions")
       .select("id, user_id, asaas_customer_id, asaas_subscription_id, status")
-      .not("asaas_customer_id", "is", null);
+      .or("asaas_customer_id.not.is.null,asaas_subscription_id.not.is.null");
 
     if (subsErr) throw subsErr;
 
@@ -48,6 +49,28 @@ Deno.serve(async (req) => {
     for (const sub of subs ?? []) {
       subsChecked++;
       try {
+        let customerId = sub.asaas_customer_id as string | null;
+
+        if (!customerId) {
+          const { data: lastPayment } = await admin
+            .from("payment_history")
+            .select("asaas_customer_id")
+            .eq("subscription_id", sub.id)
+            .not("asaas_customer_id", "is", null)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          customerId = lastPayment?.asaas_customer_id ?? null;
+          if (customerId) {
+            await admin
+              .from("subscriptions")
+              .update({ asaas_customer_id: customerId, updated_at: new Date().toISOString() })
+              .eq("id", sub.id);
+            subsUpdated++;
+          }
+        }
+
         // 1. Atualizar status da assinatura (se houver assinatura Asaas)
         if (sub.asaas_subscription_id) {
           const sResp = await fetch(`${ASAAS_BASE_URL}/subscriptions/${sub.asaas_subscription_id}`, {
@@ -69,9 +92,14 @@ Deno.serve(async (req) => {
           }
         }
 
+        if (!customerId) {
+          errors.push(`customer missing ${sub.id}`);
+          continue;
+        }
+
         // 2. Sincronizar pagamentos do customer
         const url = new URL(`${ASAAS_BASE_URL}/payments`);
-        url.searchParams.set("customer", sub.asaas_customer_id!);
+        url.searchParams.set("customer", customerId);
         url.searchParams.set("limit", "100");
         const pResp = await fetch(url.toString(), {
           headers: { "access_token": ASAAS_API_KEY },
@@ -89,7 +117,7 @@ Deno.serve(async (req) => {
             subscription_id: sub.id,
             asaas_payment_id: p.id,
             asaas_subscription_id: p.subscription ?? sub.asaas_subscription_id ?? null,
-            asaas_customer_id: p.customer ?? sub.asaas_customer_id,
+            asaas_customer_id: p.customer ?? customerId,
             amount: p.value ?? 0,
             net_value: p.netValue ?? null,
             status: p.status ?? "PENDING",

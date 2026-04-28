@@ -23,7 +23,7 @@ import { AsaasCheckoutForm } from "@/components/AsaasCheckoutForm";
 import { PaymentHistory } from "@/components/PaymentHistory";
 
 const MyAccount = () => {
-  const { user, subscription, subscriptionLoading, openCustomerPortal } = useAuth();
+  const { user, subscription, subscriptionLoading, cancelSubscription } = useAuth();
   const { role } = useUserRole();
   const [isPortalLoading, setIsPortalLoading] = useState(false);
 
@@ -31,7 +31,7 @@ const MyAccount = () => {
     if (!confirm("Tem certeza que deseja cancelar sua assinatura?")) return;
     setIsPortalLoading(true);
     try {
-      await openCustomerPortal();
+      await cancelSubscription();
     } finally {
       setIsPortalLoading(false);
     }
