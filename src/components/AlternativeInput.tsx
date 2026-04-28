@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { Textarea } from '@/components/ui/textarea';
-import { ImageIcon } from 'lucide-react';
-import { normalizeTextArtifacts, renderWithKatex } from '@/components/KatexRenderer';
+import { useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
+import { normalizeTextArtifacts, renderWithKatex } from '@/components/KatexRenderer';
 
 interface AlternativeInputProps {
   value: string;
@@ -10,14 +8,12 @@ interface AlternativeInputProps {
   placeholder?: string;
 }
 
-const hasLatex = (text: string) => /\$[^$]+\$/.test(normalizeTextArtifacts(text));
-
 const imageToHtml = (file: File): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader();
   reader.onload = (event) => {
     const src = event.target?.result;
     if (typeof src === 'string') {
-      resolve(`<img src="${src}" alt="Imagem da alternativa" />`);
+      resolve(`<img src="${src}" alt="Imagem da alternativa">`);
       return;
     }
     reject(new Error('Não foi possível ler a imagem.'));
@@ -26,65 +22,90 @@ const imageToHtml = (file: File): Promise<string> => new Promise((resolve, rejec
   reader.readAsDataURL(file);
 });
 
-/** Strip unsafe HTML/escaped chars that may come from AI extraction while preserving images in alternatives */
-const sanitizePlainText = (text: string): string => {
-  if (!text) return '';
-
-  const images: string[] = [];
-
-  const cleaned = normalizeTextArtifacts(text)
+const sanitizeAlternativeHtml = (html: string): string => {
+  const normalized = normalizeTextArtifacts(html || '')
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
-    .replace(/&amp;/gi, '&')
-    .replace(/<img\s+[^>]*src=["']([^"']+)["'][^>]*>/gi, (_, src) => {
-      const safeSrc = String(src).trim();
-      if (!/^(data:image\/(png|jpe?g|gif|webp);base64,|https?:\/\/)/i.test(safeSrc)) return '';
-      images.push(`<img src="${safeSrc}" alt="Imagem da alternativa" />`);
-      return ` __ALT_IMAGE_${images.length - 1}__ `;
-    })
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]*>/g, '')
-    .replace(/\n/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+    .replace(/&amp;/gi, '&');
 
-  return cleaned.replace(/__ALT_IMAGE_(\d+)__/g, (_, index) => images[Number(index)] || '').trim();
+  return DOMPurify.sanitize(normalized, {
+    ALLOWED_TAGS: ['br', 'div', 'p', 'span', 'strong', 'b', 'em', 'i', 'sub', 'sup', 'img'],
+    ALLOWED_ATTR: ['src', 'alt'],
+    ADD_DATA_URI_TAGS: ['img'],
+  }).trim();
 };
 
+const htmlToEditableText = (html: string): string => sanitizeAlternativeHtml(html)
+  .replace(/<p><br><\/p>/gi, '<br>')
+  .replace(/<\/?p[^>]*>/gi, '<div>')
+  .replace(/<\/p>/gi, '</div>');
+
 export const AlternativeInput = ({ value, onChange, placeholder }: AlternativeInputProps) => {
-  const previewRef = useRef<HTMLDivElement>(null);
-  const [rawValue, setRawValue] = useState(sanitizePlainText(value));
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setRawValue(sanitizePlainText(value));
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const safeValue = htmlToEditableText(value);
+    if (editor.innerHTML !== safeValue) {
+      editor.innerHTML = safeValue;
+    }
   }, [value]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newVal = sanitizePlainText(e.target.value);
-    setRawValue(newVal);
-    onChange(newVal);
+  const emitChange = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const safeValue = sanitizeAlternativeHtml(editor.innerHTML);
+    onChange(safeValue);
+  };
+
+  const insertHtmlAtCursor = (html: string) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || !editorRef.current?.contains(selection.anchorNode)) {
+      editorRef.current?.focus();
+      editorRef.current?.insertAdjacentHTML('beforeend', html);
+      emitChange();
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const fragment = range.createContextualFragment(html);
+    const lastNode = fragment.lastChild;
+    range.insertNode(fragment);
+    if (lastNode) {
+      range.setStartAfter(lastNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    emitChange();
   };
 
   const appendImages = async (files: File[]) => {
     const imageFiles = files.filter((file) => file.type.startsWith('image/'));
     if (imageFiles.length === 0) return false;
 
-    const imageHtml = await Promise.all(imageFiles.map(imageToHtml));
-    const nextValue = sanitizePlainText([rawValue, ...imageHtml].filter(Boolean).join(' '));
-    setRawValue(nextValue);
-    onChange(nextValue);
+    const imagesHtml = await Promise.all(imageFiles.map(imageToHtml));
+    insertHtmlAtCursor(imagesHtml.join(''));
     return true;
   };
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
     const files = Array.from(e.clipboardData.files || []);
-    if (files.length === 0) return;
+    if (files.some((file) => file.type.startsWith('image/'))) {
+      e.preventDefault();
+      await appendImages(files);
+      return;
+    }
 
     e.preventDefault();
-    await appendImages(files);
+    const text = e.clipboardData.getData('text/plain');
+    if (text) insertHtmlAtCursor(DOMPurify.sanitize(text).replace(/\n/g, '<br>'));
   };
 
-  const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     const files = Array.from(e.dataTransfer.files || []);
     if (files.length === 0) return;
 
@@ -92,31 +113,22 @@ export const AlternativeInput = ({ value, onChange, placeholder }: AlternativeIn
     await appendImages(files);
   };
 
-  const showPreview = hasLatex(rawValue) || /<img\s/i.test(rawValue);
-
   return (
-    <div className="space-y-1.5">
-      <Textarea
-        value={rawValue}
-        onChange={handleChange}
+    <div className="relative">
+      {!value && (
+        <span className="pointer-events-none absolute left-3 top-2 text-sm text-muted-foreground">
+          {placeholder}
+        </span>
+      )}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={emitChange}
         onPaste={handlePaste}
         onDrop={handleDrop}
-        placeholder={placeholder}
-        rows={2}
-        className="min-h-[76px] text-sm"
+        className="min-h-[76px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_img]:my-2 [&_img]:max-h-40 [&_img]:max-w-full [&_img]:rounded-md [&_img]:border [&_img]:border-border [&_img]:object-contain"
       />
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <ImageIcon className="h-3.5 w-3.5" />
-        Cole uma imagem aqui quando a alternativa tiver figura.
-      </p>
-      {showPreview && (
-        <div
-          ref={previewRef}
-          className="rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-sm [&_img]:mt-2 [&_img]:max-h-40 [&_img]:max-w-full [&_img]:rounded-md [&_img]:border [&_img]:border-border [&_img]:object-contain"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderWithKatex(rawValue)) }}
-        />
-      )}
     </div>
   );
 };
-
