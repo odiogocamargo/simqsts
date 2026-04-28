@@ -148,6 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { error } = await supabase.functions.invoke('cancel-asaas-subscription', {
         headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { confirmCancel: true },
       });
       if (error) {
         toast.error('Erro ao cancelar assinatura');
