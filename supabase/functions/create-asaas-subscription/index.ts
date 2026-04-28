@@ -73,6 +73,21 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    const { data: existingSub } = await adminClient
+      .from("subscriptions")
+      .select("id, status, expires_at, asaas_customer_id, asaas_subscription_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .maybeSingle();
+
+    const existingIsActive = existingSub?.status === "active" && (!existingSub.expires_at || new Date(existingSub.expires_at) > new Date());
+    if (existingIsActive) {
+      return new Response(JSON.stringify({ error: "Você já possui uma assinatura ativa" }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Buscar profile
     const { data: profile } = await adminClient
       .from("profiles")
@@ -83,32 +98,51 @@ Deno.serve(async (req) => {
     const cpf = (body.holderInfo.cpfCnpj || profile?.cpf || "").replace(/\D/g, "");
     const fullName = body.holderInfo.name || profile?.full_name || user.email!;
 
-    // 1. Criar/buscar customer no Asaas
-    const customerResp = await fetch(`${ASAAS_BASE_URL}/customers`, {
-      method: "POST",
-      headers: {
-        "access_token": ASAAS_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: fullName,
-        cpfCnpj: cpf,
-        email: user.email,
-        mobilePhone: body.holderInfo.phone || profile?.whatsapp || "",
-        externalReference: user.id,
-      }),
-    });
-
-    const customerData = await customerResp.json();
-    if (!customerResp.ok) {
-      console.error("Asaas customer error:", customerData);
-      return new Response(JSON.stringify({ error: customerData?.errors?.[0]?.description || "Erro ao criar cliente" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (existingSub?.asaas_subscription_id && existingSub.status !== "canceled") {
+      const cancelResp = await fetch(`${ASAAS_BASE_URL}/subscriptions/${existingSub.asaas_subscription_id}`, {
+        method: "DELETE",
+        headers: { "access_token": ASAAS_API_KEY },
       });
+
+      if (!cancelResp.ok && cancelResp.status !== 404) {
+        const cancelText = await cancelResp.text();
+        console.error("Asaas previous subscription cancel error:", cancelResp.status, cancelText);
+        return new Response(JSON.stringify({ error: "Não foi possível substituir a assinatura anterior. Tente novamente em instantes." }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
-    const customerId = customerData.id;
+    // 1. Reaproveitar customer existente ou criar novo cliente no Asaas
+    let customerId = existingSub?.asaas_customer_id as string | null;
+    if (!customerId) {
+      const customerResp = await fetch(`${ASAAS_BASE_URL}/customers`, {
+        method: "POST",
+        headers: {
+          "access_token": ASAAS_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: fullName,
+          cpfCnpj: cpf,
+          email: user.email,
+          mobilePhone: body.holderInfo.phone || profile?.whatsapp || "",
+          externalReference: user.id,
+        }),
+      });
+
+      const customerData = await customerResp.json();
+      if (!customerResp.ok) {
+        console.error("Asaas customer error:", customerData);
+        return new Response(JSON.stringify({ error: customerData?.errors?.[0]?.description || "Erro ao criar cliente" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      customerId = customerData.id;
+    }
 
     // 2. Criar assinatura mensal R$ 19,99 cartão de crédito
     // Vencimento HOJE para que o Asaas processe a cobrança no cartão imediatamente
