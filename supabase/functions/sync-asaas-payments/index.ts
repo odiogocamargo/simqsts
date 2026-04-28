@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
       const { data: lastPayment } = await admin
         .from("payment_history")
         .select("asaas_customer_id")
-        .eq("subscription_id", sub.id)
+        .eq("user_id", userData.user.id)
         .not("asaas_customer_id", "is", null)
         .order("updated_at", { ascending: false })
         .limit(1)
