@@ -469,11 +469,11 @@ const Questions = () => {
                       <SelectValue placeholder="Ano" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="2024">2024</SelectItem>
-                      <SelectItem value="2023">2023</SelectItem>
-                      <SelectItem value="2022">2022</SelectItem>
-                      <SelectItem value="2021">2021</SelectItem>
-                      <SelectItem value="2020">2020</SelectItem>
+                      {availableYears.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          {year}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select value={selectedDifficulty} onValueChange={(value) => { setSelectedDifficulty(value); setCurrentPage(0); }}>
@@ -495,7 +495,7 @@ const Questions = () => {
               </div>
               {hasActiveFilters && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{filteredQuestions.length} questões encontradas</span>
+                  <span>{totalCount} questões encontradas</span>
                 </div>
               )}
             </div>
