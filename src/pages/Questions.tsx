@@ -90,16 +90,36 @@ const Questions = () => {
   const { data: topics = [] } = useTopics(selectedContent);
   const { data: exams = [] } = useExams();
 
+  const { data: availableYears = [] } = useQuery({
+    queryKey: ['question-years'],
+    queryFn: async () => {
+      const [oldestResult, newestResult] = await Promise.all([
+        supabase.from('questions').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1).maybeSingle(),
+        supabase.from('questions').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1).maybeSingle(),
+      ]);
+
+      if (oldestResult.error || newestResult.error || !oldestResult.data || !newestResult.data) {
+        return [];
+      }
+
+      const oldest = oldestResult.data.year;
+      const newest = newestResult.data.year;
+      return Array.from({ length: newest - oldest + 1 }, (_, index) => newest - index);
+    },
+  });
+
   // Contar total de questões para paginação
   const { data: totalCount = 0 } = useQuery({
-    queryKey: ['questions-count', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
+    queryKey: ['questions-count', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
     queryFn: async () => {
       let query = supabase
         .from('questions')
-        .select('id', { count: 'exact', head: true });
+        .select(selectedTopic ? 'id, question_topics!inner(topic_id)' : 'id', { count: 'exact', head: true });
 
+      if (searchTerm.trim()) query = query.ilike('statement', `%${searchTerm.trim()}%`);
       if (selectedSubject) query = query.eq('subject_id', selectedSubject);
       if (selectedContent) query = query.eq('content_id', selectedContent);
+      if (selectedTopic) query = query.eq('question_topics.topic_id', selectedTopic);
       if (selectedExam) query = query.eq('exam_id', selectedExam);
       if (selectedYear) query = query.eq('year', parseInt(selectedYear));
       if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
@@ -114,7 +134,7 @@ const Questions = () => {
 
   // Buscar questões do banco de dados com paginação
   const { data: questions = [], refetch, isLoading } = useQuery({
-    queryKey: ['questions', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, currentPage],
+    queryKey: ['questions', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, currentPage],
     queryFn: async () => {
       const from = currentPage * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -135,13 +155,16 @@ const Questions = () => {
           explanation,
           subjects(id, name),
           contents(id, name),
-          exams(id, name)
+          exams(id, name),
+          question_topics!inner(topic_id)
         `)
         .order('created_at', { ascending: false })
         .range(from, to);
 
+      if (searchTerm.trim()) query = query.ilike('statement', `%${searchTerm.trim()}%`);
       if (selectedSubject) query = query.eq('subject_id', selectedSubject);
       if (selectedContent) query = query.eq('content_id', selectedContent);
+      if (selectedTopic) query = query.eq('question_topics.topic_id', selectedTopic);
       if (selectedExam) query = query.eq('exam_id', selectedExam);
       if (selectedYear) query = query.eq('year', parseInt(selectedYear));
       if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
