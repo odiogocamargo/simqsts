@@ -149,23 +149,7 @@ const Questions = () => {
 
       let query = supabase
         .from('questions')
-        .select(`
-          id,
-          statement,
-          year,
-          difficulty,
-          subject_id,
-          content_id,
-          exam_id,
-          question_type,
-          option_a, option_b, option_c, option_d, option_e,
-          correct_answer,
-          explanation,
-          subjects(id, name),
-          contents(id, name),
-          exams(id, name)
-          ${topicJoin}
-        `)
+        .select(`id, statement, year, difficulty, subject_id, content_id, exam_id, question_type, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation, subjects(id, name), contents(id, name), exams(id, name)${topicJoin}`)
         .order('created_at', { ascending: false })
         .range(from, to);
 
