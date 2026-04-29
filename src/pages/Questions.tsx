@@ -93,18 +93,25 @@ const Questions = () => {
   const { data: availableYears = [] } = useQuery({
     queryKey: ['question-years'],
     queryFn: async () => {
-      const [oldestResult, newestResult] = await Promise.all([
-        supabase.from('questions').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1).maybeSingle(),
-        supabase.from('questions').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1).maybeSingle(),
-      ]);
+      const pageSize = 1000;
+      let from = 0;
+      const years = new Set<number>();
 
-      if (oldestResult.error || newestResult.error || !oldestResult.data || !newestResult.data) {
-        return [];
+      while (true) {
+        const { data, error } = await supabase
+          .from('questions')
+          .select('year')
+          .not('year', 'is', null)
+          .order('year', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error || !data || data.length === 0) break;
+        data.forEach((question) => years.add(question.year));
+        if (data.length < pageSize) break;
+        from += pageSize;
       }
 
-      const oldest = oldestResult.data.year;
-      const newest = newestResult.data.year;
-      return Array.from({ length: newest - oldest + 1 }, (_, index) => newest - index);
+      return Array.from(years).sort((a, b) => b - a);
     },
   });
 
@@ -138,6 +145,7 @@ const Questions = () => {
     queryFn: async () => {
       const from = currentPage * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
+      const topicJoin = selectedTopic ? ', question_topics!inner(topic_id)' : '';
 
       let query = supabase
         .from('questions')
@@ -155,8 +163,8 @@ const Questions = () => {
           explanation,
           subjects(id, name),
           contents(id, name),
-          exams(id, name),
-          question_topics!inner(topic_id)
+          exams(id, name)
+          ${topicJoin}
         `)
         .order('created_at', { ascending: false })
         .range(from, to);
