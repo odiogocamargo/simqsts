@@ -172,6 +172,101 @@ const Dashboard = () => {
     },
   });
 
+  const getQuestionsPeriodDates = useMemo(() => {
+    const now = new Date();
+    switch (questionsPeriod) {
+      case "today":
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case "yesterday": {
+        const yesterday = subDays(now, 1);
+        return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+      }
+      case "week":
+        return { start: startOfWeek(now, { locale: ptBR }), end: endOfWeek(now, { locale: ptBR }) };
+      case "month":
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case "custom":
+        if (questionsDateRange?.from) {
+          return {
+            start: startOfDay(questionsDateRange.from),
+            end: questionsDateRange.to ? endOfDay(questionsDateRange.to) : endOfDay(questionsDateRange.from),
+          };
+        }
+        return null;
+      default:
+        return null;
+    }
+  }, [questionsPeriod, questionsDateRange]);
+
+  const { data: professorQuestionCounts } = useQuery({
+    queryKey: ["dashboard-professor-question-counts", questionsPeriod, questionsDateRange?.from?.toISOString(), questionsDateRange?.to?.toISOString()],
+    enabled: isAdmin || isProfessor,
+    queryFn: async () => {
+      const { data: staffRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["professor", "admin"]);
+
+      if (rolesError) throw rolesError;
+
+      const staffIds = staffRoles?.map((r) => r.user_id) || [];
+      const roleMap = new Map(staffRoles?.map((r) => [r.user_id, r.role]) || []);
+
+      if (staffIds.length === 0) return { data: [], periodLabel: "" };
+
+      let query = supabase
+        .from("questions")
+        .select("created_by, created_at")
+        .in("created_by", staffIds);
+
+      const periodDates = getQuestionsPeriodDates;
+      if (periodDates) {
+        query = query
+          .gte("created_at", periodDates.start.toISOString())
+          .lte("created_at", periodDates.end.toISOString());
+      }
+
+      const { data: questions, error: questionsError } = await query;
+      if (questionsError) throw questionsError;
+
+      const countMap = new Map<string, number>();
+      questions?.forEach((q) => countMap.set(q.created_by, (countMap.get(q.created_by) || 0) + 1));
+
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", staffIds);
+
+      if (profilesError) throw profilesError;
+
+      let periodLabel = "Todo o período";
+      if (periodDates) {
+        if (questionsPeriod === "today") periodLabel = "Hoje";
+        else if (questionsPeriod === "yesterday") periodLabel = "Ontem";
+        else if (questionsPeriod === "week") periodLabel = "Esta semana";
+        else if (questionsPeriod === "month") periodLabel = "Este mês";
+        else if (questionsPeriod === "custom") {
+          periodLabel = questionsDateRange?.to
+            ? `${format(periodDates.start, "dd/MM/yyyy")} - ${format(periodDates.end, "dd/MM/yyyy")}`
+            : format(periodDates.start, "dd/MM/yyyy");
+        }
+      }
+
+      return {
+        data: staffIds.map((id) => {
+          const profile = profiles?.find((p) => p.id === id);
+          return {
+            userId: id,
+            name: profile?.full_name || "Sem nome",
+            role: roleMap.get(id) || "professor",
+            questionCount: countMap.get(id) || 0,
+          };
+        }).sort((a, b) => b.questionCount - a.questionCount),
+        periodLabel,
+      };
+    },
+  });
+
   const metrics = [
     { title: "Total de Questões", value: totalQuestions.toString(), icon: Database, variant: "default" as const },
     { title: "Matérias Cobertas", value: totalSubjects.toString(), icon: BookOpen, variant: "default" as const },
