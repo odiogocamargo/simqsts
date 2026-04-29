@@ -184,8 +184,10 @@ const Questions = () => {
         return [];
       }
 
+      const questionRows = (data || []) as any[];
+
       // Buscar tópicos para as questões da página
-      const questionIds = (data || []).map(q => q.id);
+      const questionIds = questionRows.map(q => q.id);
       let topicsMap = new Map();
       
       if (questionIds.length > 0) {
@@ -202,7 +204,7 @@ const Questions = () => {
         );
       }
 
-      return (data || []).map((q: any) => {
+      return questionRows.map((q: any) => {
         const topicData = topicsMap.get(q.id);
         return {
           id: q.id,
