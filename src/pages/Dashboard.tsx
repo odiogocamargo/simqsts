@@ -119,24 +119,46 @@ const Dashboard = () => {
     queryKey: ['exam-distribution'],
     enabled: isAdmin || isProfessor,
     queryFn: async () => {
-      const { data: questions } = await supabase
-        .from('questions')
-        .select('exam_id, exams(name)');
-      
-      if (!questions) return [];
+      const { data: exams, error: examsError } = await supabase
+        .from('exams')
+        .select('id, name')
+        .order('name');
+
+      if (examsError) throw examsError;
+
+      const questions: { exam_id: string }[] = [];
+      const pageSize = 1000;
+      let from = 0;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from('questions')
+          .select('exam_id')
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        const page = data || [];
+        questions.push(...page);
+
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
 
       const distribution = questions.reduce<Record<string, number>>((acc, q) => {
-        const examName = q.exams?.name || 'Desconhecido';
-        acc[examName] = (acc[examName] || 0) + 1;
+        acc[q.exam_id] = (acc[q.exam_id] || 0) + 1;
         return acc;
       }, {});
 
-      const total = questions.length || 1;
-      return Object.entries(distribution).map(([exam, count]) => ({
-        exam,
-        count,
-        percentage: Math.round((count / total) * 100),
-      })).sort((a, b) => b.count - a.count);
+      const total = questions.length;
+      return (exams || []).map((exam) => {
+        const count = distribution[exam.id] || 0;
+        return {
+          exam: exam.name,
+          count,
+          percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+        };
+      }).sort((a, b) => b.count - a.count || a.exam.localeCompare(b.exam, 'pt-BR'));
     },
   });
 
@@ -222,7 +244,7 @@ const Dashboard = () => {
                       </p>
                     </div>
                   ) : (
-                    examStats.slice(0, 6).map((stat) => (
+                    examStats.map((stat) => (
                       <div key={stat.exam} className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="font-medium text-foreground">{stat.exam}</span>
