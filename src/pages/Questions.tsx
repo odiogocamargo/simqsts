@@ -339,6 +339,8 @@ const Questions = () => {
         description: "As alterações foram salvas com sucesso.",
       });
 
+      queryClient.invalidateQueries({ queryKey: ['questions-count'] });
+      queryClient.invalidateQueries({ queryKey: ['question-years'] });
       await refetch();
     } catch (error) {
       console.error('Error updating question:', error);
@@ -375,6 +377,8 @@ const Questions = () => {
         description: "A questão foi removida com sucesso do banco de dados.",
       });
       queryClient.invalidateQueries({ queryKey: ['questions'] });
+      queryClient.invalidateQueries({ queryKey: ['questions-count'] });
+      queryClient.invalidateQueries({ queryKey: ['question-years'] });
       setDeleteQuestionId(null);
     },
     onError: (error) => {
@@ -419,7 +423,10 @@ const Questions = () => {
                     placeholder="Buscar questões..."
                     className="pl-10"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(0);
+                    }}
                   />
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -668,7 +675,12 @@ const Questions = () => {
         <QuestionImportModal
           open={isImportModalOpen}
           onOpenChange={setIsImportModalOpen}
-          onSuccess={() => refetch()}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['questions'] });
+            queryClient.invalidateQueries({ queryKey: ['questions-count'] });
+            queryClient.invalidateQueries({ queryKey: ['question-years'] });
+            refetch();
+          }}
         />
 
         <AlertDialog open={deleteQuestionId !== null} onOpenChange={() => setDeleteQuestionId(null)}>
