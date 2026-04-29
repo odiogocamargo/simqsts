@@ -125,14 +125,14 @@ const Dashboard = () => {
       
       if (!questions) return [];
 
-      const distribution = questions.reduce((acc: any, q: any) => {
+      const distribution = questions.reduce<Record<string, number>>((acc, q) => {
         const examName = q.exams?.name || 'Desconhecido';
         acc[examName] = (acc[examName] || 0) + 1;
         return acc;
       }, {});
 
       const total = questions.length || 1;
-      return Object.entries(distribution).map(([exam, count]: [string, any]) => ({
+      return Object.entries(distribution).map(([exam, count]) => ({
         exam,
         count,
         percentage: Math.round((count / total) * 100),
