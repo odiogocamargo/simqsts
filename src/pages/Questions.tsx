@@ -66,6 +66,29 @@ interface Question {
 
 const PAGE_SIZE = 50;
 
+const fetchQuestionIdsByTopic = async (topicId?: string) => {
+  if (!topicId) return null;
+
+  const pageSize = 1000;
+  let from = 0;
+  const ids: string[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('question_topics')
+      .select('question_id')
+      .eq('topic_id', topicId)
+      .range(from, from + pageSize - 1);
+
+    if (error || !data || data.length === 0) break;
+    ids.push(...data.map((row) => row.question_id));
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return ids;
+};
+
 const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | undefined>();
@@ -119,14 +142,17 @@ const Questions = () => {
   const { data: totalCount = 0 } = useQuery({
     queryKey: ['questions-count', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
     queryFn: async () => {
+      const topicQuestionIds = await fetchQuestionIdsByTopic(selectedTopic);
+      if (selectedTopic && topicQuestionIds?.length === 0) return 0;
+
       let query = supabase
         .from('questions')
-        .select(selectedTopic ? 'id, question_topics!inner(topic_id)' : 'id', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
 
+      if (topicQuestionIds) query = query.in('id', topicQuestionIds);
       if (searchTerm.trim()) query = query.ilike('statement', `%${searchTerm.trim()}%`);
       if (selectedSubject) query = query.eq('subject_id', selectedSubject);
       if (selectedContent) query = query.eq('content_id', selectedContent);
-      if (selectedTopic) query = query.eq('question_topics.topic_id', selectedTopic);
       if (selectedExam) query = query.eq('exam_id', selectedExam);
       if (selectedYear) query = query.eq('year', parseInt(selectedYear));
       if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
@@ -145,18 +171,19 @@ const Questions = () => {
     queryFn: async () => {
       const from = currentPage * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
-      const topicJoin = selectedTopic ? ', question_topics!inner(topic_id)' : '';
+      const topicQuestionIds = await fetchQuestionIdsByTopic(selectedTopic);
+      if (selectedTopic && topicQuestionIds?.length === 0) return [];
 
       let query = supabase
         .from('questions')
-        .select(`id, statement, year, difficulty, subject_id, content_id, exam_id, question_type, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation, subjects(id, name), contents(id, name), exams(id, name)${topicJoin}`)
+        .select('id, statement, year, difficulty, subject_id, content_id, exam_id, question_type, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation, subjects(id, name), contents(id, name), exams(id, name)')
         .order('created_at', { ascending: false })
         .range(from, to);
 
+      if (topicQuestionIds) query = query.in('id', topicQuestionIds);
       if (searchTerm.trim()) query = query.ilike('statement', `%${searchTerm.trim()}%`);
       if (selectedSubject) query = query.eq('subject_id', selectedSubject);
       if (selectedContent) query = query.eq('content_id', selectedContent);
-      if (selectedTopic) query = query.eq('question_topics.topic_id', selectedTopic);
       if (selectedExam) query = query.eq('exam_id', selectedExam);
       if (selectedYear) query = query.eq('year', parseInt(selectedYear));
       if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
