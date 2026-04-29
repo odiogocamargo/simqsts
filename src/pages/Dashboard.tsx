@@ -583,6 +583,131 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {(isAdmin || isProfessor) && professorQuestionCounts && professorQuestionCounts.data.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-amber-500" />
+                    Questões Adicionadas por Equipe
+                  </CardTitle>
+                  <CardDescription>
+                    Ranking de professores e administradores por quantidade de questões cadastradas
+                    {professorQuestionCounts.periodLabel && professorQuestionCounts.periodLabel !== "Todo o período" && (
+                      <span className="ml-1 font-medium text-primary">({professorQuestionCounts.periodLabel})</span>
+                    )}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select value={questionsPeriod} onValueChange={setQuestionsPeriod}>
+                    <SelectTrigger className="w-[140px]">
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todo período</SelectItem>
+                      <SelectItem value="today">Hoje</SelectItem>
+                      <SelectItem value="yesterday">Ontem</SelectItem>
+                      <SelectItem value="week">Esta semana</SelectItem>
+                      <SelectItem value="month">Este mês</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {questionsPeriod === "custom" && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {questionsDateRange?.from ? questionsDateRange.to ? `${format(questionsDateRange.from, "dd/MM")} - ${format(questionsDateRange.to, "dd/MM")}` : format(questionsDateRange.from, "dd/MM/yyyy") : "Selecionar datas"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <CalendarComponent initialFocus mode="range" defaultMonth={questionsDateRange?.from} selected={questionsDateRange} onSelect={setQuestionsDateRange} numberOfMonths={2} locale={ptBR} />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {professorQuestionCounts.data.map((prof, index) => (
+                  <div key={prof.userId} className={`flex items-center justify-between p-3 rounded-lg border ${index === 0 ? "bg-amber-500/10 border-amber-500/30" : index === 1 ? "bg-slate-500/10 border-slate-500/30" : index === 2 ? "bg-orange-500/10 border-orange-500/30" : "bg-muted/50"}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm ${index === 0 ? "bg-amber-500 text-white" : index === 1 ? "bg-slate-400 text-white" : index === 2 ? "bg-orange-400 text-white" : "bg-muted-foreground/20 text-muted-foreground"}`}>
+                        {index + 1}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium truncate max-w-[150px]">{prof.name}</span>
+                        <span className={`text-xs ${prof.role === "admin" ? "text-red-500" : "text-blue-500"}`}>{prof.role === "admin" ? "Admin" : "Professor"}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-primary font-semibold">
+                      <BookOpen className="h-4 w-4" />
+                      {prof.questionCount}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
+                <span>Total de membros: {professorQuestionCounts.data.length}</span>
+                <span>Total de questões: {professorQuestionCounts.data.reduce((acc, p) => acc + p.questionCount, 0)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {(isAdmin || isProfessor) && (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Evolução de Questões Adicionadas
+                  </CardTitle>
+                  <CardDescription>Acompanhe a quantidade de questões cadastradas ao longo do tempo</CardDescription>
+                </div>
+                <Select value={evolutionPeriod} onValueChange={setEvolutionPeriod}>
+                  <SelectTrigger className="w-[160px]">
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                    <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                    <SelectItem value="3months">Últimos 3 meses</SelectItem>
+                    <SelectItem value="6months">Últimos 6 meses</SelectItem>
+                    <SelectItem value="12months">Últimos 12 meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {questionsEvolution && questionsEvolution.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={questionsEvolution}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} formatter={(value) => [`${value} questões`, "Questões"]} />
+                    <Bar dataKey="questoes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Questões" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">Nenhuma questão encontrada no período</div>
+              )}
+              {questionsEvolution && questionsEvolution.length > 0 && (
+                <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Período: {evolutionPeriod === "7days" ? "Últimos 7 dias" : evolutionPeriod === "30days" ? "Últimos 30 dias" : evolutionPeriod === "3months" ? "Últimos 3 meses" : evolutionPeriod === "6months" ? "Últimos 6 meses" : "Últimos 12 meses"}</span>
+                  <span>Total no período: {questionsEvolution.reduce((acc, d) => acc + d.questoes, 0)} questões</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Status do Sistema</CardTitle>
