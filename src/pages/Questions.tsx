@@ -66,6 +66,29 @@ interface Question {
 
 const PAGE_SIZE = 50;
 
+const fetchQuestionIdsByTopic = async (topicId?: string) => {
+  if (!topicId) return null;
+
+  const pageSize = 1000;
+  let from = 0;
+  const ids: string[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('question_topics')
+      .select('question_id')
+      .eq('topic_id', topicId)
+      .range(from, from + pageSize - 1);
+
+    if (error || !data || data.length === 0) break;
+    ids.push(...data.map((row) => row.question_id));
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return ids;
+};
+
 const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | undefined>();
@@ -90,14 +113,44 @@ const Questions = () => {
   const { data: topics = [] } = useTopics(selectedContent);
   const { data: exams = [] } = useExams();
 
+  const { data: availableYears = [] } = useQuery({
+    queryKey: ['question-years'],
+    queryFn: async () => {
+      const pageSize = 1000;
+      let from = 0;
+      const years = new Set<number>();
+
+      while (true) {
+        const { data, error } = await supabase
+          .from('questions')
+          .select('year')
+          .not('year', 'is', null)
+          .order('year', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error || !data || data.length === 0) break;
+        data.forEach((question) => years.add(question.year));
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return Array.from(years).sort((a, b) => b - a);
+    },
+  });
+
   // Contar total de questões para paginação
   const { data: totalCount = 0 } = useQuery({
-    queryKey: ['questions-count', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
+    queryKey: ['questions-count', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
     queryFn: async () => {
+      const topicQuestionIds = await fetchQuestionIdsByTopic(selectedTopic);
+      if (selectedTopic && topicQuestionIds?.length === 0) return 0;
+
       let query = supabase
         .from('questions')
         .select('id', { count: 'exact', head: true });
 
+      if (topicQuestionIds) query = query.in('id', topicQuestionIds);
+      if (searchTerm.trim()) query = query.ilike('statement', `%${searchTerm.trim()}%`);
       if (selectedSubject) query = query.eq('subject_id', selectedSubject);
       if (selectedContent) query = query.eq('content_id', selectedContent);
       if (selectedExam) query = query.eq('exam_id', selectedExam);
@@ -114,32 +167,21 @@ const Questions = () => {
 
   // Buscar questões do banco de dados com paginação
   const { data: questions = [], refetch, isLoading } = useQuery({
-    queryKey: ['questions', selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, currentPage],
+    queryKey: ['questions', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, currentPage],
     queryFn: async () => {
       const from = currentPage * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
+      const topicQuestionIds = await fetchQuestionIdsByTopic(selectedTopic);
+      if (selectedTopic && topicQuestionIds?.length === 0) return [];
 
       let query = supabase
         .from('questions')
-        .select(`
-          id,
-          statement,
-          year,
-          difficulty,
-          subject_id,
-          content_id,
-          exam_id,
-          question_type,
-          option_a, option_b, option_c, option_d, option_e,
-          correct_answer,
-          explanation,
-          subjects(id, name),
-          contents(id, name),
-          exams(id, name)
-        `)
+        .select('id, statement, year, difficulty, subject_id, content_id, exam_id, question_type, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation, subjects(id, name), contents(id, name), exams(id, name)')
         .order('created_at', { ascending: false })
         .range(from, to);
 
+      if (topicQuestionIds) query = query.in('id', topicQuestionIds);
+      if (searchTerm.trim()) query = query.ilike('statement', `%${searchTerm.trim()}%`);
       if (selectedSubject) query = query.eq('subject_id', selectedSubject);
       if (selectedContent) query = query.eq('content_id', selectedContent);
       if (selectedExam) query = query.eq('exam_id', selectedExam);
@@ -153,8 +195,10 @@ const Questions = () => {
         return [];
       }
 
+      const questionRows = (data || []) as any[];
+
       // Buscar tópicos para as questões da página
-      const questionIds = (data || []).map(q => q.id);
+      const questionIds = questionRows.map(q => q.id);
       let topicsMap = new Map();
       
       if (questionIds.length > 0) {
@@ -171,7 +215,7 @@ const Questions = () => {
         );
       }
 
-      return (data || []).map((q: any) => {
+      return questionRows.map((q: any) => {
         const topicData = topicsMap.get(q.id);
         return {
           id: q.id,
@@ -295,6 +339,8 @@ const Questions = () => {
         description: "As alterações foram salvas com sucesso.",
       });
 
+      queryClient.invalidateQueries({ queryKey: ['questions-count'] });
+      queryClient.invalidateQueries({ queryKey: ['question-years'] });
       await refetch();
     } catch (error) {
       console.error('Error updating question:', error);
@@ -331,6 +377,8 @@ const Questions = () => {
         description: "A questão foi removida com sucesso do banco de dados.",
       });
       queryClient.invalidateQueries({ queryKey: ['questions'] });
+      queryClient.invalidateQueries({ queryKey: ['questions-count'] });
+      queryClient.invalidateQueries({ queryKey: ['question-years'] });
       setDeleteQuestionId(null);
     },
     onError: (error) => {
@@ -375,7 +423,10 @@ const Questions = () => {
                     placeholder="Buscar questões..."
                     className="pl-10"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(0);
+                    }}
                   />
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -452,11 +503,11 @@ const Questions = () => {
                       <SelectValue placeholder="Ano" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="2024">2024</SelectItem>
-                      <SelectItem value="2023">2023</SelectItem>
-                      <SelectItem value="2022">2022</SelectItem>
-                      <SelectItem value="2021">2021</SelectItem>
-                      <SelectItem value="2020">2020</SelectItem>
+                      {availableYears.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          {year}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select value={selectedDifficulty} onValueChange={(value) => { setSelectedDifficulty(value); setCurrentPage(0); }}>
@@ -478,7 +529,7 @@ const Questions = () => {
               </div>
               {hasActiveFilters && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{filteredQuestions.length} questões encontradas</span>
+                  <span>{totalCount} questões encontradas</span>
                 </div>
               )}
             </div>
@@ -624,7 +675,12 @@ const Questions = () => {
         <QuestionImportModal
           open={isImportModalOpen}
           onOpenChange={setIsImportModalOpen}
-          onSuccess={() => refetch()}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['questions'] });
+            queryClient.invalidateQueries({ queryKey: ['questions-count'] });
+            queryClient.invalidateQueries({ queryKey: ['question-years'] });
+            refetch();
+          }}
         />
 
         <AlertDialog open={deleteQuestionId !== null} onOpenChange={() => setDeleteQuestionId(null)}>
