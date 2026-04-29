@@ -71,24 +71,46 @@ const Dashboard = () => {
   const { data: subjectStats = [] } = useQuery({
     queryKey: ['subject-distribution'],
     queryFn: async () => {
-      const { data: questions } = await supabase
-        .from('questions')
-        .select('subject_id, subjects(name)');
-      
-      if (!questions) return [];
+      const { data: subjects, error: subjectsError } = await supabase
+        .from('subjects')
+        .select('id, name')
+        .order('name');
 
-      const distribution = questions.reduce((acc: any, q: any) => {
-        const subjectName = q.subjects?.name || 'Desconhecida';
-        acc[subjectName] = (acc[subjectName] || 0) + 1;
+      if (subjectsError) throw subjectsError;
+
+      const questions: { subject_id: string }[] = [];
+      const pageSize = 1000;
+      let from = 0;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from('questions')
+          .select('subject_id')
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        const page = data || [];
+        questions.push(...page);
+
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+
+      const distribution = questions.reduce<Record<string, number>>((acc, q) => {
+        acc[q.subject_id] = (acc[q.subject_id] || 0) + 1;
         return acc;
       }, {});
 
-      const total = questions.length || 1;
-      return Object.entries(distribution).map(([subject, count]: [string, any]) => ({
-        subject,
-        count,
-        percentage: Math.round((count / total) * 100),
-      })).sort((a, b) => b.count - a.count);
+      const total = questions.length;
+      return (subjects || []).map((subject) => {
+        const count = distribution[subject.id] || 0;
+        return {
+          subject: subject.name,
+          count,
+          percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+        };
+      }).sort((a, b) => b.count - a.count || a.subject.localeCompare(b.subject, 'pt-BR'));
     },
   });
 
@@ -103,14 +125,14 @@ const Dashboard = () => {
       
       if (!questions) return [];
 
-      const distribution = questions.reduce((acc: any, q: any) => {
+      const distribution = questions.reduce<Record<string, number>>((acc, q) => {
         const examName = q.exams?.name || 'Desconhecido';
         acc[examName] = (acc[examName] || 0) + 1;
         return acc;
       }, {});
 
       const total = questions.length || 1;
-      return Object.entries(distribution).map(([exam, count]: [string, any]) => ({
+      return Object.entries(distribution).map(([exam, count]) => ({
         exam,
         count,
         percentage: Math.round((count / total) * 100),
