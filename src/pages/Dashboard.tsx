@@ -1,21 +1,31 @@
 import { Layout } from "@/components/Layout";
 import { MetricCard } from "@/components/MetricCard";
-import { Database, BookOpen, TrendingUp, Calendar, Crown, CreditCard, CheckCircle, Clock, GraduationCap } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Database, BookOpen, TrendingUp, Calendar, Crown, CreditCard, CheckCircle, Clock, GraduationCap, Trophy, CalendarDays } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useEffect } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const Dashboard = () => {
   const { subscription, subscriptionLoading, createCheckout, openCustomerPortal, checkSubscription } = useAuth();
   const { isAdmin, isProfessor } = useUserRole();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [questionsPeriod, setQuestionsPeriod] = useState<string>("all");
+  const [questionsDateRange, setQuestionsDateRange] = useState<DateRange | undefined>();
+  const [evolutionPeriod, setEvolutionPeriod] = useState<string>("30days");
 
   // Handle subscription success/cancel from Stripe redirect
   useEffect(() => {
