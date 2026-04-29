@@ -267,6 +267,87 @@ const Dashboard = () => {
     },
   });
 
+  const { data: questionsEvolution } = useQuery({
+    queryKey: ["dashboard-questions-evolution", evolutionPeriod],
+    enabled: isAdmin || isProfessor,
+    queryFn: async () => {
+      const now = new Date();
+      let startDate: Date;
+      let granularity: "day" | "week" | "month";
+
+      switch (evolutionPeriod) {
+        case "7days":
+          startDate = subDays(now, 7);
+          granularity = "day";
+          break;
+        case "3months":
+          startDate = subMonths(now, 3);
+          granularity = "week";
+          break;
+        case "6months":
+          startDate = subMonths(now, 6);
+          granularity = "month";
+          break;
+        case "12months":
+          startDate = subMonths(now, 12);
+          granularity = "month";
+          break;
+        default:
+          startDate = subDays(now, 30);
+          granularity = "day";
+      }
+
+      const allQuestions: { created_at: string }[] = [];
+      const pageSize = 1000;
+      let from = 0;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from("questions")
+          .select("created_at")
+          .gte("created_at", startOfDay(startDate).toISOString())
+          .lte("created_at", endOfDay(now).toISOString())
+          .order("created_at", { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        const page = data || [];
+        allQuestions.push(...page);
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+
+      const intervals = granularity === "day"
+        ? eachDayOfInterval({ start: startOfDay(startDate), end: now })
+        : granularity === "week"
+          ? eachWeekOfInterval({ start: startOfDay(startDate), end: now }, { locale: ptBR })
+          : eachMonthOfInterval({ start: startOfDay(startDate), end: now });
+
+      const buckets = new Map<string, number>();
+      allQuestions.forEach((q) => {
+        const qDate = new Date(q.created_at);
+        const key = granularity === "day"
+          ? format(qDate, "yyyy-MM-dd")
+          : granularity === "week"
+            ? format(startOfWeek(qDate, { locale: ptBR }), "yyyy-MM-dd")
+            : format(qDate, "yyyy-MM");
+        buckets.set(key, (buckets.get(key) || 0) + 1);
+      });
+
+      return intervals.map((date) => {
+        const key = granularity === "day"
+          ? format(date, "yyyy-MM-dd")
+          : granularity === "week"
+            ? format(startOfWeek(date, { locale: ptBR }), "yyyy-MM-dd")
+            : format(date, "yyyy-MM");
+        return {
+          date: granularity === "day" ? format(date, "dd/MM", { locale: ptBR }) : granularity === "week" ? `Sem ${format(date, "dd/MM", { locale: ptBR })}` : format(date, "MMM/yy", { locale: ptBR }),
+          questoes: buckets.get(key) || 0,
+        };
+      });
+    },
+  });
+
   const metrics = [
     { title: "Total de Questões", value: totalQuestions.toString(), icon: Database, variant: "default" as const },
     { title: "Matérias Cobertas", value: totalSubjects.toString(), icon: BookOpen, variant: "default" as const },
