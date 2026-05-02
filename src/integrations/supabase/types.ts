@@ -19,16 +19,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
           id: string
           name: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -38,18 +41,21 @@ export type Database = {
           id: string
           name: string
           subject_id: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
           id: string
           name: string
           subject_id: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           subject_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -66,16 +72,64 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
           id: string
           name: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      external_consumers: {
+        Row: {
+          active: boolean
+          api_key_hash: string
+          api_key_prefix: string
+          created_at: string
+          events_failed: number
+          events_sent: number
+          id: string
+          last_ping_at: string | null
+          name: string
+          updated_at: string
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          active?: boolean
+          api_key_hash: string
+          api_key_prefix: string
+          created_at?: string
+          events_failed?: number
+          events_sent?: number
+          id?: string
+          last_ping_at?: string | null
+          name: string
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          active?: boolean
+          api_key_hash?: string
+          api_key_prefix?: string
+          created_at?: string
+          events_failed?: number
+          events_sent?: number
+          id?: string
+          last_ping_at?: string | null
+          name?: string
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
         }
         Relationships: []
       }
@@ -688,18 +742,21 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          updated_at: string
         }
         Insert: {
           area_id?: string | null
           created_at?: string
           id: string
           name: string
+          updated_at?: string
         }
         Update: {
           area_id?: string | null
           created_at?: string
           id?: string
           name?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -777,18 +834,21 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          updated_at: string
         }
         Insert: {
           content_id: string
           created_at?: string
           id: string
           name: string
+          updated_at?: string
         }
         Update: {
           content_id?: string
           created_at?: string
           id?: string
           name?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -903,6 +963,45 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          delivered_at: string | null
+          entity_id: string
+          entity_type: string
+          id: number
+          last_error: string | null
+          next_attempt_at: string
+          operation: string
+          payload: Json | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          delivered_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: number
+          last_error?: string | null
+          next_attempt_at?: string
+          operation: string
+          payload?: Json | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          delivered_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: number
+          last_error?: string | null
+          next_attempt_at?: string
+          operation?: string
+          payload?: Json | null
         }
         Relationships: []
       }

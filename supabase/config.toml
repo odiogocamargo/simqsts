@@ -59,3 +59,12 @@ verify_jwt = false
 
 [functions.sync-asaas-all]
 verify_jwt = false
+
+[functions.public-questions-feed]
+verify_jwt = false
+
+[functions.dispatch-webhooks]
+verify_jwt = false
+
+[functions.create-external-consumer]
+verify_jwt = false
