@@ -44,6 +44,8 @@ export default function Integrations() {
   const [name, setName] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [newCredentials, setNewCredentials] = useState<{ api_key: string; webhook_secret: string } | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<any | null>(null);
 
   const load = async () => {
     setLoading(true);
