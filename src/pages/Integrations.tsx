@@ -91,6 +91,24 @@ export default function Integrations() {
     toast({ title: `${label} copiado` });
   };
 
+  const runTest = async (c: Consumer, mode: "valid" | "bad_signature") => {
+    if (!c.webhook_url) {
+      toast({ title: "Webhook URL não configurada", description: "Edite o consumidor e adicione a URL primeiro.", variant: "destructive" });
+      return;
+    }
+    setTestingId(c.id + ":" + mode);
+    setTestResult(null);
+    const { data, error } = await supabase.functions.invoke("test-webhook", {
+      body: { consumer_id: c.id, mode },
+    });
+    setTestingId(null);
+    if (error) {
+      toast({ title: "Erro ao testar", description: error.message, variant: "destructive" });
+      return;
+    }
+    setTestResult(data);
+  };
+
   const pendingOutbox = outbox.filter((o) => !o.delivered_at).length;
 
   return (
