@@ -198,6 +198,7 @@ export default function Integrations() {
                     <TableHead>Último ping</TableHead>
                     <TableHead className="text-right">Enviados / Falhas</TableHead>
                     <TableHead>Ativo</TableHead>
+                    <TableHead className="text-right">Testar webhook</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -214,6 +215,32 @@ export default function Integrations() {
                       </TableCell>
                       <TableCell>
                         <Switch checked={c.active} onCheckedChange={() => toggleActive(c)} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 h-8"
+                            disabled={!c.webhook_url || !!testingId}
+                            onClick={() => runTest(c, "valid")}
+                            title="Envia evento de teste com assinatura VÁLIDA. Esperado: 2xx."
+                          >
+                            {testingId === c.id + ":valid" ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
+                            Válido
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 h-8"
+                            disabled={!c.webhook_url || !!testingId}
+                            onClick={() => runTest(c, "bad_signature")}
+                            title="Envia evento de teste com assinatura INVÁLIDA. Esperado: 401."
+                          >
+                            {testingId === c.id + ":bad_signature" ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldX className="h-3 w-3" />}
+                            Inválido
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
