@@ -30,6 +30,7 @@ import CoordinatorStudents from "./pages/CoordinatorStudents";
 import CoordinatorClasses from "./pages/CoordinatorClasses";
 import CoordinatorStudentDetail from "./pages/CoordinatorStudentDetail";
 import CoordinatorReports from "./pages/CoordinatorReports";
+import Integrations from "./pages/Integrations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/subscriptions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Subscriptions /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/taxonomy-migration" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><TaxonomyMigration /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/schools" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Schools /></RoleBasedRoute></ProtectedRoute>} />
+            <Route path="/integrations" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Integrations /></RoleBasedRoute></ProtectedRoute>} />
             {/* Rotas de Coordenador */}
             <Route path="/coordinator" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["coordenador"]}><CoordinatorDashboard /></RoleBasedRoute></ProtectedRoute>} />
             <Route path="/coordinator/students" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["coordenador"]}><CoordinatorStudents /></RoleBasedRoute></ProtectedRoute>} />
