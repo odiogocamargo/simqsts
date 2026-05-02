@@ -317,6 +317,72 @@ Body: {
           </CardContent>
         </Card>
       </div>
+
+      {/* Resultado do teste de webhook */}
+      <Dialog open={!!testResult} onOpenChange={(o) => !o && setTestResult(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {testResult?.mode === "bad_signature" ? (
+                testResult?.status === 401 ? (
+                  <><CheckCircle2 className="h-5 w-5 text-green-600" /> Validação OK — assinatura inválida foi rejeitada</>
+                ) : (
+                  <><XCircle className="h-5 w-5 text-destructive" /> Atenção — assinatura inválida NÃO foi rejeitada</>
+                )
+              ) : testResult?.status >= 200 && testResult?.status < 300 ? (
+                <><CheckCircle2 className="h-5 w-5 text-green-600" /> Webhook respondeu OK</>
+              ) : (
+                <><XCircle className="h-5 w-5 text-destructive" /> Webhook falhou</>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Modo: <Badge variant="secondary">{testResult?.mode}</Badge> · Latência: {testResult?.elapsed_ms}ms
+            </DialogDescription>
+          </DialogHeader>
+
+          {testResult && (
+            <div className="space-y-3 text-sm">
+              <div>
+                <Label className="text-xs">URL chamada</Label>
+                <code className="block px-3 py-2 bg-muted rounded text-xs break-all mt-1">{testResult.consumer?.webhook_url}</code>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">HTTP status</Label>
+                  <div className="mt-1">
+                    <Badge variant={testResult.status >= 200 && testResult.status < 300 ? "secondary" : "destructive"}>
+                      {testResult.status || "—"}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Assinatura enviada</Label>
+                  <code className="block text-xs mt-1">{testResult.sent_signature_preview}</code>
+                </div>
+              </div>
+
+              <Alert>
+                <AlertDescription className="text-xs">{testResult.interpretation}</AlertDescription>
+              </Alert>
+
+              {testResult.network_error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Erro de rede</AlertTitle>
+                  <AlertDescription className="text-xs">{testResult.network_error}</AlertDescription>
+                </Alert>
+              )}
+
+              {testResult.response_body_preview && (
+                <div>
+                  <Label className="text-xs">Resposta da outra app</Label>
+                  <pre className="bg-muted p-3 rounded text-xs overflow-x-auto mt-1 max-h-48">{testResult.response_body_preview}</pre>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
