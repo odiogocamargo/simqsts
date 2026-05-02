@@ -10,7 +10,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Plus, Loader2, Plug, AlertTriangle } from "lucide-react";
+import { Copy, Plus, Loader2, Plug, AlertTriangle, Send, ShieldCheck, ShieldX, CheckCircle2, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface Consumer {
   id: string;
@@ -43,6 +44,8 @@ export default function Integrations() {
   const [name, setName] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [newCredentials, setNewCredentials] = useState<{ api_key: string; webhook_secret: string } | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<any | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -86,6 +89,24 @@ export default function Integrations() {
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: `${label} copiado` });
+  };
+
+  const runTest = async (c: Consumer, mode: "valid" | "bad_signature") => {
+    if (!c.webhook_url) {
+      toast({ title: "Webhook URL não configurada", description: "Edite o consumidor e adicione a URL primeiro.", variant: "destructive" });
+      return;
+    }
+    setTestingId(c.id + ":" + mode);
+    setTestResult(null);
+    const { data, error } = await supabase.functions.invoke("test-webhook", {
+      body: { consumer_id: c.id, mode },
+    });
+    setTestingId(null);
+    if (error) {
+      toast({ title: "Erro ao testar", description: error.message, variant: "destructive" });
+      return;
+    }
+    setTestResult(data);
   };
 
   const pendingOutbox = outbox.filter((o) => !o.delivered_at).length;
@@ -177,6 +198,7 @@ export default function Integrations() {
                     <TableHead>Último ping</TableHead>
                     <TableHead className="text-right">Enviados / Falhas</TableHead>
                     <TableHead>Ativo</TableHead>
+                    <TableHead className="text-right">Testar webhook</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -193,6 +215,32 @@ export default function Integrations() {
                       </TableCell>
                       <TableCell>
                         <Switch checked={c.active} onCheckedChange={() => toggleActive(c)} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 h-8"
+                            disabled={!c.webhook_url || !!testingId}
+                            onClick={() => runTest(c, "valid")}
+                            title="Envia evento de teste com assinatura VÁLIDA. Esperado: 2xx."
+                          >
+                            {testingId === c.id + ":valid" ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
+                            Válido
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 h-8"
+                            disabled={!c.webhook_url || !!testingId}
+                            onClick={() => runTest(c, "bad_signature")}
+                            title="Envia evento de teste com assinatura INVÁLIDA. Esperado: 401."
+                          >
+                            {testingId === c.id + ":bad_signature" ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldX className="h-3 w-3" />}
+                            Inválido
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -269,6 +317,72 @@ Body: {
           </CardContent>
         </Card>
       </div>
+
+      {/* Resultado do teste de webhook */}
+      <Dialog open={!!testResult} onOpenChange={(o) => !o && setTestResult(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {testResult?.mode === "bad_signature" ? (
+                testResult?.status === 401 ? (
+                  <><CheckCircle2 className="h-5 w-5 text-green-600" /> Validação OK — assinatura inválida foi rejeitada</>
+                ) : (
+                  <><XCircle className="h-5 w-5 text-destructive" /> Atenção — assinatura inválida NÃO foi rejeitada</>
+                )
+              ) : testResult?.status >= 200 && testResult?.status < 300 ? (
+                <><CheckCircle2 className="h-5 w-5 text-green-600" /> Webhook respondeu OK</>
+              ) : (
+                <><XCircle className="h-5 w-5 text-destructive" /> Webhook falhou</>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Modo: <Badge variant="secondary">{testResult?.mode}</Badge> · Latência: {testResult?.elapsed_ms}ms
+            </DialogDescription>
+          </DialogHeader>
+
+          {testResult && (
+            <div className="space-y-3 text-sm">
+              <div>
+                <Label className="text-xs">URL chamada</Label>
+                <code className="block px-3 py-2 bg-muted rounded text-xs break-all mt-1">{testResult.consumer?.webhook_url}</code>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">HTTP status</Label>
+                  <div className="mt-1">
+                    <Badge variant={testResult.status >= 200 && testResult.status < 300 ? "secondary" : "destructive"}>
+                      {testResult.status || "—"}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Assinatura enviada</Label>
+                  <code className="block text-xs mt-1">{testResult.sent_signature_preview}</code>
+                </div>
+              </div>
+
+              <Alert>
+                <AlertDescription className="text-xs">{testResult.interpretation}</AlertDescription>
+              </Alert>
+
+              {testResult.network_error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Erro de rede</AlertTitle>
+                  <AlertDescription className="text-xs">{testResult.network_error}</AlertDescription>
+                </Alert>
+              )}
+
+              {testResult.response_body_preview && (
+                <div>
+                  <Label className="text-xs">Resposta da outra app</Label>
+                  <pre className="bg-muted p-3 rounded text-xs overflow-x-auto mt-1 max-h-48">{testResult.response_body_preview}</pre>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
