@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
     // 3. Salvar no banco
     await adminClient.from("subscriptions").upsert({
       user_id: user.id,
-      kiwify_customer_email: user.email!,
+      customer_email: user.email!,
       asaas_customer_id: customerId,
       asaas_subscription_id: subData.id,
       plan_name: "SIM Questões Premium",
