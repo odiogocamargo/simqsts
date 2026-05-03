@@ -20,8 +20,8 @@ type SubscriptionStatus = "active" | "canceled" | "late" | "refunded" | "pending
 interface Subscription {
   id: string;
   user_id: string | null;
-  kiwify_customer_email: string | null;
-  kiwify_customer_cpf: string | null;
+  customer_email: string | null;
+  customer_cpf: string | null;
   status: SubscriptionStatus;
   plan_name: string | null;
   payment_method: string | null;
@@ -53,8 +53,8 @@ interface EditForm {
   next_due_date: string;
   expires_at: string;
   started_at: string;
-  kiwify_customer_email: string;
-  kiwify_customer_cpf: string;
+  customer_email: string;
+  customer_cpf: string;
 }
 
 const emptyForm: EditForm = {
@@ -67,8 +67,8 @@ const emptyForm: EditForm = {
   next_due_date: "",
   expires_at: "",
   started_at: "",
-  kiwify_customer_email: "",
-  kiwify_customer_cpf: "",
+  customer_email: "",
+  customer_cpf: "",
 };
 
 const toDateInput = (iso: string | null) =>
@@ -119,8 +119,8 @@ export default function Subscriptions() {
   const addSubscription = useMutation({
     mutationFn: async (data: typeof newSubscription) => {
       const { error } = await supabase.from("subscriptions").insert({
-        kiwify_customer_email: data.email,
-        kiwify_customer_cpf: data.cpf || null,
+        customer_email: data.email,
+        customer_cpf: data.cpf || null,
         plan_name: data.plan_name,
         status: data.status,
         started_at: new Date().toISOString(),
@@ -148,8 +148,8 @@ export default function Subscriptions() {
       next_due_date: toDateInput(sub.next_due_date),
       expires_at: toDateInput(sub.expires_at),
       started_at: toDateInput(sub.started_at),
-      kiwify_customer_email: sub.kiwify_customer_email ?? "",
-      kiwify_customer_cpf: sub.kiwify_customer_cpf ?? "",
+      customer_email: sub.customer_email ?? "",
+      customer_cpf: sub.customer_cpf ?? "",
     });
   };
 
@@ -167,8 +167,8 @@ export default function Subscriptions() {
         next_due_date: fromDateInput(editForm.next_due_date),
         expires_at: fromDateInput(editForm.expires_at),
         started_at: fromDateInput(editForm.started_at),
-        kiwify_customer_email: editForm.kiwify_customer_email || null,
-        kiwify_customer_cpf: editForm.kiwify_customer_cpf || null,
+        customer_email: editForm.customer_email || null,
+        customer_cpf: editForm.customer_cpf || null,
         canceled_at: editForm.status === "canceled" ? new Date().toISOString() : null,
       },
     });
@@ -177,8 +177,8 @@ export default function Subscriptions() {
   const filteredSubscriptions = subscriptions?.filter((sub) => {
     const term = searchTerm.toLowerCase();
     const matchesSearch =
-      (sub.kiwify_customer_email?.toLowerCase().includes(term) ?? false) ||
-      (sub.kiwify_customer_cpf?.includes(searchTerm) ?? false) ||
+      (sub.customer_email?.toLowerCase().includes(term) ?? false) ||
+      (sub.customer_cpf?.includes(searchTerm) ?? false) ||
       (sub.asaas_customer_id?.toLowerCase().includes(term) ?? false) ||
       (sub.asaas_subscription_id?.toLowerCase().includes(term) ?? false);
     const matchesStatus = statusFilter === "all" || sub.status === statusFilter;
@@ -308,7 +308,7 @@ export default function Subscriptions() {
                         return (
                           <TableRow key={sub.id}>
                             <TableCell className="font-medium">
-                              <div className="text-sm">{sub.kiwify_customer_email || "-"}</div>
+                              <div className="text-sm">{sub.customer_email || "-"}</div>
                               <div className="text-xs text-muted-foreground font-mono">
                                 {sub.user_id ? sub.user_id.slice(0, 8) : "sem user"}
                               </div>
@@ -414,8 +414,8 @@ export default function Subscriptions() {
               <div className="space-y-2">
                 <Label>Email</Label>
                 <Input
-                  value={editForm.kiwify_customer_email}
-                  onChange={(e) => setEditForm({ ...editForm, kiwify_customer_email: e.target.value })}
+                  value={editForm.customer_email}
+                  onChange={(e) => setEditForm({ ...editForm, customer_email: e.target.value })}
                 />
               </div>
               <div className="space-y-2 col-span-2">
@@ -472,8 +472,8 @@ export default function Subscriptions() {
               <div className="space-y-2">
                 <Label>CPF</Label>
                 <Input
-                  value={editForm.kiwify_customer_cpf}
-                  onChange={(e) => setEditForm({ ...editForm, kiwify_customer_cpf: e.target.value })}
+                  value={editForm.customer_cpf}
+                  onChange={(e) => setEditForm({ ...editForm, customer_cpf: e.target.value })}
                 />
               </div>
             </div>
