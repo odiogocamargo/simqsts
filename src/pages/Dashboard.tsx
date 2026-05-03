@@ -731,7 +731,7 @@ const Dashboard = () => {
               <div className="flex items-start gap-3">
                 <div className="h-2 w-2 rounded-full bg-green-500 mt-2" />
                 <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium text-foreground">Pagamentos (Stripe)</p>
+                  <p className="text-sm font-medium text-foreground">Pagamentos (Asaas)</p>
                   <p className="text-xs text-muted-foreground">Integração ativa</p>
                 </div>
               </div>
