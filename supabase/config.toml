@@ -40,9 +40,6 @@ verify_jwt = false
 [functions.sync-asaas-payments]
 verify_jwt = false
 
-[functions.sync-asaas-all]
-verify_jwt = false
-
 [functions.public-questions-feed]
 verify_jwt = false
 
