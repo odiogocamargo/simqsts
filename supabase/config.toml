@@ -6,9 +6,6 @@ verify_jwt = false
 [functions.classify-question]
 verify_jwt = false
 
-[functions.classify-questions-batch]
-verify_jwt = false
-
 [functions.export-taxonomy]
 verify_jwt = false
 
@@ -24,8 +21,6 @@ verify_jwt = false
 [functions.create-school-student]
 verify_jwt = false
 
-[functions.export-questions-json]
-verify_jwt = false
 
 [functions.tri-diagnosis]
 verify_jwt = false
