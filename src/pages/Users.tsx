@@ -280,7 +280,7 @@ export default function Users() {
           user_id: userId,
           status: "active",
           plan_name: "Cortesia",
-          kiwify_customer_email: `admin-granted-${userId}`,
+          customer_email: `admin-granted-${userId}`,
           started_at: new Date().toISOString(),
         });
         if (error) throw error;

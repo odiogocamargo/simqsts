@@ -775,11 +775,10 @@ export type Database = {
           asaas_subscription_id: string | null
           canceled_at: string | null
           created_at: string
+          customer_cpf: string | null
+          customer_email: string | null
           expires_at: string | null
           id: string
-          kiwify_customer_cpf: string | null
-          kiwify_customer_email: string | null
-          kiwify_subscription_id: string | null
           next_due_date: string | null
           payment_method: string | null
           plan_name: string | null
@@ -794,11 +793,10 @@ export type Database = {
           asaas_subscription_id?: string | null
           canceled_at?: string | null
           created_at?: string
+          customer_cpf?: string | null
+          customer_email?: string | null
           expires_at?: string | null
           id?: string
-          kiwify_customer_cpf?: string | null
-          kiwify_customer_email?: string | null
-          kiwify_subscription_id?: string | null
           next_due_date?: string | null
           payment_method?: string | null
           plan_name?: string | null
@@ -813,11 +811,10 @@ export type Database = {
           asaas_subscription_id?: string | null
           canceled_at?: string | null
           created_at?: string
+          customer_cpf?: string | null
+          customer_email?: string | null
           expires_at?: string | null
           id?: string
-          kiwify_customer_cpf?: string | null
-          kiwify_customer_email?: string | null
-          kiwify_subscription_id?: string | null
           next_due_date?: string | null
           payment_method?: string | null
           plan_name?: string | null
