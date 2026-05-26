@@ -275,22 +275,41 @@ export default function Users() {
   const toggleAccessMutation = useMutation({
     mutationFn: async ({ userId, grant }: { userId: string; grant: boolean }) => {
       if (grant) {
-        // Insert a "Cortesia" subscription
-        const { error } = await supabase.from("subscriptions").insert({
-          user_id: userId,
-          status: "active",
-          plan_name: "Cortesia",
-          customer_email: `admin-granted-${userId}`,
-          started_at: new Date().toISOString(),
-        });
-        if (error) throw error;
+        // Reativa se já existir uma assinatura para o usuário; caso contrário, cria
+        const { data: existing } = await supabase
+          .from("subscriptions")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (existing) {
+          const { error } = await supabase
+            .from("subscriptions")
+            .update({
+              status: "active",
+              plan_name: "Cortesia",
+              started_at: new Date().toISOString(),
+              canceled_at: null,
+              expires_at: null,
+            })
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("subscriptions").insert({
+            user_id: userId,
+            status: "active",
+            plan_name: "Cortesia",
+            customer_email: `admin-granted-${userId}`,
+            started_at: new Date().toISOString(),
+          });
+          if (error) throw error;
+        }
       } else {
-        // Revoke: update status to canceled
+        // Revoga: marca como cancelado
         const { error } = await supabase
           .from("subscriptions")
           .update({ status: "canceled", canceled_at: new Date().toISOString() })
           .eq("user_id", userId)
-          .eq("plan_name", "Cortesia")
           .eq("status", "active");
         if (error) throw error;
       }
