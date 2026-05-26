@@ -224,3 +224,8 @@ sub {
 sup {
   top: -0.5em;
 }
+
+/* Hide Lovable badge on published deployments */
+#lovable-badge {
+  display: none !important;
+}
