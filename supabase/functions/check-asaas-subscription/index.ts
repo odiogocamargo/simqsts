@@ -41,24 +41,18 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 1. Bypass para admin/professor/coordenador/aluno-escola
+    // 1. Bypass para admin/professor
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
     const roleNames = (roles || []).map((r) => r.role);
-    const staffBypass = roleNames.some((r) => ["admin", "professor", "coordenador"].includes(r));
+    const staffBypass = roleNames.some((r) => ["admin", "professor"].includes(r));
 
-    const { data: schoolStudent } = await admin
-      .from("school_students")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (staffBypass || schoolStudent) {
+    if (staffBypass) {
       return new Response(JSON.stringify({
         subscribed: true,
         has_access: true,
         is_in_trial: false,
         trial_days_remaining: 0,
-        product_id: schoolStudent ? "school_access" : "admin_access",
+        product_id: "admin_access",
         subscription_end: null,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
