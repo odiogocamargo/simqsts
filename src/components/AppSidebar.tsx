@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, CreditCard, Crown, Loader2, Receipt, ClipboardList, School, GraduationCap, FileBarChart, AlertTriangle, Sigma, Plug } from "lucide-react";
+import { LayoutDashboard, FileText, TrendingUp, BookOpen, List, Users, CreditCard, Crown, Loader2, Receipt, ClipboardList, AlertTriangle, Sigma, Plug } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,7 +25,6 @@ const adminNavItems = [
   { title: "Taxonomia", url: "/subject-report", icon: List },
   { title: "Usuários", url: "/users", icon: Users },
   { title: "Assinaturas", url: "/subscriptions", icon: Receipt },
-  { title: "Escolas", url: "/schools", icon: School },
   { title: "Integrações", url: "/integrations", icon: Plug },
 ];
 
@@ -44,14 +43,6 @@ const studentNavItems = [
   { title: "Análise TRI", url: "/student/tri-analysis", icon: Sigma },
 ];
 
-// Itens de navegação para coordenador
-const coordinatorNavItems = [
-  { title: "Dashboard", url: "/coordinator", icon: LayoutDashboard },
-  { title: "Alunos", url: "/coordinator/students", icon: Users },
-  { title: "Turmas", url: "/coordinator/classes", icon: GraduationCap },
-  { title: "Relatórios", url: "/coordinator/reports", icon: FileBarChart },
-];
-
 export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const { role, isLoading } = useUserRole();
@@ -60,7 +51,6 @@ export function AppSidebar() {
   const getNavItems = () => {
     if (isLoading) return [];
     if (role === "aluno") return studentNavItems;
-    if (role === "coordenador") return coordinatorNavItems;
     if (role === "professor") return professorNavItems;
     if (role === "admin") return adminNavItems;
     return [];
@@ -139,13 +129,11 @@ export function AppSidebar() {
                 {!isCollapsed && (
                   <div className="flex items-center gap-2">
                     <Crown className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium text-foreground">
-                      {subscription.productId === 'school_access' ? 'Acesso Escola' : 'Assinante'}
-                    </span>
+                    <span className="text-sm font-medium text-foreground">Assinante</span>
                     <Badge variant="secondary" className="text-xs">Ativo</Badge>
                   </div>
                 )}
-                {subscription.productId !== 'school_access' && subscription.productId !== 'admin_access' && (
+                {subscription.productId !== 'admin_access' && (
                   <Button
                     variant="outline"
                     size="sm"
