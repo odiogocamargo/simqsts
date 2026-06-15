@@ -1,743 +1,239 @@
 import { Layout } from "@/components/Layout";
-import { MetricCard } from "@/components/MetricCard";
-import { Database, BookOpen, TrendingUp, Calendar, Crown, CreditCard, CheckCircle, Clock, GraduationCap, Trophy, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useUserRole } from "@/hooks/useUserRole";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
-import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, subMonths } from "date-fns";
+import { FileText, TrendingUp, Users as UsersIcon, Plug, Loader2 } from "lucide-react";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DateRange } from "react-day-picker";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+interface QuestionRow {
+  id: string;
+  created_at: string;
+  created_by: string | null;
+  subject_id: string | null;
+}
 
 const Dashboard = () => {
-  const { subscription, subscriptionLoading, createCheckout, openCustomerPortal, checkSubscription } = useAuth();
-  const { isAdmin, isProfessor } = useUserRole();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [questionsPeriod, setQuestionsPeriod] = useState<string>("all");
-  const [questionsDateRange, setQuestionsDateRange] = useState<DateRange | undefined>();
-  const [evolutionPeriod, setEvolutionPeriod] = useState<string>("30days");
-
-  // Handle subscription success/cancel from Stripe redirect
-  useEffect(() => {
-    const subscriptionStatus = searchParams.get('subscription');
-    if (subscriptionStatus === 'success') {
-      toast.success('Assinatura realizada com sucesso! Bem-vindo ao SIM Questões.');
-      checkSubscription();
-      setSearchParams({});
-    } else if (subscriptionStatus === 'canceled') {
-      toast.info('Processo de assinatura cancelado.');
-      setSearchParams({});
-    }
-  }, [searchParams, setSearchParams, checkSubscription]);
-
-  // Buscar total de questões
-  const { data: totalQuestions = 0 } = useQuery({
-    queryKey: ['questions-count'],
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard-overview"],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true });
-      return count || 0;
-    },
-  });
+      const [questionsRes, profilesRes, subjectsRes, consumersRes] = await Promise.all([
+        supabase.from("questions").select("id, created_at, created_by, subject_id"),
+        supabase.from("profiles").select("id, full_name"),
+        supabase.from("subjects").select("id, name"),
+        supabase.from("external_consumers").select("id, name, is_active"),
+      ]);
 
-  // Buscar total de matérias
-  const { data: totalSubjects = 0 } = useQuery({
-    queryKey: ['subjects-count'],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('subjects')
-        .select('*', { count: 'exact', head: true });
-      return count || 0;
-    },
-  });
+      const questions = (questionsRes.data ?? []) as QuestionRow[];
+      const profiles = profilesRes.data ?? [];
+      const subjects = subjectsRes.data ?? [];
+      const consumers = consumersRes.data ?? [];
 
-  // Buscar questões adicionadas esta semana
-  const { data: questionsThisWeek = 0 } = useQuery({
-    queryKey: ['questions-this-week'],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      const { count } = await supabase
-        .from('questions')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', sevenDaysAgo.toISOString());
-      return count || 0;
-    },
-  });
+      const profileMap = new Map(profiles.map((p: any) => [p.id, p.full_name || "Sem nome"]));
+      const subjectMap = new Map(subjects.map((s: any) => [s.id, s.name]));
 
-  // Buscar distribuição por matéria
-  const { data: subjectStats = [] } = useQuery({
-    queryKey: ['subject-distribution'],
-    queryFn: async () => {
-      const { data: subjects, error: subjectsError } = await supabase
-        .from('subjects')
-        .select('id, name')
-        .order('name');
+      // Por mês
+      const byMonth = new Map<string, number>();
+      // Por usuário
+      const byUser = new Map<string, number>();
+      // Por matéria
+      const bySubject = new Map<string, number>();
 
-      if (subjectsError) throw subjectsError;
+      questions.forEach((q) => {
+        const monthKey = q.created_at.slice(0, 7); // YYYY-MM
+        byMonth.set(monthKey, (byMonth.get(monthKey) ?? 0) + 1);
 
-      const questions: { subject_id: string }[] = [];
-      const pageSize = 1000;
-      let from = 0;
-
-      while (true) {
-        const { data, error } = await supabase
-          .from('questions')
-          .select('subject_id')
-          .range(from, from + pageSize - 1);
-
-        if (error) throw error;
-
-        const page = data || [];
-        questions.push(...page);
-
-        if (page.length < pageSize) break;
-        from += pageSize;
-      }
-
-      const distribution = questions.reduce<Record<string, number>>((acc, q) => {
-        acc[q.subject_id] = (acc[q.subject_id] || 0) + 1;
-        return acc;
-      }, {});
-
-      const total = questions.length;
-      return (subjects || []).map((subject) => {
-        const count = distribution[subject.id] || 0;
-        return {
-          subject: subject.name,
-          count,
-          percentage: total > 0 ? Math.round((count / total) * 100) : 0,
-        };
-      }).sort((a, b) => b.count - a.count || a.subject.localeCompare(b.subject, 'pt-BR'));
-    },
-  });
-
-  // Buscar distribuição por vestibular (apenas para admin/professor)
-  const { data: examStats = [] } = useQuery({
-    queryKey: ['exam-distribution'],
-    enabled: isAdmin || isProfessor,
-    queryFn: async () => {
-      const { data: exams, error: examsError } = await supabase
-        .from('exams')
-        .select('id, name')
-        .order('name');
-
-      if (examsError) throw examsError;
-
-      const questions: { exam_id: string }[] = [];
-      const pageSize = 1000;
-      let from = 0;
-
-      while (true) {
-        const { data, error } = await supabase
-          .from('questions')
-          .select('exam_id')
-          .range(from, from + pageSize - 1);
-
-        if (error) throw error;
-
-        const page = data || [];
-        questions.push(...page);
-
-        if (page.length < pageSize) break;
-        from += pageSize;
-      }
-
-      const distribution = questions.reduce<Record<string, number>>((acc, q) => {
-        acc[q.exam_id] = (acc[q.exam_id] || 0) + 1;
-        return acc;
-      }, {});
-
-      const total = questions.length;
-      return (exams || []).map((exam) => {
-        const count = distribution[exam.id] || 0;
-        return {
-          exam: exam.name,
-          count,
-          percentage: total > 0 ? Math.round((count / total) * 100) : 0,
-        };
-      }).sort((a, b) => b.count - a.count || a.exam.localeCompare(b.exam, 'pt-BR'));
-    },
-  });
-
-  const getQuestionsPeriodDates = useMemo(() => {
-    const now = new Date();
-    switch (questionsPeriod) {
-      case "today":
-        return { start: startOfDay(now), end: endOfDay(now) };
-      case "yesterday": {
-        const yesterday = subDays(now, 1);
-        return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
-      }
-      case "week":
-        return { start: startOfWeek(now, { locale: ptBR }), end: endOfWeek(now, { locale: ptBR }) };
-      case "month":
-        return { start: startOfMonth(now), end: endOfMonth(now) };
-      case "custom":
-        if (questionsDateRange?.from) {
-          return {
-            start: startOfDay(questionsDateRange.from),
-            end: questionsDateRange.to ? endOfDay(questionsDateRange.to) : endOfDay(questionsDateRange.from),
-          };
+        if (q.created_by) {
+          byUser.set(q.created_by, (byUser.get(q.created_by) ?? 0) + 1);
         }
-        return null;
-      default:
-        return null;
-    }
-  }, [questionsPeriod, questionsDateRange]);
-
-  const { data: professorQuestionCounts } = useQuery({
-    queryKey: ["dashboard-professor-question-counts", questionsPeriod, questionsDateRange?.from?.toISOString(), questionsDateRange?.to?.toISOString()],
-    enabled: isAdmin || isProfessor,
-    queryFn: async () => {
-      const { data: staffRoles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .in("role", ["professor", "admin"]);
-
-      if (rolesError) throw rolesError;
-
-      const staffIds = staffRoles?.map((r) => r.user_id) || [];
-      const roleMap = new Map(staffRoles?.map((r) => [r.user_id, r.role]) || []);
-
-      if (staffIds.length === 0) return { data: [], periodLabel: "" };
-
-      let query = supabase
-        .from("questions")
-        .select("created_by, created_at")
-        .in("created_by", staffIds);
-
-      const periodDates = getQuestionsPeriodDates;
-      if (periodDates) {
-        query = query
-          .gte("created_at", periodDates.start.toISOString())
-          .lte("created_at", periodDates.end.toISOString());
-      }
-
-      const { data: questions, error: questionsError } = await query;
-      if (questionsError) throw questionsError;
-
-      const countMap = new Map<string, number>();
-      questions?.forEach((q) => countMap.set(q.created_by, (countMap.get(q.created_by) || 0) + 1));
-
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", staffIds);
-
-      if (profilesError) throw profilesError;
-
-      let periodLabel = "Todo o período";
-      if (periodDates) {
-        if (questionsPeriod === "today") periodLabel = "Hoje";
-        else if (questionsPeriod === "yesterday") periodLabel = "Ontem";
-        else if (questionsPeriod === "week") periodLabel = "Esta semana";
-        else if (questionsPeriod === "month") periodLabel = "Este mês";
-        else if (questionsPeriod === "custom") {
-          periodLabel = questionsDateRange?.to
-            ? `${format(periodDates.start, "dd/MM/yyyy")} - ${format(periodDates.end, "dd/MM/yyyy")}`
-            : format(periodDates.start, "dd/MM/yyyy");
+        if (q.subject_id) {
+          bySubject.set(q.subject_id, (bySubject.get(q.subject_id) ?? 0) + 1);
         }
-      }
+      });
+
+      const monthly = Array.from(byMonth.entries())
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .slice(0, 12)
+        .map(([month, count]) => ({ month, count }));
+
+      const ranking = Array.from(byUser.entries())
+        .map(([userId, count]) => ({
+          userId,
+          name: profileMap.get(userId) ?? "Usuário removido",
+          count,
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      const subjectsList = Array.from(bySubject.entries())
+        .map(([subjectId, count]) => ({
+          name: subjectMap.get(subjectId) ?? "Sem matéria",
+          count,
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
 
       return {
-        data: staffIds.map((id) => {
-          const profile = profiles?.find((p) => p.id === id);
-          return {
-            userId: id,
-            name: profile?.full_name || "Sem nome",
-            role: roleMap.get(id) || "professor",
-            questionCount: countMap.get(id) || 0,
-          };
-        }).sort((a, b) => b.questionCount - a.questionCount),
-        periodLabel,
+        totalQuestions: questions.length,
+        totalUsers: profiles.length,
+        activeConsumers: consumers.filter((c: any) => c.is_active).length,
+        totalConsumers: consumers.length,
+        monthly,
+        ranking,
+        subjectsList,
       };
     },
   });
 
-  const { data: questionsEvolution } = useQuery({
-    queryKey: ["dashboard-questions-evolution", evolutionPeriod],
-    enabled: isAdmin || isProfessor,
-    queryFn: async () => {
-      const now = new Date();
-      let startDate: Date;
-      let granularity: "day" | "week" | "month";
-
-      switch (evolutionPeriod) {
-        case "7days":
-          startDate = subDays(now, 7);
-          granularity = "day";
-          break;
-        case "3months":
-          startDate = subMonths(now, 3);
-          granularity = "week";
-          break;
-        case "6months":
-          startDate = subMonths(now, 6);
-          granularity = "month";
-          break;
-        case "12months":
-          startDate = subMonths(now, 12);
-          granularity = "month";
-          break;
-        default:
-          startDate = subDays(now, 30);
-          granularity = "day";
-      }
-
-      const allQuestions: { created_at: string }[] = [];
-      const pageSize = 1000;
-      let from = 0;
-
-      while (true) {
-        const { data, error } = await supabase
-          .from("questions")
-          .select("created_at")
-          .gte("created_at", startOfDay(startDate).toISOString())
-          .lte("created_at", endOfDay(now).toISOString())
-          .order("created_at", { ascending: true })
-          .range(from, from + pageSize - 1);
-
-        if (error) throw error;
-        const page = data || [];
-        allQuestions.push(...page);
-        if (page.length < pageSize) break;
-        from += pageSize;
-      }
-
-      const intervals = granularity === "day"
-        ? eachDayOfInterval({ start: startOfDay(startDate), end: now })
-        : granularity === "week"
-          ? eachWeekOfInterval({ start: startOfDay(startDate), end: now }, { locale: ptBR })
-          : eachMonthOfInterval({ start: startOfDay(startDate), end: now });
-
-      const buckets = new Map<string, number>();
-      allQuestions.forEach((q) => {
-        const qDate = new Date(q.created_at);
-        const key = granularity === "day"
-          ? format(qDate, "yyyy-MM-dd")
-          : granularity === "week"
-            ? format(startOfWeek(qDate, { locale: ptBR }), "yyyy-MM-dd")
-            : format(qDate, "yyyy-MM");
-        buckets.set(key, (buckets.get(key) || 0) + 1);
-      });
-
-      return intervals.map((date) => {
-        const key = granularity === "day"
-          ? format(date, "yyyy-MM-dd")
-          : granularity === "week"
-            ? format(startOfWeek(date, { locale: ptBR }), "yyyy-MM-dd")
-            : format(date, "yyyy-MM");
-        return {
-          date: granularity === "day" ? format(date, "dd/MM", { locale: ptBR }) : granularity === "week" ? `Sem ${format(date, "dd/MM", { locale: ptBR })}` : format(date, "MMM/yy", { locale: ptBR }),
-          questoes: buckets.get(key) || 0,
-        };
-      });
-    },
-  });
-
-  const metrics = [
-    { title: "Total de Questões", value: totalQuestions.toString(), icon: Database, variant: "default" as const },
-    { title: "Matérias Cobertas", value: totalSubjects.toString(), icon: BookOpen, variant: "default" as const },
-    { title: "Questões Adicionadas", value: questionsThisWeek.toString(), icon: TrendingUp, trend: "Esta semana", variant: "success" as const },
-    { title: "Última Atualização", value: totalQuestions > 0 ? "Hoje" : "Nenhuma", icon: Calendar, trend: totalQuestions > 0 ? "Recente" : "Adicione questões", variant: "accent" as const },
-  ];
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
-
   return (
     <Layout>
-      <div className="space-y-8">
-        {/* Trial Banner - destacado no topo (apenas para alunos) */}
-        {subscription.isInTrial && !isAdmin && !isProfessor && (
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 text-white shadow-lg">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSI0Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-            <div className="relative flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                  <Clock className="h-7 w-7" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">Período de Teste Gratuito</h3>
-                  <p className="text-white/90">
-                    {subscription.trialDaysRemaining === 1 
-                      ? "Seu teste expira amanhã! Não perca o acesso." 
-                      : subscription.trialDaysRemaining === 0
-                      ? "Seu teste expira hoje!"
-                      : `Restam ${subscription.trialDaysRemaining} dias do seu período de teste.`}
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={createCheckout}
-                disabled={subscriptionLoading}
-                size="lg"
-                className="bg-white text-orange-600 hover:bg-white/90 font-semibold shadow-md"
-              >
-                <Crown className="h-5 w-5 mr-2" />
-                Assinar Agora - R$ 37,90/mês
-              </Button>
-            </div>
-          </div>
-        )}
-
+      <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-bold text-foreground mb-2">Dashboard</h2>
-          <p className="text-muted-foreground">Visão geral da saúde do seu banco de questões</p>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Visão geral do banco de questões e integrações</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {metrics.map((metric) => (
-            <MetricCard key={metric.title} {...metric} />
-          ))}
-        </div>
+        {isLoading || !data ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-2"><FileText className="h-4 w-4" />Questões</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{data.totalQuestions}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-2"><UsersIcon className="h-4 w-4" />Usuários internos</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{data.totalUsers}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-2"><Plug className="h-4 w-4" />Integrações ativas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{data.activeConsumers}<span className="text-base text-muted-foreground font-normal">/{data.totalConsumers}</span></p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />Este mês</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{data.monthly[0]?.count ?? 0}</p>
+                </CardContent>
+              </Card>
+            </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Distribuição por Vestibular - apenas para admin/professor */}
-          {(isAdmin || isProfessor) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Adições por mês</CardTitle>
+                  <CardDescription>Últimos 12 meses</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {data.monthly.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem dados ainda.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Mês</TableHead>
+                          <TableHead className="text-right">Questões adicionadas</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.monthly.map((row) => (
+                          <TableRow key={row.month}>
+                            <TableCell className="font-medium">
+                              {format(new Date(row.month + "-01"), "MMM/yyyy", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="secondary">{row.count}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ranking de colaboradores</CardTitle>
+                  <CardDescription>Quem mais adicionou questões</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {data.ranking.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem dados ainda.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>#</TableHead>
+                          <TableHead>Usuário</TableHead>
+                          <TableHead className="text-right">Questões</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.ranking.map((row, idx) => (
+                          <TableRow key={row.userId}>
+                            <TableCell className="font-medium">{idx + 1}</TableCell>
+                            <TableCell>{row.name}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge>{row.count}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                  Questões por Vestibular
-                </CardTitle>
+                <CardTitle>Top matérias</CardTitle>
+                <CardDescription>Distribuição de questões por matéria</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {examStats.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-muted-foreground">
-                        Nenhuma questão cadastrada ainda.
-                      </p>
-                    </div>
-                  ) : (
-                    examStats.map((stat) => (
-                      <div key={stat.exam} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-foreground">{stat.exam}</span>
-                          <span className="text-muted-foreground">{stat.count} questões</span>
-                        </div>
-                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-accent to-accent/80 rounded-full transition-all"
-                            style={{ width: `${stat.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Subscription Status Card - apenas para alunos */}
-          {!isAdmin && !isProfessor && (
-            <Card className={subscription.subscribed ? "border-primary/50" : subscription.isInTrial ? "border-amber-500/50" : ""}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-primary" />
-                  Status da Assinatura
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {subscriptionLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  </div>
-                ) : subscription.subscribed ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">Assinatura Ativa</span>
-                          <Badge variant="secondary" className="bg-primary/10 text-primary">Premium</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Válida até {formatDate(subscription.subscriptionEnd)}
-                        </p>
-                      </div>
-                    </div>
-                    {subscription.productId !== 'school_access' && subscription.productId !== 'admin_access' && (
-                      <Button
-                        variant="outline"
-                        onClick={openCustomerPortal}
-                        disabled={subscriptionLoading}
-                        className="w-full gap-2"
-                      >
-                        <CreditCard className="h-4 w-4" />
-                        Gerenciar Assinatura
-                      </Button>
-                    )}
-                  </div>
-                ) : subscription.isInTrial ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                        <Clock className="h-5 w-5 text-amber-500" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">Período de Teste</span>
-                          <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">Trial</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {subscription.trialDaysRemaining === 1 
-                            ? "Expira amanhã" 
-                            : `${subscription.trialDaysRemaining} dias restantes`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                      <p className="text-sm text-amber-700 dark:text-amber-400">
-                        Você tem acesso gratuito por 2 dias. Assine agora para não perder o acesso!
-                      </p>
-                    </div>
-                    <Button
-                      onClick={createCheckout}
-                      disabled={subscriptionLoading}
-                      className="w-full gap-2"
-                    >
-                      <Crown className="h-4 w-4" />
-                      Assinar por R$ 37,90/mês
-                    </Button>
-                  </div>
+                {data.subjectsList.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sem dados ainda.</p>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="text-center py-4">
-                      <Crown className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
-                      <h4 className="font-semibold text-foreground mb-1">Seu período de teste expirou</h4>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Assine para ter acesso completo ao banco de questões e todas as funcionalidades.
-                      </p>
-                    </div>
-                    <Button
-                      onClick={createCheckout}
-                      disabled={subscriptionLoading}
-                      className="w-full gap-2"
-                    >
-                      <Crown className="h-4 w-4" />
-                      Assinar por R$ 37,90/mês
-                    </Button>
+                  <div className="space-y-3">
+                    {data.subjectsList.map((s) => {
+                      const pct = data.totalQuestions > 0 ? (s.count / data.totalQuestions) * 100 : 0;
+                      return (
+                        <div key={s.name}>
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="font-medium">{s.name}</span>
+                            <span className="text-muted-foreground">{s.count} ({pct.toFixed(1)}%)</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
             </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Distribuição por Matéria</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {subjectStats.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-muted-foreground">
-                      Nenhuma questão cadastrada ainda.
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Adicione questões para ver a distribuição por matéria.
-                    </p>
-                  </div>
-                ) : (
-                  subjectStats.map((stat) => (
-                    <div key={stat.subject} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-foreground">{stat.subject}</span>
-                        <span className="text-muted-foreground">{stat.count} questões</span>
-                      </div>
-                      <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all"
-                          style={{ width: `${stat.percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {(isAdmin || isProfessor) && professorQuestionCounts && professorQuestionCounts.data.length > 0 && (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-amber-500" />
-                    Questões Adicionadas por Equipe
-                  </CardTitle>
-                  <CardDescription>
-                    Ranking de professores e administradores por quantidade de questões cadastradas
-                    {professorQuestionCounts.periodLabel && professorQuestionCounts.periodLabel !== "Todo o período" && (
-                      <span className="ml-1 font-medium text-primary">({professorQuestionCounts.periodLabel})</span>
-                    )}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Select value={questionsPeriod} onValueChange={setQuestionsPeriod}>
-                    <SelectTrigger className="w-[140px]">
-                      <CalendarDays className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Período" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todo período</SelectItem>
-                      <SelectItem value="today">Hoje</SelectItem>
-                      <SelectItem value="yesterday">Ontem</SelectItem>
-                      <SelectItem value="week">Esta semana</SelectItem>
-                      <SelectItem value="month">Este mês</SelectItem>
-                      <SelectItem value="custom">Personalizado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {questionsPeriod === "custom" && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {questionsDateRange?.from ? questionsDateRange.to ? `${format(questionsDateRange.from, "dd/MM")} - ${format(questionsDateRange.to, "dd/MM")}` : format(questionsDateRange.from, "dd/MM/yyyy") : "Selecionar datas"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="end">
-                        <CalendarComponent initialFocus mode="range" defaultMonth={questionsDateRange?.from} selected={questionsDateRange} onSelect={setQuestionsDateRange} numberOfMonths={2} locale={ptBR} />
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {professorQuestionCounts.data.map((prof, index) => (
-                  <div key={prof.userId} className={`flex items-center justify-between p-3 rounded-lg border ${index === 0 ? "bg-amber-500/10 border-amber-500/30" : index === 1 ? "bg-slate-500/10 border-slate-500/30" : index === 2 ? "bg-orange-500/10 border-orange-500/30" : "bg-muted/50"}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm ${index === 0 ? "bg-amber-500 text-white" : index === 1 ? "bg-slate-400 text-white" : index === 2 ? "bg-orange-400 text-white" : "bg-muted-foreground/20 text-muted-foreground"}`}>
-                        {index + 1}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium truncate max-w-[150px]">{prof.name}</span>
-                        <span className={`text-xs ${prof.role === "admin" ? "text-red-500" : "text-blue-500"}`}>{prof.role === "admin" ? "Admin" : "Professor"}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-primary font-semibold">
-                      <BookOpen className="h-4 w-4" />
-                      {prof.questionCount}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
-                <span>Total de membros: {professorQuestionCounts.data.length}</span>
-                <span>Total de questões: {professorQuestionCounts.data.reduce((acc, p) => acc + p.questionCount, 0)}</span>
-              </div>
-            </CardContent>
-          </Card>
+          </>
         )}
-
-        {(isAdmin || isProfessor) && (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    Evolução de Questões Adicionadas
-                  </CardTitle>
-                  <CardDescription>Acompanhe a quantidade de questões cadastradas ao longo do tempo</CardDescription>
-                </div>
-                <Select value={evolutionPeriod} onValueChange={setEvolutionPeriod}>
-                  <SelectTrigger className="w-[160px]">
-                    <CalendarDays className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Período" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7days">Últimos 7 dias</SelectItem>
-                    <SelectItem value="30days">Últimos 30 dias</SelectItem>
-                    <SelectItem value="3months">Últimos 3 meses</SelectItem>
-                    <SelectItem value="6months">Últimos 6 meses</SelectItem>
-                    <SelectItem value="12months">Últimos 12 meses</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {questionsEvolution && questionsEvolution.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={questionsEvolution}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} formatter={(value) => [`${value} questões`, "Questões"]} />
-                    <Bar dataKey="questoes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Questões" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[300px] text-muted-foreground">Nenhuma questão encontrada no período</div>
-              )}
-              {questionsEvolution && questionsEvolution.length > 0 && (
-                <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Período: {evolutionPeriod === "7days" ? "Últimos 7 dias" : evolutionPeriod === "30days" ? "Últimos 30 dias" : evolutionPeriod === "3months" ? "Últimos 3 meses" : evolutionPeriod === "6months" ? "Últimos 6 meses" : "Últimos 12 meses"}</span>
-                  <span>Total no período: {questionsEvolution.reduce((acc, d) => acc + d.questoes, 0)} questões</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Status do Sistema</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 rounded-full bg-green-500 mt-2" />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium text-foreground">Banco de Dados</p>
-                  <p className="text-xs text-muted-foreground">Conectado e funcionando</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 rounded-full bg-green-500 mt-2" />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium text-foreground">Autenticação</p>
-                  <p className="text-xs text-muted-foreground">Sistema ativo</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 rounded-full bg-green-500 mt-2" />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium text-foreground">Pagamentos (Asaas)</p>
-                  <p className="text-xs text-muted-foreground">Integração ativa</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );

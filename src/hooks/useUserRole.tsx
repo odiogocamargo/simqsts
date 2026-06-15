@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type UserRole = "admin" | "professor" | "aluno" | null;
+export type UserRole = "admin" | "professor" | null;
 
 export const useUserRole = () => {
   const { user } = useAuth();
@@ -12,8 +12,6 @@ export const useUserRole = () => {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      // user_roles pode ter 0 linhas (usuário sem role) ou mais de 1 (caso a regra mude no futuro).
-      // Então evitamos .single() para não cair em erro e acabarmos assumindo permissões indevidas.
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
@@ -24,12 +22,10 @@ export const useUserRole = () => {
         return null;
       }
 
-      const roles = (data ?? []).map((r) => r.role) as Exclude<UserRole, null>[];
+      const roles = (data ?? []).map((r) => r.role as string);
 
-      // Hierarquia de permissões (mais forte primeiro)
       if (roles.includes("admin")) return "admin";
       if (roles.includes("professor")) return "professor";
-      if (roles.includes("aluno")) return "aluno";
 
       return null;
     },
@@ -41,6 +37,5 @@ export const useUserRole = () => {
     isLoading,
     isAdmin: role === "admin",
     isProfessor: role === "professor",
-    isAluno: role === "aluno",
   };
 };

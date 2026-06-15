@@ -7,23 +7,13 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import Index from "./pages/Index";
-import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Questions from "./pages/Questions";
 import AddQuestion from "./pages/AddQuestion";
-import StudentPractice from "./pages/StudentPractice";
-import StudentSimulations from "./pages/StudentSimulations";
-import StudentQuestions from "./pages/StudentQuestions";
-import StudentErrorAnalysis from "./pages/StudentErrorAnalysis";
-import StudentTriAnalysis from "./pages/StudentTriAnalysis";
-import SubjectReport from "./pages/SubjectReport";
 import Users from "./pages/Users";
 import TaxonomyMigration from "./pages/TaxonomyMigration";
-import Subscriptions from "./pages/Subscriptions";
 import Auth from "./pages/Auth";
-import PaymentSuccess from "./pages/PaymentSuccess";
 import MyAccount from "./pages/MyAccount";
-import Subscribe from "./pages/Subscribe";
 import Integrations from "./pages/Integrations";
 import NotFound from "./pages/NotFound";
 
@@ -38,27 +28,75 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-            <Route path="/assinar" element={<ProtectedRoute><Subscribe /></ProtectedRoute>} />
-            {/* Rotas de Admin */}
-            <Route path="/dashboard" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Dashboard /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><Questions /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/add-question" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin", "professor"]}><AddQuestion /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/subject-report" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><SubjectReport /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Users /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/subscriptions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Subscriptions /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/taxonomy-migration" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><TaxonomyMigration /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/integrations" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["admin"]}><Integrations /></RoleBasedRoute></ProtectedRoute>} />
-            {/* Rotas de Aluno */}
-            <Route path="/student" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentPractice /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/student/questions" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentQuestions /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/student/simulations" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentSimulations /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/student/error-analysis" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentErrorAnalysis /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/student/tri-analysis" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><StudentTriAnalysis /></RoleBasedRoute></ProtectedRoute>} />
-            <Route path="/student/account" element={<ProtectedRoute><RoleBasedRoute allowedRoles={["aluno"]}><MyAccount /></RoleBasedRoute></ProtectedRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin", "professor"]}>
+                    <Dashboard />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/questions"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin", "professor"]}>
+                    <Questions />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/add-question"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin", "professor"]}>
+                    <AddQuestion />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin"]}>
+                    <Users />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/taxonomy-migration"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin"]}>
+                    <TaxonomyMigration />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/integrations"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin"]}>
+                    <Integrations />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-account"
+              element={
+                <ProtectedRoute>
+                  <MyAccount />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -1,9 +1,8 @@
 import { useUserRole, UserRole } from "@/hooks/useUserRole";
-import { Navigate } from "react-router-dom";
 
 interface RoleBasedRouteProps {
   children: React.ReactNode;
-  allowedRoles: UserRole[];
+  allowedRoles: Exclude<UserRole, null>[];
 }
 
 export const RoleBasedRoute = ({ children, allowedRoles }: RoleBasedRouteProps) => {
@@ -20,14 +19,17 @@ export const RoleBasedRoute = ({ children, allowedRoles }: RoleBasedRouteProps) 
     );
   }
 
-  // Se o usuário está logado mas não tem role definida, mostra mensagem ao invés de redirecionar
-  // (redirecionar para /auth causaria loop infinito pois Auth redireciona usuários logados de volta)
   if (!role) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground">Sua conta ainda não possui um perfil de acesso configurado.</p>
-          <p className="text-sm text-muted-foreground">Entre em contato com o administrador.</p>
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="text-center space-y-3 max-w-md">
+          <h2 className="text-xl font-semibold">Acesso pendente</h2>
+          <p className="text-muted-foreground">
+            Sua conta ainda não tem um perfil de acesso configurado.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Entre em contato com um administrador para liberar o seu acesso.
+          </p>
         </div>
       </div>
     );
@@ -37,7 +39,14 @@ export const RoleBasedRoute = ({ children, allowedRoles }: RoleBasedRouteProps) 
     return <>{children}</>;
   }
 
-  const redirectTo = role === "aluno" ? "/student" : "/dashboard";
-  return <Navigate to={redirectTo} replace />;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+      <div className="text-center space-y-3 max-w-md">
+        <h2 className="text-xl font-semibold">Sem permissão</h2>
+        <p className="text-muted-foreground">
+          Sua conta não tem permissão para acessar esta página.
+        </p>
+      </div>
+    </div>
+  );
 };
-
