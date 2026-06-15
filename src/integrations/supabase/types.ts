@@ -133,6 +133,152 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_clients: {
+        Row: {
+          active: boolean
+          created_at: string
+          due_day: number
+          id: string
+          monthly_value: number
+          name: string
+          notes: string | null
+          start_month: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          due_day?: number
+          id?: string
+          monthly_value?: number
+          name: string
+          notes?: string | null
+          start_month: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          due_day?: number
+          id?: string
+          monthly_value?: number
+          name?: string
+          notes?: string | null
+          start_month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category: string
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_fixed_costs: {
+        Row: {
+          active: boolean
+          amount: number
+          category: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          start_month: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount?: number
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          start_month: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          start_month?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_payments: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          id: string
+          method: string | null
+          month: string
+          paid_at: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          client_id: string
+          created_at?: string
+          id?: string
+          method?: string | null
+          month: string
+          paid_at?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          method?: string | null
+          month?: string
+          paid_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "finance_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

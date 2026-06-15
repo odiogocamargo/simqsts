@@ -8,55 +8,64 @@ import { FileText, TrendingUp, Users as UsersIcon, Plug, Loader2 } from "lucide-
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-interface QuestionRow {
-  id: string;
-  created_at: string;
-  created_by: string | null;
-  subject_id: string | null;
+const PAGE_SIZE = 1000;
+
+async function fetchAllQuestions() {
+  const all: { created_at: string; created_by: string | null; subject_id: string | null }[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("questions")
+      .select("created_at, created_by, subject_id")
+      .order("created_at", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...(data as any));
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+  return all;
 }
 
 const Dashboard = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-overview"],
     queryFn: async () => {
-      const [questionsRes, profilesRes, subjectsRes, consumersRes] = await Promise.all([
-        supabase.from("questions").select("id, created_at, created_by, subject_id"),
+      const [questions, internalRolesRes, profilesRes, subjectsRes, consumersRes, consumersActiveRes] = await Promise.all([
+        fetchAllQuestions(),
+        supabase.from("user_roles").select("user_id, role").in("role", ["admin", "professor"]),
         supabase.from("profiles").select("id, full_name"),
         supabase.from("subjects").select("id, name"),
-        supabase.from("external_consumers").select("id, name, is_active"),
+        supabase.from("external_consumers").select("id", { count: "exact", head: true }),
+        supabase.from("external_consumers").select("id", { count: "exact", head: true }).eq("active", true),
       ]);
 
-      const questions = (questionsRes.data ?? []) as QuestionRow[];
+      const internalUserIds = new Set((internalRolesRes.data ?? []).map((r: any) => r.user_id));
       const profiles = profilesRes.data ?? [];
       const subjects = subjectsRes.data ?? [];
-      const consumers = consumersRes.data ?? [];
 
       const profileMap = new Map(profiles.map((p: any) => [p.id, p.full_name || "Sem nome"]));
       const subjectMap = new Map(subjects.map((s: any) => [s.id, s.name]));
 
-      // Por mês
       const byMonth = new Map<string, number>();
-      // Por usuário
       const byUser = new Map<string, number>();
-      // Por matéria
       const bySubject = new Map<string, number>();
 
       questions.forEach((q) => {
-        const monthKey = q.created_at.slice(0, 7); // YYYY-MM
+        const monthKey = q.created_at.slice(0, 7);
         byMonth.set(monthKey, (byMonth.get(monthKey) ?? 0) + 1);
-
-        if (q.created_by) {
-          byUser.set(q.created_by, (byUser.get(q.created_by) ?? 0) + 1);
-        }
-        if (q.subject_id) {
-          bySubject.set(q.subject_id, (bySubject.get(q.subject_id) ?? 0) + 1);
-        }
+        if (q.created_by) byUser.set(q.created_by, (byUser.get(q.created_by) ?? 0) + 1);
+        if (q.subject_id) bySubject.set(q.subject_id, (bySubject.get(q.subject_id) ?? 0) + 1);
       });
 
       const monthly = Array.from(byMonth.entries())
         .sort((a, b) => b[0].localeCompare(a[0]))
         .slice(0, 12)
         .map(([month, count]) => ({ month, count }));
+
+      const currentMonthKey = new Date().toISOString().slice(0, 7);
+      const thisMonth = byMonth.get(currentMonthKey) ?? 0;
 
       const ranking = Array.from(byUser.entries())
         .map(([userId, count]) => ({
@@ -77,9 +86,10 @@ const Dashboard = () => {
 
       return {
         totalQuestions: questions.length,
-        totalUsers: profiles.length,
-        activeConsumers: consumers.filter((c: any) => c.is_active).length,
-        totalConsumers: consumers.length,
+        totalUsers: internalUserIds.size,
+        activeConsumers: consumersActiveRes.count ?? 0,
+        totalConsumers: consumersRes.count ?? 0,
+        thisMonth,
         monthly,
         ranking,
         subjectsList,
@@ -107,7 +117,7 @@ const Dashboard = () => {
                   <CardDescription className="flex items-center gap-2"><FileText className="h-4 w-4" />Questões</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold">{data.totalQuestions}</p>
+                  <p className="text-3xl font-bold">{data.totalQuestions.toLocaleString("pt-BR")}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -131,7 +141,7 @@ const Dashboard = () => {
                   <CardDescription className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />Este mês</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold">{data.monthly[0]?.count ?? 0}</p>
+                  <p className="text-3xl font-bold">{data.thisMonth}</p>
                 </CardContent>
               </Card>
             </div>
