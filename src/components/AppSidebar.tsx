@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, List, Users, Plug, Loader2 } from "lucide-react";
+import { LayoutDashboard, FileText, List, Users, Plug, Loader2, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import {
 const adminNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Questões", url: "/questions", icon: FileText },
+  { title: "Gerador Autoral", url: "/generate-questions", icon: Sparkles },
   { title: "Taxonomia", url: "/taxonomy-migration", icon: List },
   { title: "Usuários", url: "/users", icon: Users },
   { title: "Integrações", url: "/integrations", icon: Plug },
@@ -26,6 +27,7 @@ const adminNavItems = [
 const professorNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Questões", url: "/questions", icon: FileText },
+  { title: "Gerador Autoral", url: "/generate-questions", icon: Sparkles },
 ];
 
 export function AppSidebar() {
