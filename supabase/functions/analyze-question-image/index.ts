@@ -269,7 +269,8 @@ serve(async (req) => {
                     items: {
                       type: "object",
                       properties: {
-                        statement: { type: "string", description: "Enunciado transcrito fielmente ao original, preservando ordem de leitura e podendo usar HTML simples para manter formatação." },
+                        statement: { type: "string", description: "Enunciado transcrito fielmente ao original, preservando ordem de leitura e podendo usar HTML simples para manter formatação. NÃO inclua o texto-base compartilhado aqui — use shared_text." },
+                        shared_text: { type: "string", description: "Texto-base compartilhado entre esta e outra(s) questão(ões) da página (ex.: poema, trecho literário, notícia). Deixe vazio se o texto não for compartilhado. NÃO inclua rótulos como 'Texto para as questões X e Y'." },
                         subject_id: { type: "string", description: "ID real da matéria" },
                         content_id: { type: "string", description: "ID real do conteúdo" },
                         topic_id: { type: "string", description: "ID real do tópico ou string vazia" },
