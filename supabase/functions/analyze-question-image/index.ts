@@ -286,7 +286,7 @@ serve(async (req) => {
                         explanation: { type: "string", description: "Explicação curta opcional; se houver citação textual relevante, preserve-a fielmente." },
                         should_attach_source_image: { type: "boolean", description: "true quando a questão depende ou inclui imagem, gráfico, tabela, charge, mapa ou qualquer apoio visual da página original." },
                       },
-                      required: ["statement", "subject_id", "content_id", "topic_id", "exam_id", "year", "difficulty", "option_a", "option_b", "option_c", "option_d", "option_e", "correct_answer", "explanation", "should_attach_source_image"],
+                      required: ["statement", "subject_id", "content_id", "topic_id", "exam_id", "year", "difficulty", "option_a", "option_b", "option_c", "option_d", "option_e", "correct_answer", "explanation", "should_attach_source_image", "shared_text"],
                       additionalProperties: false,
                     },
                   },
