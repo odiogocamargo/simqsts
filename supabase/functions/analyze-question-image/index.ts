@@ -471,8 +471,30 @@ serve(async (req) => {
       }
     }
 
+    // Regex para remover rótulos como "Texto para as questões 1 e 2", "Leia o texto abaixo", "Texto I", etc.
+    const SHARED_TEXT_LABEL_REGEX = /^\s*(?:<[^>]+>\s*)*(?:texto\s+(?:para\s+(?:as?\s+)?(?:pr[óo]xim[ao]s?\s+)?quest[õo]es?[^\.\n<]*|[IVX]+\s*[:\-–]?|a\s+seguir|abaixo|comum[^\.\n<]*)|leia\s+(?:o\s+)?texto[^\.\n<]*|com\s+base\s+no\s+texto[^\.\n<]*)[:\.\-–]?\s*(?:<\/[^>]+>)?\s*/i;
+
+    const stripSharedTextLabel = (value: string) => {
+      let result = value.trim();
+      // aplica múltiplas vezes caso venham vários rótulos empilhados
+      for (let i = 0; i < 3; i++) {
+        const next = result.replace(SHARED_TEXT_LABEL_REGEX, "").trim();
+        if (next === result) break;
+        result = next;
+      }
+      return result;
+    };
+
+    const composeStatement = (sharedText: string, statement: string) => {
+      const cleanShared = stripSharedTextLabel(sharedText);
+      if (!cleanShared) return statement;
+      return `<div class="shared-text">${cleanShared}</div><br/>${statement}`;
+    };
+
     const sanitizedQuestions = extractedQuestions.reduce((acc: Record<string, unknown>[], question: Record<string, unknown>, index: number) => {
-      const statement = typeof question.statement === "string" ? question.statement.trim() : "";
+      const rawStatement = typeof question.statement === "string" ? question.statement.trim() : "";
+      const statement = stripSharedTextLabel(rawStatement);
+      const sharedText = typeof question.shared_text === "string" ? question.shared_text.trim() : "";
       const subjectId = String(question.subject_id || "");
       const contentId = String(question.content_id || "");
       const examId = String(question.exam_id || "");
@@ -489,7 +511,7 @@ serve(async (req) => {
 
       acc.push({
         ...question,
-        statement,
+        statement: composeStatement(sharedText, statement),
         subject_id: fallbackSubjectId,
         content_id: fallbackContentId,
         exam_id: fallbackExamId,
