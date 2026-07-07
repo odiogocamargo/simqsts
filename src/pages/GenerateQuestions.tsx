@@ -132,6 +132,61 @@ const GenerateQuestions = () => {
     toast({ title: "Copiado", description: "JSON copiado para a área de transferência." });
   };
 
+  const handleSaveAll = async () => {
+    if (!result || !user) return;
+    setIsSaving(true);
+    try {
+      const rows = result.questions.map((q) => ({
+        exam_id: MERITO_EXAM_ID,
+        year: MERITO_YEAR,
+        subject_id: result.subject.id,
+        content_id: result.content.id,
+        question_type: "multipla_escolha" as const,
+        statement: q.statement,
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        option_e: q.option_e,
+        correct_answer: q.correct_answer?.toLowerCase() || null,
+        explanation: q.explanation || null,
+        difficulty: result.difficulty,
+        created_by: user.id,
+      }));
+
+      const { data: inserted, error } = await supabase
+        .from("questions")
+        .insert(rows)
+        .select("id");
+
+      if (error) throw error;
+
+      // Vincula tópico (se houver) via question_topics
+      if (result.topic?.id && inserted && inserted.length > 0) {
+        const links = inserted.map((row) => ({
+          question_id: row.id,
+          topic_id: result.topic!.id,
+        }));
+        const { error: linkError } = await supabase.from("question_topics").insert(links);
+        if (linkError) console.warn("Falha ao vincular tópico:", linkError);
+      }
+
+      setSavedCount(rows.length);
+      toast({
+        title: "Questões salvas",
+        description: `${rows.length} questão(ões) salvas no vestibular Autorais Mérito.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Erro ao salvar",
+        description: err instanceof Error ? err.message : "Não foi possível salvar as questões.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const renderHtml = (html: string) => ({
     __html: DOMPurify.sanitize(html, { ADD_ATTR: ["target"] }),
   });
