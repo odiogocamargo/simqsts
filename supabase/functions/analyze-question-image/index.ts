@@ -161,6 +161,9 @@ serve(async (req) => {
       "16. Se parte do texto estiver ilegível, mantenha apenas o trecho confiável e não invente conteúdo.",
       "17. Se existir uma questão com imagem e pouco texto, não descarte automaticamente; extraia todo o texto legível ao redor e preserve a associação com a imagem original.",
       "18. Considere figuras, gráficos e imagens como parte do contexto da questão, não como motivo para invalidar a questão.",
+      "19. TEXTO COMPARTILHADO: quando a página apresentar um texto-base (poema, trecho literário, notícia, gráfico com legenda etc.) que serve para DUAS OU MAIS questões (ex.: 'Texto para as questões 1 e 2', 'Leia o texto a seguir para responder às questões 45 e 46'), preencha o campo shared_text de CADA uma dessas questões com o texto-base COMPLETO e fiel ao original. O statement deve conter APENAS o enunciado específico daquela questão, sem o texto-base.",
+      "20. NUNCA inclua rótulos como 'Texto para as questões X e Y', 'Leia o texto abaixo', 'Texto I', 'Texto para a próxima questão' — descarte esses cabeçalhos. O shared_text deve conter apenas o conteúdo do texto-base em si.",
+      "21. Se o texto-base servir para apenas UMA questão, incorpore-o direto no statement e deixe shared_text vazio.",
       "",
       "EXAMES DISPONÍVEIS:",
       ...(examsResult.data || []).map((exam) => `- ${exam.id}: ${exam.name}`),
@@ -266,7 +269,8 @@ serve(async (req) => {
                     items: {
                       type: "object",
                       properties: {
-                        statement: { type: "string", description: "Enunciado transcrito fielmente ao original, preservando ordem de leitura e podendo usar HTML simples para manter formatação." },
+                        statement: { type: "string", description: "Enunciado transcrito fielmente ao original, preservando ordem de leitura e podendo usar HTML simples para manter formatação. NÃO inclua o texto-base compartilhado aqui — use shared_text." },
+                        shared_text: { type: "string", description: "Texto-base compartilhado entre esta e outra(s) questão(ões) da página (ex.: poema, trecho literário, notícia). Deixe vazio se o texto não for compartilhado. NÃO inclua rótulos como 'Texto para as questões X e Y'." },
                         subject_id: { type: "string", description: "ID real da matéria" },
                         content_id: { type: "string", description: "ID real do conteúdo" },
                         topic_id: { type: "string", description: "ID real do tópico ou string vazia" },
@@ -282,7 +286,7 @@ serve(async (req) => {
                         explanation: { type: "string", description: "Explicação curta opcional; se houver citação textual relevante, preserve-a fielmente." },
                         should_attach_source_image: { type: "boolean", description: "true quando a questão depende ou inclui imagem, gráfico, tabela, charge, mapa ou qualquer apoio visual da página original." },
                       },
-                      required: ["statement", "subject_id", "content_id", "topic_id", "exam_id", "year", "difficulty", "option_a", "option_b", "option_c", "option_d", "option_e", "correct_answer", "explanation", "should_attach_source_image"],
+                      required: ["statement", "subject_id", "content_id", "topic_id", "exam_id", "year", "difficulty", "option_a", "option_b", "option_c", "option_d", "option_e", "correct_answer", "explanation", "should_attach_source_image", "shared_text"],
                       additionalProperties: false,
                     },
                   },
@@ -467,8 +471,30 @@ serve(async (req) => {
       }
     }
 
+    // Regex para remover rótulos como "Texto para as questões 1 e 2", "Leia o texto abaixo", "Texto I", etc.
+    const SHARED_TEXT_LABEL_REGEX = /^\s*(?:<[^>]+>\s*)*(?:texto\s+(?:para\s+(?:as?\s+)?(?:pr[óo]xim[ao]s?\s+)?quest[õo]es?[^\.\n<]*|[IVX]+\s*[:\-–]?|a\s+seguir|abaixo|comum[^\.\n<]*)|leia\s+(?:o\s+)?texto[^\.\n<]*|com\s+base\s+no\s+texto[^\.\n<]*)[:\.\-–]?\s*(?:<\/[^>]+>)?\s*/i;
+
+    const stripSharedTextLabel = (value: string) => {
+      let result = value.trim();
+      // aplica múltiplas vezes caso venham vários rótulos empilhados
+      for (let i = 0; i < 3; i++) {
+        const next = result.replace(SHARED_TEXT_LABEL_REGEX, "").trim();
+        if (next === result) break;
+        result = next;
+      }
+      return result;
+    };
+
+    const composeStatement = (sharedText: string, statement: string) => {
+      const cleanShared = stripSharedTextLabel(sharedText);
+      if (!cleanShared) return statement;
+      return `<div class="shared-text">${cleanShared}</div><br/>${statement}`;
+    };
+
     const sanitizedQuestions = extractedQuestions.reduce((acc: Record<string, unknown>[], question: Record<string, unknown>, index: number) => {
-      const statement = typeof question.statement === "string" ? question.statement.trim() : "";
+      const rawStatement = typeof question.statement === "string" ? question.statement.trim() : "";
+      const statement = stripSharedTextLabel(rawStatement);
+      const sharedText = typeof question.shared_text === "string" ? question.shared_text.trim() : "";
       const subjectId = String(question.subject_id || "");
       const contentId = String(question.content_id || "");
       const examId = String(question.exam_id || "");
@@ -485,7 +511,7 @@ serve(async (req) => {
 
       acc.push({
         ...question,
-        statement,
+        statement: composeStatement(sharedText, statement),
         subject_id: fallbackSubjectId,
         content_id: fallbackContentId,
         exam_id: fallbackExamId,
