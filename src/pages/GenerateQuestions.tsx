@@ -297,6 +297,15 @@ const GenerateQuestions = () => {
               </Button>
               {result && (
                 <>
+                  <Button onClick={handleSaveAll} disabled={isSaving || savedCount > 0}>
+                    {isSaving ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>
+                    ) : savedCount > 0 ? (
+                      <><CheckCircle2 className="mr-2 h-4 w-4" />Salvas ({savedCount})</>
+                    ) : (
+                      <><Save className="mr-2 h-4 w-4" />Salvar no Autorais Mérito</>
+                    )}
+                  </Button>
                   <Button variant="outline" onClick={handleGenerate} disabled={isGenerating}>
                     <RefreshCw className="mr-2 h-4 w-4" />Gerar novamente
                   </Button>
