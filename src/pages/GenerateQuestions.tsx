@@ -45,6 +45,7 @@ interface GenerationResult {
 
 const GenerateQuestions = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { data: subjects = [] } = useSubjects();
   const [subjectId, setSubjectId] = useState("");
   const [contentId, setContentId] = useState("");
@@ -53,6 +54,8 @@ const GenerateQuestions = () => {
   const [quantity, setQuantity] = useState(3);
   const [instructions, setInstructions] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
 
   const { data: contents = [] } = useContents(subjectId || undefined);
