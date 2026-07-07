@@ -67,6 +67,7 @@ const GenerateQuestions = () => {
     if (!canGenerate) return;
     setIsGenerating(true);
     setResult(null);
+    setSavedCount(0);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-authorial-questions", {
