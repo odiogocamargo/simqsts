@@ -54,20 +54,6 @@ const normalizeEscapedText = (value?: string | null) => {
 
 const isLikelyStructuredLine = (line: string) => /^\s*(?:\(?[A-Ea-e]\)|\d+[\).]|[-•])\s+/.test(line);
 
-const mergeSoftWrappedLines = (lines: string[]) => lines
-  .reduce((acc, line) => {
-    if (!acc) return line;
-    if (acc.endsWith("-")) return `${acc.slice(0, -1)}${line}`;
-    return `${acc} ${line}`;
-  }, "")
-  .replace(/\s{2,}/g, " ")
-  .replace(/\s+([,.;:!?])/g, "$1")
-  .replace(/\(\s+/g, "(")
-  .replace(/\s+\)/g, ")")
-  .replace(/\$\s+/g, "$")
-  .replace(/\s+\$/g, "$")
-  .trim();
-
 const normalizeRichText = (value?: string | null) => {
   const normalized = normalizeEscapedText(value).trim();
   if (!normalized) return "";
@@ -76,6 +62,8 @@ const normalizeRichText = (value?: string | null) => {
     return normalized;
   }
 
+  // Preserva quebras de linha SEMPRE: cada linha vira uma linha visual.
+  // Isso mantém poemas, versos, diálogos e listas com sua estrutura original.
   return normalized
     .split(/\n{2,}/)
     .map((block) => block.trim())
@@ -87,11 +75,8 @@ const normalizeRichText = (value?: string | null) => {
         .filter(Boolean);
 
       if (lines.length === 0) return "";
-      if (lines.some(isLikelyStructuredLine)) {
-        return `<p>${lines.join("<br />")}</p>`;
-      }
-
-      return `<p>${mergeSoftWrappedLines(lines)}</p>`;
+      // Junta linhas com <br/> em vez de espaços, para preservar poemas/versos/diálogos.
+      return `<p>${lines.join("<br />")}</p>`;
     })
     .join("");
 };
