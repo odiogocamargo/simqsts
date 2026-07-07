@@ -15,9 +15,13 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSubjects, useContents, useTopics } from "@/hooks/useSubjects";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Copy, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Sparkles, Loader2, Copy, RefreshCw, CheckCircle2, Save } from "lucide-react";
 import DOMPurify from "dompurify";
+
+const MERITO_EXAM_ID = "merito-2026";
+const MERITO_YEAR = 2026;
 
 interface GeneratedQuestion {
   statement: string;
@@ -41,6 +45,7 @@ interface GenerationResult {
 
 const GenerateQuestions = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { data: subjects = [] } = useSubjects();
   const [subjectId, setSubjectId] = useState("");
   const [contentId, setContentId] = useState("");
@@ -49,6 +54,8 @@ const GenerateQuestions = () => {
   const [quantity, setQuantity] = useState(3);
   const [instructions, setInstructions] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
 
   const { data: contents = [] } = useContents(subjectId || undefined);
@@ -60,6 +67,7 @@ const GenerateQuestions = () => {
     if (!canGenerate) return;
     setIsGenerating(true);
     setResult(null);
+    setSavedCount(0);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-authorial-questions", {
@@ -122,6 +130,61 @@ const GenerateQuestions = () => {
     }));
     navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
     toast({ title: "Copiado", description: "JSON copiado para a área de transferência." });
+  };
+
+  const handleSaveAll = async () => {
+    if (!result || !user) return;
+    setIsSaving(true);
+    try {
+      const rows = result.questions.map((q) => ({
+        exam_id: MERITO_EXAM_ID,
+        year: MERITO_YEAR,
+        subject_id: result.subject.id,
+        content_id: result.content.id,
+        question_type: "multipla_escolha" as const,
+        statement: q.statement,
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        option_e: q.option_e,
+        correct_answer: q.correct_answer?.toLowerCase() || null,
+        explanation: q.explanation || null,
+        difficulty: result.difficulty,
+        created_by: user.id,
+      }));
+
+      const { data: inserted, error } = await supabase
+        .from("questions")
+        .insert(rows)
+        .select("id");
+
+      if (error) throw error;
+
+      // Vincula tópico (se houver) via question_topics
+      if (result.topic?.id && inserted && inserted.length > 0) {
+        const links = inserted.map((row) => ({
+          question_id: row.id,
+          topic_id: result.topic!.id,
+        }));
+        const { error: linkError } = await supabase.from("question_topics").insert(links);
+        if (linkError) console.warn("Falha ao vincular tópico:", linkError);
+      }
+
+      setSavedCount(rows.length);
+      toast({
+        title: "Questões salvas",
+        description: `${rows.length} questão(ões) salvas no vestibular Autorais Mérito.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Erro ao salvar",
+        description: err instanceof Error ? err.message : "Não foi possível salvar as questões.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const renderHtml = (html: string) => ({
@@ -234,6 +297,15 @@ const GenerateQuestions = () => {
               </Button>
               {result && (
                 <>
+                  <Button onClick={handleSaveAll} disabled={isSaving || savedCount > 0}>
+                    {isSaving ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>
+                    ) : savedCount > 0 ? (
+                      <><CheckCircle2 className="mr-2 h-4 w-4" />Salvas ({savedCount})</>
+                    ) : (
+                      <><Save className="mr-2 h-4 w-4" />Salvar no Autorais Mérito</>
+                    )}
+                  </Button>
                   <Button variant="outline" onClick={handleGenerate} disabled={isGenerating}>
                     <RefreshCw className="mr-2 h-4 w-4" />Gerar novamente
                   </Button>
