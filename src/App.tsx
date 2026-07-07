@@ -15,6 +15,7 @@ import TaxonomyMigration from "./pages/TaxonomyMigration";
 import Auth from "./pages/Auth";
 import MyAccount from "./pages/MyAccount";
 import Integrations from "./pages/Integrations";
+import GenerateQuestions from "./pages/GenerateQuestions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MyAccount />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/generate-questions"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin", "professor"]}>
+                    <GenerateQuestions />
+                  </RoleBasedRoute>
                 </ProtectedRoute>
               }
             />
