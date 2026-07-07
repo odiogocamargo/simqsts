@@ -98,6 +98,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/generate-questions"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin", "professor"]}>
+                    <GenerateQuestions />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
