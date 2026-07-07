@@ -15,9 +15,13 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSubjects, useContents, useTopics } from "@/hooks/useSubjects";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, Copy, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Sparkles, Loader2, Copy, RefreshCw, CheckCircle2, Save } from "lucide-react";
 import DOMPurify from "dompurify";
+
+const MERITO_EXAM_ID = "merito-2026";
+const MERITO_YEAR = 2026;
 
 interface GeneratedQuestion {
   statement: string;
