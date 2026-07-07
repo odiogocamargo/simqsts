@@ -35,6 +35,39 @@ export type Database = {
         }
         Relationships: []
       }
+      banners: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          image_url: string
+          link_url: string | null
+          order_index: number
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_url: string
+          link_url?: string | null
+          order_index?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_url?: string
+          link_url?: string | null
+          order_index?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contents: {
         Row: {
           created_at: string
@@ -594,9 +627,100 @@ export type Database = {
           },
         ]
       }
+      simulado_questions: {
+        Row: {
+          answered_at: string | null
+          id: string
+          is_correct: boolean | null
+          order_index: number
+          question_id: string
+          selected_answer: string | null
+          simulado_id: string
+        }
+        Insert: {
+          answered_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          order_index?: number
+          question_id: string
+          selected_answer?: string | null
+          simulado_id: string
+        }
+        Update: {
+          answered_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          order_index?: number
+          question_id?: string
+          selected_answer?: string | null
+          simulado_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulado_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulado_questions_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "simulados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulados: {
+        Row: {
+          config: Json
+          created_at: string
+          duration_minutes: number
+          finished_at: string | null
+          id: string
+          question_count: number
+          score: number | null
+          started_at: string
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          duration_minutes: number
+          finished_at?: string | null
+          id?: string
+          question_count: number
+          score?: number | null
+          started_at?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          duration_minutes?: number
+          finished_at?: string | null
+          id?: string
+          question_count?: number
+          score?: number | null
+          started_at?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           area_id: string | null
+          cover_url: string | null
           created_at: string
           id: string
           name: string
@@ -604,6 +728,7 @@ export type Database = {
         }
         Insert: {
           area_id?: string | null
+          cover_url?: string | null
           created_at?: string
           id: string
           name: string
@@ -611,6 +736,7 @@ export type Database = {
         }
         Update: {
           area_id?: string | null
+          cover_url?: string | null
           created_at?: string
           id?: string
           name?: string
