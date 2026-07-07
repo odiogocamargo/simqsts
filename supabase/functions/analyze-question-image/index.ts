@@ -156,7 +156,7 @@ serve(async (req) => {
       "11. Se a página tiver mais de uma questão, preserve a ordem visual da página.",
       "12. Leia sempre de cima para baixo e da esquerda para a direita dentro de cada bloco textual.",
       "13. NUNCA misture linhas de alternativas com o enunciado nem junte trechos de blocos diferentes fora de ordem.",
-      "14. Quando houver poema, letra de música, citação longa ou passagem de livro, preserve a formatação com HTML simples (<p>, <br>, <strong>, <em>, <ul>, <li>) quando isso ajudar a manter o sentido original.",
+      "14. Quando houver poema, letra de música, versos, citação em verso, diálogos teatrais ou qualquer texto em que a quebra de linha carregue sentido, SEMPRE preserve a formatação com HTML: use <br/> ao final de CADA verso/linha e <p>...</p> para separar estrofes. NÃO junte versos em um único parágrafo corrido. Também use <strong>, <em>, <ul>, <li> quando fizer sentido. Isso vale tanto para o campo statement quanto para shared_text.",
       "15. Não reescreva, não resuma, não interprete e não simplifique o texto; transcreva como aparece.",
       "16. Se parte do texto estiver ilegível, mantenha apenas o trecho confiável e não invente conteúdo.",
       "17. Se existir uma questão com imagem e pouco texto, não descarte automaticamente; extraia todo o texto legível ao redor e preserve a associação com a imagem original.",
