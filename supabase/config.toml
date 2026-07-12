@@ -51,3 +51,6 @@ verify_jwt = false
 
 [functions.sim-questoes-ingest]
 verify_jwt = false
+
+[functions.public-taxonomy]
+verify_jwt = false
