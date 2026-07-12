@@ -82,24 +82,7 @@ Deno.serve(async (req) => {
       const { error } = await supa.from(table).delete().eq("id", evt.entity_id);
       if (error) throw error;
     } else {
-      let payload = { ...(evt.payload ?? {}) };
-
-      if (evt.entity_type === "question") {
-        const subjectName: string | undefined = payload.subject_name;
-        const topicName: string | undefined = payload.topic_name;
-        delete payload.subject_name;
-        delete payload.topic_name;
-
-        if (!payload.subject_id) {
-          if (!subjectName) throw new Error("question payload missing subject_id/subject_name");
-          payload.subject_id = await resolveSubjectId(supa, subjectName);
-        }
-        if (!payload.content_id) {
-          if (!topicName) throw new Error("question payload missing content_id/topic_name");
-          payload.content_id = await resolveContentId(supa, payload.subject_id, topicName);
-        }
-      }
-
+      const payload = evt.payload ?? {};
       const { error } = await supa.from(table).upsert(payload);
       if (error) throw error;
     }
