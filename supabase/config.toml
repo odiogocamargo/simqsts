@@ -48,3 +48,6 @@ verify_jwt = false
 
 [functions.create-external-consumer]
 verify_jwt = false
+
+[functions.sim-questoes-ingest]
+verify_jwt = false
