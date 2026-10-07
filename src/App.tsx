@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import MyAccount from "./pages/MyAccount";
 import Integrations from "./pages/Integrations";
 import GenerateQuestions from "./pages/GenerateQuestions";
+import Apis from "./pages/Apis";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -86,6 +87,16 @@ const App = () => (
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={["admin"]}>
                     <Integrations />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/apis"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin"]}>
+                    <Apis />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               }
