@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import MyAccount from "./pages/MyAccount";
 import Integrations from "./pages/Integrations";
 import GenerateQuestions from "./pages/GenerateQuestions";
+import Apis from "./pages/Apis";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
