@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, List, Users, Plug, Loader2, Sparkles } from "lucide-react";
+import { LayoutDashboard, FileText, List, Users, Plug, Loader2, Sparkles, Code2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ const adminNavItems = [
   { title: "Taxonomia", url: "/taxonomy-migration", icon: List },
   { title: "Usuários", url: "/users", icon: Users },
   { title: "Integrações", url: "/integrations", icon: Plug },
+  { title: "APIs", url: "/apis", icon: Code2 },
 ];
 
 const professorNavItems = [

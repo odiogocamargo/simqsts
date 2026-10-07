@@ -91,6 +91,16 @@ const App = () => (
               }
             />
             <Route
+              path="/apis"
+              element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={["admin"]}>
+                    <Apis />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/my-account"
               element={
                 <ProtectedRoute>
