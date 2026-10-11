@@ -78,11 +78,61 @@ Deno.serve(async (req) => {
   );
 
   try {
-    if (evt.operation === "delete") {
+    const payload = evt.payload ?? {};
+    if (evt.entity_type === "question_topic") {
+      // O vínculo chega identificado por question_id + topic_id (não pelo id da linha).
+      const { question_id, topic_id } = payload;
+      if (!question_id) {
+        return new Response(JSON.stringify({ error: "question_topic requires question_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (evt.operation === "delete") {
+        let del = supa.from("question_topics").delete().eq("question_id", question_id);
+        if (topic_id) del = del.eq("topic_id", topic_id);
+        const { error } = await del;
+        if (error) throw error;
+      } else {
+        // O tópico é a fonte da verdade: cada questão tem UM tópico, e o
+        // conteúdo e a matéria da questão acompanham o conteúdo do tópico.
+        const { data: topic, error: topicErr } = await supa
+          .from("topics")
+          .select("id, content_id, contents(subject_id)")
+          .eq("id", topic_id)
+          .maybeSingle();
+        if (topicErr) throw topicErr;
+        if (!topic) {
+          return new Response(JSON.stringify({ error: `unknown topic_id: ${topic_id}` }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { error: delErr } = await supa
+          .from("question_topics")
+          .delete()
+          .eq("question_id", question_id)
+          .neq("topic_id", topic_id);
+        if (delErr) throw delErr;
+        const { error: upErr } = await supa
+          .from("question_topics")
+          .upsert({ question_id, topic_id }, { onConflict: "question_id,topic_id", ignoreDuplicates: true });
+        if (upErr) throw upErr;
+        const subjectId = (topic as any).contents?.subject_id;
+        if (subjectId) {
+          // Só grava quando há diferença, para não gerar eventos de webhook à toa.
+          const { error: qErr } = await supa
+            .from("questions")
+            .update({ content_id: topic.content_id, subject_id: subjectId })
+            .eq("id", question_id)
+            .or(`content_id.is.null,content_id.neq.${topic.content_id},subject_id.neq.${subjectId}`);
+          if (qErr) throw qErr;
+        }
+      }
+    } else if (evt.operation === "delete") {
       const { error } = await supa.from(table).delete().eq("id", evt.entity_id);
       if (error) throw error;
     } else {
-      const payload = evt.payload ?? {};
       const { error } = await supa.from(table).upsert(payload);
       if (error) throw error;
     }
