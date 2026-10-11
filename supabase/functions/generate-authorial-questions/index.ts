@@ -159,6 +159,8 @@ serve(async (req) => {
       "9. NUNCA cite imagens, figuras, mapas, gráficos ou tabelas que você não possa escrever no próprio texto. A questão deve ser resolvível só com o que está escrito.",
       "10. Respeite o gabarito indicado para cada questão e varie o contexto e a abertura do enunciado de uma questão para outra.",
       "11. Na explicação, justifique pelo conteúdo das alternativas, sem depender apenas da letra.",
+      "12. As cinco alternativas devem ter extensão e nível de detalhe semelhantes: a correta NÃO pode ser a mais longa nem a mais elaborada.",
+      "13. Não escreva a letra no início das alternativas (nada de \"A)\" ou \"(A)\") e organize o enunciado em parágrafos com <p>.",
     ].join("\n");
 
     const userPrompt = [
