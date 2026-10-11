@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, X, PlusCircle, FileJson, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Eye, X, PlusCircle, FileJson, Trash2, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Select,
@@ -62,6 +62,8 @@ interface Question {
   };
   correctAnswer?: string;
   explanation?: string;
+  needsReview?: boolean;
+  reviewReason?: string;
 }
 
 const PAGE_SIZE = 50;
@@ -97,6 +99,7 @@ const Questions = () => {
   const [selectedExam, setSelectedExam] = useState<string | undefined>();
   const [selectedYear, setSelectedYear] = useState<string | undefined>();
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | undefined>();
+  const [onlyNeedsReview, setOnlyNeedsReview] = useState(false);
   const [viewQuestion, setViewQuestion] = useState<Question | null>(null);
   const [editQuestion, setEditQuestion] = useState<Question | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -140,7 +143,7 @@ const Questions = () => {
 
   // Contar total de questões para paginação
   const { data: totalCount = 0 } = useQuery({
-    queryKey: ['questions-count', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty],
+    queryKey: ['questions-count', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, onlyNeedsReview],
     queryFn: async () => {
       const topicQuestionIds = await fetchQuestionIdsByTopic(selectedTopic);
       if (selectedTopic && topicQuestionIds?.length === 0) return 0;
@@ -156,6 +159,7 @@ const Questions = () => {
       if (selectedExam) query = query.eq('exam_id', selectedExam);
       if (selectedYear) query = query.eq('year', parseInt(selectedYear));
       if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
+      if (onlyNeedsReview) query = query.eq('needs_review', true);
 
       const { count, error } = await query;
       if (error) return 0;
@@ -167,7 +171,7 @@ const Questions = () => {
 
   // Buscar questões do banco de dados com paginação
   const { data: questions = [], refetch, isLoading } = useQuery({
-    queryKey: ['questions', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, currentPage],
+    queryKey: ['questions', searchTerm, selectedSubject, selectedContent, selectedTopic, selectedExam, selectedYear, selectedDifficulty, onlyNeedsReview, currentPage],
     queryFn: async () => {
       const from = currentPage * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -176,7 +180,7 @@ const Questions = () => {
 
       let query = supabase
         .from('questions')
-        .select('id, statement, year, difficulty, subject_id, content_id, exam_id, question_type, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation, subjects(id, name), contents(id, name), exams(id, name)')
+        .select('id, statement, year, difficulty, subject_id, content_id, exam_id, question_type, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation, needs_review, review_reason, subjects(id, name), contents(id, name), exams(id, name)')
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -187,6 +191,7 @@ const Questions = () => {
       if (selectedExam) query = query.eq('exam_id', selectedExam);
       if (selectedYear) query = query.eq('year', parseInt(selectedYear));
       if (selectedDifficulty) query = query.eq('difficulty', selectedDifficulty);
+      if (onlyNeedsReview) query = query.eq('needs_review', true);
 
       const { data, error } = await query;
       
@@ -239,6 +244,8 @@ const Questions = () => {
           } : undefined,
           correctAnswer: q.correct_answer,
           explanation: q.explanation,
+          needsReview: !!q.needs_review,
+          reviewReason: q.review_reason || undefined,
         };
       });
     },
@@ -277,7 +284,7 @@ const Questions = () => {
     return matchesSearch && matchesTopic;
   });
 
-  const hasActiveFilters = selectedSubject || selectedContent || selectedTopic || selectedExam || selectedYear || selectedDifficulty;
+  const hasActiveFilters = selectedSubject || selectedContent || selectedTopic || selectedExam || selectedYear || selectedDifficulty || onlyNeedsReview;
 
   const clearFilters = () => {
     setSelectedSubject(undefined);
@@ -286,6 +293,7 @@ const Questions = () => {
     setSelectedExam(undefined);
     setSelectedYear(undefined);
     setSelectedDifficulty(undefined);
+    setOnlyNeedsReview(false);
     setSearchTerm("");
     setCurrentPage(0);
   };
@@ -388,6 +396,33 @@ const Questions = () => {
         variant: "destructive",
       });
       console.error('Error deleting question:', error);
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (questionId: string) => {
+      const { error } = await supabase
+        .from('questions')
+        .update({ needs_review: false, review_reason: null })
+        .eq('id', questionId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Questão aprovada",
+        description: "A questão foi marcada como revisada.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['questions'] });
+      queryClient.invalidateQueries({ queryKey: ['questions-count'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao aprovar",
+        description: "Não foi possível aprovar a questão. Tente novamente.",
+        variant: "destructive",
+      });
+      console.error('Error approving question:', error);
     },
   });
 
@@ -520,6 +555,13 @@ const Questions = () => {
                       <SelectItem value="dificil">Difícil</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant={onlyNeedsReview ? "default" : "outline"}
+                    onClick={() => { setOnlyNeedsReview(v => !v); setCurrentPage(0); }}
+                  >
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    Para revisar
+                  </Button>
                   {hasActiveFilters && (
                     <Button variant="ghost" size="icon" onClick={clearFilters}>
                       <X className="h-4 w-4" />
@@ -577,6 +619,11 @@ const Questions = () => {
                           <KatexText as="div" className="line-clamp-2 text-sm break-words">
                             {question.text}
                           </KatexText>
+                          {question.needsReview && (
+                            <Badge variant="outline" className="mt-1 border-destructive/30 text-destructive" title={question.reviewReason}>
+                              Para revisar
+                            </Badge>
+                          )}
                         </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
@@ -609,6 +656,16 @@ const Questions = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          {question.needsReview && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Aprovar questão"
+                              onClick={() => approveMutation.mutate(question.id)}
+                            >
+                              <CheckCircle2 className="h-4 w-4 text-success" />
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="icon"

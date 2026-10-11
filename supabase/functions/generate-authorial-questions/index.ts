@@ -16,6 +16,25 @@ const tryParse = (v: string) => {
   try { return JSON.parse(v); } catch { return null; }
 };
 
+// Sorteia k itens sem repetição
+const sample = <T>(items: T[], k: number): T[] => {
+  const pool = [...items];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, k);
+};
+
+// Distribui o gabarito igualmente entre as letras, em ordem aleatória
+const balancedAnswers = (quantity: number): string[] => {
+  const letters: string[] = [];
+  while (letters.length < quantity) letters.push(...sample(["a", "b", "c", "d", "e"], 5));
+  return letters.slice(0, quantity);
+};
+
+const REFERENCE_FIELDS = "statement, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation";
+
 const extractJson = (v: string) => {
   const cleaned = v.replace(/```json/gi, "").replace(/```/g, "").trim();
   const first = cleaned.search(/[\[{]/);
@@ -64,6 +83,12 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) return json({ error: "AI service not configured" }, 500);
 
+    // Conteúdo com tópicos cadastrados exige tópico, para a questão não entrar no banco sem classificação
+    if (!topic_id) {
+      const { count } = await supabase.from("topics").select("id", { count: "exact", head: true }).eq("content_id", content_id);
+      if (count && count > 0) return json({ error: "Selecione um tópico para gerar as questões" }, 400);
+    }
+
     // Buscar taxonomia (nomes) e amostra de questões existentes como referência de estilo
     const [subj, cont, top, refQuestions] = await Promise.all([
       supabase.from("subjects").select("id, name").eq("id", subject_id).maybeSingle(),
@@ -72,33 +97,38 @@ serve(async (req) => {
         ? supabase.from("topics").select("id, name").eq("id", topic_id).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
       (async () => {
+        // Só questões oficiais servem de referência: usar as autorais faria a IA imitar a si mesma.
         // O tópico fica em question_topics (questions não tem coluna topic_id)
         const { data, error } = topic_id
           ? await supabase
               .from("questions")
-              .select("statement, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation, question_topics!inner(topic_id)")
+              .select(`${REFERENCE_FIELDS}, question_topics!inner(topic_id)`)
               .eq("subject_id", subject_id)
               .eq("content_id", content_id)
               .eq("question_topics.topic_id", topic_id)
-              .limit(6)
+              .not("exam_id", "like", "merito-%")
+              .limit(20)
           : { data: null, error: null };
         if (error || !data || data.length === 0) {
           // fallback: sem filtro de tópico
           const { data: fb } = await supabase
             .from("questions")
-            .select("statement, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation")
+            .select(REFERENCE_FIELDS)
             .eq("subject_id", subject_id)
             .eq("content_id", content_id)
-            .limit(6);
-          return fb || [];
+            .not("exam_id", "like", "merito-%")
+            .limit(20);
+          return sample(fb || [], 6);
         }
-        return data;
+        return sample(data, 6);
       })(),
     ]);
 
     const subjectName = subj.data?.name || subject_id;
     const contentName = cont.data?.name || content_id;
     const topicName = top.data?.name || "";
+
+    const targetAnswers = balancedAnswers(quantity);
 
     const referenceBlock = (refQuestions || []).map((q, i) => {
       return [
@@ -125,6 +155,10 @@ serve(async (req) => {
       "5. Use HTML simples quando necessário (<p>, <br/>, <strong>, <em>, <ul>, <li>). Para fórmulas, use LaTeX inline entre $...$.",
       "6. Respeite a dificuldade solicitada.",
       "7. Português brasileiro formal, típico de banca de vestibular.",
+      "8. Todas as questões devem tratar exatamente da matéria, do conteúdo e do tópico informados. Instruções adicionais ajustam o enfoque, nunca o assunto.",
+      "9. NUNCA cite imagens, figuras, mapas, gráficos ou tabelas que você não possa escrever no próprio texto. A questão deve ser resolvível só com o que está escrito.",
+      "10. Respeite o gabarito indicado para cada questão e varie o contexto e a abertura do enunciado de uma questão para outra.",
+      "11. Na explicação, justifique pelo conteúdo das alternativas, sem depender apenas da letra.",
     ].join("\n");
 
     const userPrompt = [
@@ -139,6 +173,7 @@ serve(async (req) => {
         ? `QUESTÕES DE REFERÊNCIA (padrão de estilo — NÃO copiar):\n\n${referenceBlock}`
         : "Não há questões de referência no banco para esta taxonomia — crie no padrão dos grandes vestibulares brasileiros.",
       "",
+      `Gabarito de cada questão, na ordem: ${targetAnswers.map((l, i) => `#${i + 1} = ${l.toUpperCase()}`).join(", ")}.`,
       `Gere agora ${quantity} questão(ões) AUTORAL(is) inédita(s) seguindo esse padrão.`,
     ].filter(Boolean).join("\n");
 
@@ -210,6 +245,89 @@ serve(async (req) => {
       return json({ error: "Formato de resposta inesperado da IA" }, 500);
     }
 
+    // Segunda resolução independente: confere o gabarito e se a questão pertence à taxonomia escolhida
+    const reviews = new Map<number, { solved_answer: string; on_topic: boolean }>();
+    try {
+      const reviewPrompt = parsed.questions.map((q: any, i: number) => [
+        `--- Questão ${i} ---`,
+        q.statement || "",
+        `A) ${q.option_a || ""}`,
+        `B) ${q.option_b || ""}`,
+        `C) ${q.option_c || ""}`,
+        `D) ${q.option_d || ""}`,
+        `E) ${q.option_e || ""}`,
+      ].join("\n")).join("\n\n");
+
+      const reviewResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: AI_MODEL,
+          messages: [
+            {
+              role: "system",
+              content: "Você é um revisor de questões de vestibular. Resolva cada questão de forma independente e diga se ela trata do assunto indicado.",
+            },
+            {
+              role: "user",
+              content: `Assunto esperado: ${subjectName} → ${contentName}${topicName ? ` → ${topicName}` : ""}\n\n${reviewPrompt}`,
+            },
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "review_questions",
+              description: "Retorna a resolução e a aderência ao assunto de cada questão.",
+              parameters: {
+                type: "object",
+                properties: {
+                  reviews: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        question_index: { type: "number" },
+                        solved_answer: { type: "string", enum: ["a", "b", "c", "d", "e"] },
+                        on_topic: { type: "boolean", description: "true se a questão trata do assunto esperado" },
+                      },
+                      required: ["question_index", "solved_answer", "on_topic"],
+                    },
+                  },
+                },
+                required: ["reviews"],
+              },
+            },
+          }],
+          tool_choice: { type: "function", function: { name: "review_questions" } },
+        }),
+      });
+
+      if (reviewResp.ok) {
+        const reviewData = await reviewResp.json();
+        const reviewArgs = reviewData?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+        const reviewParsed = typeof reviewArgs === "string" ? tryParse(reviewArgs) : null;
+        for (const r of reviewParsed?.reviews || []) {
+          reviews.set(Number(r.question_index), { solved_answer: String(r.solved_answer || "").toLowerCase(), on_topic: !!r.on_topic });
+        }
+      } else {
+        console.error("AI review error:", reviewResp.status, await reviewResp.text());
+      }
+    } catch (reviewError) {
+      console.warn("Revisão automática indisponível:", reviewError);
+    }
+
+    const reviewedQuestions = parsed.questions.map((q: any, i: number) => {
+      const review = reviews.get(i);
+      return {
+        ...q,
+        answer_verified: review ? review.solved_answer === String(q.correct_answer || "").toLowerCase() : null,
+        on_topic: review ? review.on_topic : null,
+      };
+    });
+
     return json({
       success: true,
       data: {
@@ -218,7 +336,7 @@ serve(async (req) => {
         topic: topic_id ? { id: topic_id, name: topicName } : null,
         difficulty,
         reference_count: refQuestions?.length || 0,
-        questions: parsed.questions,
+        questions: reviewedQuestions,
       },
     });
   } catch (err) {

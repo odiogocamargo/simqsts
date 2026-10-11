@@ -21,7 +21,7 @@ import { Sparkles, Loader2, Copy, RefreshCw, CheckCircle2, Save } from "lucide-r
 import DOMPurify from "dompurify";
 
 const MERITO_EXAM_ID = "merito-2026";
-const MERITO_YEAR = 2026;
+const MERITO_YEAR = new Date().getFullYear();
 
 interface GeneratedQuestion {
   statement: string;
@@ -32,6 +32,9 @@ interface GeneratedQuestion {
   option_e: string;
   correct_answer: string;
   explanation: string;
+  // Resultado da segunda resolução feita pela IA (null = revisão indisponível)
+  answer_verified?: boolean | null;
+  on_topic?: boolean | null;
 }
 
 interface GenerationResult {
@@ -42,6 +45,15 @@ interface GenerationResult {
   reference_count: number;
   questions: GeneratedQuestion[];
 }
+
+const buildReviewReason = (q: GeneratedQuestion) => {
+  const notes = ["Questão gerada por IA — confira com atenção antes de aprovar."];
+  if (q.answer_verified === true) notes.push("Gabarito confirmado por uma segunda resolução independente da IA.");
+  else if (q.answer_verified === false) notes.push("ATENÇÃO: a segunda resolução da IA chegou a outro gabarito.");
+  else notes.push("Gabarito não conferido automaticamente.");
+  if (q.on_topic === false) notes.push("ATENÇÃO: a questão pode não pertencer ao assunto escolhido.");
+  return notes.join(" ");
+};
 
 const GenerateQuestions = () => {
   const { toast } = useToast();
@@ -61,7 +73,8 @@ const GenerateQuestions = () => {
   const { data: contents = [] } = useContents(subjectId || undefined);
   const { data: topics = [] } = useTopics(contentId || undefined);
 
-  const canGenerate = subjectId && contentId && !isGenerating;
+  const topicRequired = topics.length > 0;
+  const canGenerate = subjectId && contentId && (!topicRequired || topicId) && !isGenerating;
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
@@ -118,6 +131,9 @@ const GenerateQuestions = () => {
       subject_id: result.subject.id,
       content_id: result.content.id,
       topic_id: result.topic?.id || "",
+      exam_id: MERITO_EXAM_ID,
+      year: MERITO_YEAR,
+      question_type: "multipla_escolha",
       difficulty: result.difficulty,
       option_a: q.option_a,
       option_b: q.option_b,
@@ -126,7 +142,6 @@ const GenerateQuestions = () => {
       option_e: q.option_e,
       correct_answer: q.correct_answer,
       explanation: q.explanation,
-      origin: "autoral_merito",
     }));
     navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
     toast({ title: "Copiado", description: "JSON copiado para a área de transferência." });
@@ -151,6 +166,8 @@ const GenerateQuestions = () => {
         correct_answer: q.correct_answer?.toLowerCase() || null,
         explanation: q.explanation || null,
         difficulty: result.difficulty,
+        needs_review: true,
+        review_reason: buildReviewReason(q),
         created_by: user.id,
       }));
 
@@ -168,13 +185,13 @@ const GenerateQuestions = () => {
           topic_id: result.topic!.id,
         }));
         const { error: linkError } = await supabase.from("question_topics").insert(links);
-        if (linkError) console.warn("Falha ao vincular tópico:", linkError);
+        if (linkError) throw new Error("Questões salvas, mas o tópico não foi vinculado. Edite-as para corrigir.");
       }
 
       setSavedCount(rows.length);
       toast({
         title: "Questões salvas",
-        description: `${rows.length} questão(ões) salvas no vestibular Autorais Mérito.`,
+        description: `${rows.length} questão(ões) salvas no Autorais Mérito, marcadas para revisão.`,
       });
     } catch (err) {
       toast({
@@ -207,7 +224,8 @@ const GenerateQuestions = () => {
           <h1 className="text-3xl font-bold tracking-tight">Gerar questões autorais</h1>
           <p className="text-muted-foreground">
             A IA usa as questões do seu banco como referência de estilo e gera novas questões inéditas
-            no mesmo padrão. Nada é salvo automaticamente — revise e copie o JSON quando aprovar.
+            no mesmo padrão. Nada é salvo automaticamente — revise e, ao salvar, as questões entram
+            marcadas como "Para revisar" no banco.
           </p>
         </div>
 
@@ -242,9 +260,9 @@ const GenerateQuestions = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Tópico (opcional)</Label>
+                <Label>{topicRequired ? "Tópico *" : "Tópico"}</Label>
                 <Select value={topicId} onValueChange={setTopicId} disabled={!contentId}>
-                  <SelectTrigger><SelectValue placeholder={contentId ? "Qualquer tópico" : "Escolha o conteúdo antes"} /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={contentId ? "Selecione" : "Escolha o conteúdo antes"} /></SelectTrigger>
                   <SelectContent>
                     {topics.map((t) => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
@@ -337,6 +355,15 @@ const GenerateQuestions = () => {
                   <CardTitle className="text-lg">Questão autoral #{i + 1}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {(q.answer_verified === false || q.on_topic === false) && (
+                    <Alert variant="destructive">
+                      <AlertTitle>Revise com atenção</AlertTitle>
+                      <AlertDescription>
+                        {q.answer_verified === false && "A segunda resolução da IA chegou a outro gabarito. "}
+                        {q.on_topic === false && "A questão pode não pertencer ao assunto escolhido."}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <div
                     className="prose prose-sm max-w-none rounded-lg border border-border bg-muted/30 p-4"
                     dangerouslySetInnerHTML={renderHtml(q.statement)}
