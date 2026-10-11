@@ -47,9 +47,9 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
     const template = [
       {
         statement: "Qual é a fórmula da água?",
-        subject_id: "quimica",
-        content_id: "quimica_geral",
-        topic_id: "substancias_e_misturas",
+        subject_id: "qu",
+        content_id: "qu-materia",
+        topic_id: "qu-ma-misturas",
         exam_id: "enem",
         year: 2024,
         difficulty: "facil",
@@ -70,9 +70,9 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       },
       {
         statement: "Observe a imagem abaixo. Qual elemento químico está representado?",
-        subject_id: "quimica",
-        content_id: "quimica_geral",
-        topic_id: "tabela_periodica",
+        subject_id: "qu",
+        content_id: "qu-tabela-periodica",
+        topic_id: "qu-tp-familias",
         exam_id: "enem",
         year: 2024,
         difficulty: "medio",
@@ -94,9 +94,9 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       {
         statement: "Analise o gráfico e responda: qual é o comportamento da função?",
         subject_id: "ma",
-        content_id: "funcoes",
-        topic_id: "funcao_primeiro_grau",
-        exam_id: "paes_uema",
+        content_id: "ma-funcoes",
+        topic_id: "ma-fn-afim",
+        exam_id: "paes-uema",
         year: 2024,
         difficulty: "dificil",
         option_a: "Crescente",
@@ -117,9 +117,9 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       {
         statement: "Questão dissertativa: Explique o processo de fotossíntese com base na imagem fornecida.",
         subject_id: "bi",
-        content_id: "ecologia",
-        topic_id: "fotossintese",
-        exam_id: "paes_uema",
+        content_id: "bi-metabolismo",
+        topic_id: "bi-me-fotossintese",
+        exam_id: "paes-uema",
         year: 2024,
         difficulty: "medio",
         question_type: "discursiva",
@@ -134,7 +134,7 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       {
         statement: "INSTRUÇÕES: Para converter suas imagens para base64, você pode usar:\n\n1. Sites online: https://www.base64-image.de/\n2. Python: import base64; base64.b64encode(open('imagem.png', 'rb').read()).decode()\n3. Node.js: Buffer.from(fs.readFileSync('imagem.png')).toString('base64')\n\nO formato completo deve ser: data:image/png;base64,SEU_CODIGO_BASE64_AQUI\n\nSuporte para: PNG, JPG, JPEG, GIF, WebP",
         subject_id: "ma",
-        content_id: "algebra",
+        content_id: "ma-algebra",
         exam_id: "enem",
         year: 2024,
         difficulty: "facil",
@@ -214,6 +214,20 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
       let errorCount = 0;
       const errors: string[] = [];
 
+      // Carregar a taxonomia para validar os IDs antes de inserir
+      const [subjectsRes, contentsRes, topicsRes, examsRes] = await Promise.all([
+        supabase.from("subjects").select("id"),
+        supabase.from("contents").select("id, subject_id"),
+        supabase.from("topics").select("id, content_id"),
+        supabase.from("exams").select("id"),
+      ]);
+      const taxonomyError = subjectsRes.error || contentsRes.error || topicsRes.error || examsRes.error;
+      if (taxonomyError) throw taxonomyError;
+      const validSubjects = new Set((subjectsRes.data || []).map(s => s.id));
+      const contentSubject = new Map((contentsRes.data || []).map(c => [c.id, c.subject_id]));
+      const topicContent = new Map((topicsRes.data || []).map(t => [t.id, t.content_id]));
+      const validExams = new Set((examsRes.data || []).map(e => e.id));
+
       console.log(`Iniciando importação de ${questions.length} questões...`);
 
       for (const [index, question] of questions.entries()) {
@@ -224,6 +238,19 @@ export const QuestionImportModal = ({ open, onOpenChange, onSuccess }: QuestionI
           
           if (missingFields.length > 0) {
             throw new Error(`Campos obrigatórios ausentes: ${missingFields.join(', ')}`);
+          }
+
+          if (!validSubjects.has(question.subject_id)) {
+            throw new Error(`subject_id inexistente: "${question.subject_id}"`);
+          }
+          if (contentSubject.get(question.content_id) !== question.subject_id) {
+            throw new Error(`content_id "${question.content_id}" não existe ou não pertence à matéria "${question.subject_id}"`);
+          }
+          if (question.topic_id && topicContent.get(question.topic_id) !== question.content_id) {
+            throw new Error(`topic_id "${question.topic_id}" não existe ou não pertence ao conteúdo "${question.content_id}"`);
+          }
+          if (!validExams.has(question.exam_id)) {
+            throw new Error(`exam_id inexistente: "${question.exam_id}"`);
           }
 
           console.log(`Importando questão ${index + 1}:`, question.statement.substring(0, 50) + '...');

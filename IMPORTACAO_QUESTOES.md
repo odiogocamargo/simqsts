@@ -37,9 +37,9 @@ As questões devem ser importadas em formato JSON como um array de objetos. Cada
 ## Campos Obrigatórios
 
 - `statement`: Texto do enunciado da questão
-- `subject_id`: ID da matéria (ex: "matematica", "portugues")
-- `content_id`: ID do conteúdo (ex: "algebra", "geometria")
-- `exam_id`: ID do vestibular ("enem" ou "paes_uema")
+- `subject_id`: ID da matéria (ex: "ma", "gr")
+- `content_id`: ID do conteúdo (ex: "ma-algebra", "ma-geometria-plana")
+- `exam_id`: ID do vestibular ("enem" ou "paes-uema")
 - `year`: Ano da questão (número inteiro)
 
 ## Campos Opcionais
@@ -114,9 +114,9 @@ O campo `display_order` determina a ordem de exibição das imagens (0 = primeir
 [
   {
     "statement": "Observe o gráfico abaixo e responda: qual é o valor de x quando y = 5?",
-    "subject_id": "matematica",
-    "content_id": "funcoes",
-    "topic_id": "funcao_primeiro_grau",
+    "subject_id": "ma",
+    "content_id": "ma-funcoes",
+    "topic_id": "ma-fn-afim",
     "exam_id": "enem",
     "year": 2024,
     "difficulty": "medio",
@@ -154,12 +154,12 @@ O campo `display_order` determina a ordem de exibição das imagens (0 = primeir
 
 Para descobrir os IDs válidos de matérias, conteúdos e tópicos:
 
-1. Acesse o **Relatório de Taxonomia** no menu admin
-2. Ou consulte diretamente no banco de dados Supabase
+1. Consulte o arquivo `REFERENCIA_IDS.md`
+2. Ou o endpoint público `public-taxonomy`, que reflete o banco em tempo real
 
 ### Exames Disponíveis
 - `enem`: ENEM
-- `paes_uema`: PAES UEMA
+- `paes-uema`: PAES UEMA
 
 ## Importando o Arquivo
 

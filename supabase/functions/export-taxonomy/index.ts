@@ -40,6 +40,14 @@ serve(async (req) => {
 
     if (topicsError) throw topicsError;
 
+    // Buscar exams
+    const { data: exams, error: examsError } = await supabase
+      .from('exams')
+      .select('id, name')
+      .order('name');
+
+    if (examsError) throw examsError;
+
     // Organizar dados hierarquicamente
     const taxonomy = subjects.map(subject => ({
       subject_id: subject.id,
@@ -71,7 +79,7 @@ serve(async (req) => {
     // Gerar texto formatado para o ChatGPT
     let formattedText = "# TAXONOMIA COMPLETA DO SIM QUESTÕES\n\n";
     formattedText += "🚨 ATENÇÃO CRÍTICA: OS IDs NÃO SÃO UUIDs!\n";
-    formattedText += "🚨 Os IDs são STRINGS em formato kebab-case (exemplo: 'funcao-exponencial')\n";
+    formattedText += "🚨 Os IDs são STRINGS em formato kebab-case (exemplo: 'ma-fn-exponencial')\n";
     formattedText += "🚨 NUNCA gere UUIDs aleatórios como 'e9f3b7e0-7cd1-4d0a-8b67-9abc2f0bd881'\n";
     formattedText += "🚨 SEMPRE copie EXATAMENTE os IDs desta lista!\n";
     formattedText += "🚨 Um único caractere errado = erro no Supabase\n\n";
@@ -105,7 +113,10 @@ serve(async (req) => {
     });
 
     formattedText += "\n## 🎓 VESTIBULARES ACEITOS\n\n";
-    formattedText += '**exam_id:** "enem" ou "paes-uema"\n\n';
+    exams.forEach(exam => {
+      formattedText += `  • **"${exam.id}"** → ${exam.name}\n`;
+    });
+    formattedText += "\n";
     formattedText += "## ✅ VALORES ACEITOS PARA correct_answer\n\n";
     formattedText += '**Apenas letras minúsculas:** "a", "b", "c", "d", "e"\n\n';
     formattedText += "## 📊 VALORES ACEITOS PARA difficulty\n\n";
@@ -122,9 +133,9 @@ serve(async (req) => {
     formattedText += '  "option_e": "Alternativa E",\n';
     formattedText += '  "correct_answer": "a",\n';
     formattedText += '  "explanation": "Explicação detalhada da resposta",\n';
-    formattedText += '  "subject_id": "matematica",\n';
-    formattedText += '  "content_id": "funcoes",\n';
-    formattedText += '  "topic_id": "funcao-exponencial",\n';
+    formattedText += '  "subject_id": "ma",\n';
+    formattedText += '  "content_id": "ma-funcoes",\n';
+    formattedText += '  "topic_id": "ma-fn-exponencial",\n';
     formattedText += '  "exam_id": "enem",\n';
     formattedText += '  "year": 2024,\n';
     formattedText += '  "difficulty": "medio"\n';
@@ -139,9 +150,9 @@ serve(async (req) => {
     formattedText += '}\n';
     formattedText += '```\n\n';
     formattedText += "## ✅ FORMATO CORRETO DOS IDs\n\n";
-    formattedText += '- subject_id: texto em kebab-case (ex: "matematica", "ciencias-da-natureza")\n';
-    formattedText += '- content_id: texto em kebab-case (ex: "funcoes", "trigonometria")\n';
-    formattedText += '- topic_id: texto em kebab-case (ex: "funcao-exponencial", "teorema-de-pitagoras")\n';
+    formattedText += '- subject_id: texto em kebab-case (ex: "ma", "bi")\n';
+    formattedText += '- content_id: texto em kebab-case (ex: "ma-funcoes", "ma-trigonometria")\n';
+    formattedText += '- topic_id: texto em kebab-case (ex: "ma-fn-exponencial", "ma-gp-teorema-pitagoras")\n';
     formattedText += '- SEMPRE consulte a lista completa acima para copiar o ID exato!\n';
 
     return new Response(

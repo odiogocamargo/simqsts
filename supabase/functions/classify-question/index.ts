@@ -99,7 +99,7 @@ ${JSON.stringify(taxonomyMap, null, 2)}
 
 INSTRUÇÕES CRÍTICAS:
 1. Analise o enunciado da questão cuidadosamente
-2. Identifique a matéria principal (matematica, portugues, quimica, fisica, biologia, historia, geografia, filosofia, sociologia, ingles, espanhol, artes)
+2. Identifique a matéria principal usando o ID EXATO da taxonomia (as chaves de primeiro nível do JSON acima)
 3. Identifique o conteúdo específico dentro da matéria usando os IDs EXATOS da taxonomia
 4. Identifique o tópico específico dentro do conteúdo usando os IDs EXATOS da taxonomia
 5. IMPORTANTE: Use APENAS os IDs que existem na taxonomia fornecida acima
@@ -124,8 +124,8 @@ Use tool calling para retornar os dados estruturados.`
                 properties: {
                   subject_id: {
                     type: 'string',
-                    enum: ['ma', 'ge', 'hi', 'bi', 'qu', 'fi', 'gr', 'le', 'it', 'li', 'so', 'fl', 'in', 'es'],
-                    description: 'ID da matéria (ex: ma=Matemática, ge=Geografia, hi=História, bi=Biologia, qu=Química, fi=Física, gr=Gramática, le=Leitura, it=Interpretação Textual, li=Literatura, so=Sociologia, fl=Filosofia, in=Inglês, es=Espanhol)'
+                    enum: (subjects ?? []).map(s => s.id),
+                    description: 'ID da matéria (deve ser um ID existente na taxonomia)'
                   },
                   content_id: {
                     type: 'string',
@@ -192,6 +192,15 @@ Use tool calling para retornar os dados estruturados.`
 
     const classification = JSON.parse(toolCall.function.arguments);
     console.log('Classification result:', classification);
+
+    // Descartar IDs que não existem ou que não pertencem ao nível acima
+    const content = contents?.find(c => c.id === classification.content_id);
+    if (!content || content.subject_id !== classification.subject_id) {
+      classification.content_id = '';
+      classification.topic_id = '';
+    } else if (!topics?.some(t => t.id === classification.topic_id && t.content_id === content.id)) {
+      classification.topic_id = '';
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: classification }),

@@ -72,14 +72,16 @@ serve(async (req) => {
         ? supabase.from("topics").select("id, name").eq("id", topic_id).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
       (async () => {
-        let q = supabase
-          .from("questions")
-          .select("statement, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation")
-          .eq("subject_id", subject_id)
-          .eq("content_id", content_id)
-          .limit(6);
-        if (topic_id) q = q.eq("topic_id", topic_id);
-        const { data, error } = await q;
+        // O tópico fica em question_topics (questions não tem coluna topic_id)
+        const { data, error } = topic_id
+          ? await supabase
+              .from("questions")
+              .select("statement, option_a, option_b, option_c, option_d, option_e, correct_answer, explanation, question_topics!inner(topic_id)")
+              .eq("subject_id", subject_id)
+              .eq("content_id", content_id)
+              .eq("question_topics.topic_id", topic_id)
+              .limit(6)
+          : { data: null, error: null };
         if (error || !data || data.length === 0) {
           // fallback: sem filtro de tópico
           const { data: fb } = await supabase
