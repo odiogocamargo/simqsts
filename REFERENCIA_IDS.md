@@ -527,9 +527,6 @@
 - `hi-fu-fontes-historicas` - Fontes históricas
 - `hi-fu-tempo-historico` - Tempo histórico
 
-### **content_id: hi-historia-do-brasil-colonial** - História do Brasil Colonial
-(Sem tópicos cadastrados)
-
 ### **content_id: hi-historia-do-maranhao** - História do Maranhão
 (Sem tópicos cadastrados)
 
